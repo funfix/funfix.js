@@ -35,7 +35,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:prod": "yarn run lint && yarn run test -- --coverage --no-cache",
-    "deploy-docs": "node tools/gh-pages-publish.js",
+    "deploy-docs": "ts-node tools/gh-pages-publish.ts",
     "report-coverage": "cat ./coverage/lcov.info | coveralls",
     "commit": "git-cz",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post",
