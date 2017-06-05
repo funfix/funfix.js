@@ -1,6 +1,6 @@
 {
   "name": "funcat",
-  "version": "0.0.1",
+  "version": "0.0.0-development",
   "description": "Functional programming library for Javascript",
   "keywords": [
     "fp",
