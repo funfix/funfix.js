@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "moduleResolution": "node",
+        "target": "es2015",
+        "lib": ["es2016", "dom"],
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "sourceMap": true,
+        "declaration": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "declarationDir": "dist/types",
+        "outDir": "dist",
+        "typeRoots": [
+          "node_modules/@types"
+        ]
+    },
+    "include": [
+        "src"
+    ]
+}
