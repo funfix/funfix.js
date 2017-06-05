@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 by The Funcat Project Developers.
+ * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { DummyError, CompositeError } from "../../src/funcat"
+import { DummyError, CompositeError } from "../../src/funfix"
 
 describe("DummyError", () => {
   it("has custom message", () => {

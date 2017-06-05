@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 by The Funcat Project Developers.
+ * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import commonjs from "rollup-plugin-commonjs"
 const pkg = require("./package.json")
 const { camelCase } = require("lodash")
 
-const libraryName = "funcat"
+const libraryName = "funfix"
 
 export default {
   entry: `dist/${libraryName}.js`,

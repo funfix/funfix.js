@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 by The Funcat Project Developers.
+ * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { CompositeError } from "../funcat-core/errors"
+import { CompositeError } from "../funfix-core/errors"
 
 /**
  * `Cancelable` represents a one-time idempotent action that can be

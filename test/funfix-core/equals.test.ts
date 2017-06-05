@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 by The Funcat Project Developers.
+ * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
-// Exporting everything
-export * from "./funcat-core/equals"
-export * from "./funcat-core/errors"
-export * from "./funcat-core/option"
-export * from "./funcat-exec/cancelable"
+import { hashCode, equals, Option } from "../../src/funfix"
+
+describe("hashCode", () => {
+  it("works for string", () => {
+    expect(hashCode("hello")).toBe(99162322)
+  })
+
+  it("works for number", () => {
+    expect(hashCode(1000)).toBe(1000)
+    expect(hashCode(1000.10)).toBe(1000)
+  })
+
+  it("works works for complex type", () => {
+    expect(hashCode(Option.some(1000))).toBe(1000)
+  })
+})

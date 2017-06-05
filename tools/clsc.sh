@@ -8,7 +8,7 @@ cd "$DIR"/..
 # --module_resolution NODE
 # --module_resolution NODE
 # --generate_exports true
-# --entry_point src/funcat-core
+# --entry_point src/funfix-core
 # --js node_modules/google-closure-library/closure/
 # --only_closure_dependencies \
 # --generate_exports \

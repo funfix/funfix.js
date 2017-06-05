@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 by The Funcat Project Developers.
+ * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import { Cancelable, BoolCancelable } from "../../src/funcat-exec/cancelable"
-import { DummyError, CompositeError } from "../../src/funcat-core/errors"
+import { Cancelable, BoolCancelable } from "../../src/funfix-exec/cancelable"
+import { DummyError, CompositeError } from "../../src/funfix-core/errors"
 
 describe("Cancelable.from", () => {
   it("converts any callback", () => {

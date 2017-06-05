@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 by The Funcat Project Developers.
+ * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import { Option } from "../../src/funcat"
-import { NoSuchElementException } from "../../src/funcat"
-import { equals } from "../../src/funcat"
+import { Option } from "../../src/funfix"
+import { NoSuchElementException } from "../../src/funfix"
+import { equals } from "../../src/funfix"
 
 describe("Option#get", () => {
   it("returns the enclosed value if nonempty",

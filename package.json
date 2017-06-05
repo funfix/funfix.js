@@ -1,5 +1,5 @@
 {
-  "name": "funcat",
+  "name": "funfix",
   "version": "0.0.0-development",
   "description": "Functional programming library for Javascript",
   "keywords": [
@@ -12,15 +12,15 @@
     "io",
     "task"
   ],
-  "main": "dist/funcat.umd.js",
-  "module": "dist/funcat.es5.js",
-  "typings": "dist/types/funcat.d.ts",
+  "main": "dist/funfix.umd.js",
+  "module": "dist/funfix.es5.js",
+  "typings": "dist/types/funfix.d.ts",
   "files": [
     "dist"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/alexandru/funcat.git"
+    "url": "https://github.com/alexandru/funfix.git"
   },
   "author": "Alexandru Nedelcu <noreply@alexn.org>",
   "license": "Apache-2.0",

@@ -1,8 +1,8 @@
-# Contributing to Funcat
+# Contributing to Funfix
 
-The Funcat project welcomes contributions from anybody wishing to participate.
+The Funfix project welcomes contributions from anybody wishing to participate.
 All code or documentation that is provided must be licensed with the same
-license that Funcat is licensed with (Apache 2.0, see LICENSE.txt).
+license that Funfix is licensed with (Apache 2.0, see LICENSE.txt).
 
 ## General Workflow
 
@@ -46,7 +46,7 @@ All code must be licensed under the Apache 2.0 license and all files
 must include the following copyright header:
 
 ```
-Copyright (c) $today.year by The Funcat Project Developers.
+Copyright (c) $today.year by The Funfix Project Developers.
 Some rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
