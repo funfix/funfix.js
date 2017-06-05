@@ -15,3 +15,7 @@ before_script:
   - npm install
 script:
   - npm run test:prod && npm run build
+after_success:
+  - npm run report-coverage
+  - npm run deploy-docs
+  - npm run semantic-release
