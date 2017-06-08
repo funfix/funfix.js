@@ -1,6 +1,6 @@
 # Funfix
 
-<img src="https://funfix.org/assets/logo-200.png" width="100" align="right" style="float:right; display: block; width:100px;" />
+<img src="https://funfix.org/public/logo.png" width="100" align="right" style="float:right; display: block; width:100px;" />
 
 [![Travis](https://img.shields.io/travis/alexandru/funfix.svg)](https://travis-ci.org/alexandru/funfix)
 [![Coverage Status](https://coveralls.io/repos/github/alexandru/funfix/badge.svg?branch=master)](https://coveralls.io/github/alexandru/funfix?branch=master)
