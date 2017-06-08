@@ -30,7 +30,7 @@ echo("Deploying docs!!!")
 if (existsSync(process.env.TMPDIR)) cd(`${process.env.TMPDIR}`)
 
 exec(`rm -rf "${destDir}"`)
-exec(`git clone "https://${ghToken}@${repository}" "${destDir}"`)
+exec(`git clone "https://${ghToken}@${repository}" "${destDir}" -b gh-pages`)
 
 exec(`mkdir -p "${destDir}"/api/`)
 exec(`rm -rf "${destDir}"/api/${version} && rm -rf "${destDir}"/api/latest`)
@@ -42,9 +42,8 @@ exec("git add .")
 exec('git config user.name "Alexandru Nedelcu"')
 exec('git config user.email "noreply@alexn.org"')
 exec('git commit -m "docs(docs): update gh-pages"')
-exec(
-  `git push --force --quiet "https://${ghToken}@${repository}" master:gh-pages`
-)
+// exec(`git push --force --quiet "https://${ghToken}@${repository}" master:gh-pages`)
+exec(`git push --force --quiet "git@github.com:alexandru/funfix.git" master:gh-pages`)
 
 cd("..")
 exec(`rm -rf ${destDir}`)
