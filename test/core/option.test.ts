@@ -16,7 +16,7 @@
  */
 
 import { Option } from "../../src/funfix"
-import { NoSuchElementException } from "../../src/funfix"
+import { NoSuchElementError } from "../../src/funfix"
 import { equals, hashCode } from "../../src/funfix"
 
 import * as jv from "jsverify"
@@ -38,7 +38,7 @@ describe("Option#get", () => {
     try {
       fail(`unexpected ${ref.get()}`)
     } catch (e) {
-      expect(e instanceof NoSuchElementException).toBe(true)
+      expect(e instanceof NoSuchElementError).toBe(true)
     }
   })
 })

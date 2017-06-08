@@ -19,4 +19,5 @@
 export * from "./core/equals"
 export * from "./core/errors"
 export * from "./core/option"
+export * from "./core/either"
 export * from "./exec/cancelable"

@@ -16,7 +16,7 @@
  */
 
 import * as eq from "./equals"
-import { NoSuchElementException } from "./errors"
+import { NoSuchElementError } from "./errors"
 
 /**
  * Represents optional values, inspired by Scala"s `Option` and by
@@ -33,7 +33,6 @@ import { NoSuchElementException } from "./errors"
  */
 export class Option<A> implements eq.IEquals<Option<A>> {
   // tslint:disable-next-line:variable-name
-  protected __self__: Option<A>
   private _isEmpty: boolean
   private _ref: A
 
@@ -42,7 +41,6 @@ export class Option<A> implements eq.IEquals<Option<A>> {
     if (isEmpty != null) this._isEmpty = isEmpty
     else this._isEmpty = (ref == null)
     this._ref = ref
-    this.__self__ = this
   }
 
   /**
@@ -52,11 +50,11 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * non-empty, otherwise a runtime exception will get thrown.
    * Use with care.
    *
-   * @throws [[NoSuchElementException]] in case the option is empty
+   * @throws [[NoSuchElementError]] in case the option is empty
    */
   get(): A {
     if (!this._isEmpty) return this._ref
-    else throw new NoSuchElementException("Option.get")
+    else throw new NoSuchElementError("Option.get")
   }
 
   /**
@@ -261,7 +259,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   hashCode(): number {
     if (this._isEmpty) return 2433880
     else if (this._ref == null) return 2433881 << 2
-    else return eq.hashCode(this._ref)
+    else return eq.hashCode(this._ref) << 2
   }
 
   /**
