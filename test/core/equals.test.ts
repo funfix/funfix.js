@@ -15,19 +15,45 @@
  * limitations under the License.
  */
 
-import { hashCode, equals, Option } from "../../src/funfix"
+import { hashCode, equals } from "../../src/funfix"
+import * as jv from "jsverify"
+import * as inst from "./instances"
 
 describe("hashCode", () => {
-  it("works for string", () => {
-    expect(hashCode("hello")).toBe(99162322)
-  })
+  jv.property("hashCode(v) == hashCode(v)",
+    inst.arbAny,
+    v => hashCode(v) === hashCode(v)
+  )
 
-  it("works for number", () => {
-    expect(hashCode(1000)).toBe(1000)
-    expect(hashCode(1000.10)).toBe(1000)
-  })
+  jv.property("hashCode(v1) != hashCode(v2) => v1 != v2",
+    jv.string, jv.string,
+    (v1, v2) => hashCode(v1) === hashCode(v2) || v1 !== v2
+  )
+})
 
-  it("works works for complex type", () => {
-    expect(hashCode(Option.some(1000))).toBe(1000)
-  })
+describe("equals", () => {
+  jv.property("equals(v, v) == true",
+    inst.arbAny,
+    v => equals(v, v)
+  )
+
+  jv.property("equals(v1, v2) == false => v1 != v2",
+    inst.arbAny, inst.arbAny,
+    (v1, v2) => equals(v1, v2) || v1 !== v2
+  )
+
+  jv.property("equals(v1, v2) == equals(v2, v1)",
+    inst.arbAny, inst.arbAny,
+    (v1, v2) => equals(v1, v2) === equals(v2, v1)
+  )
+
+  jv.property("equals(v1, v2) && equals(v2, v3) => equals(v1, v3) (numbers)",
+    jv.number, jv.number, jv.number,
+    (v1, v2, v3) => equals(v1, v2) && equals(v2, v3) ? equals(v1, v3) : true
+  )
+
+  jv.property("equals(v1, v2) && equals(v2, v3) => equals(v1, v3) (strings)",
+    jv.string, jv.string, jv.string,
+    (v1, v2, v3) => equals(v1, v2) && equals(v2, v3) ? equals(v1, v3) : true
+  )
 })

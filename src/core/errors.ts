@@ -27,7 +27,6 @@ export class CompositeError extends Error {
     for (const e of errors.slice(0, 2)) {
       let message = ""
       if (e instanceof Error) {
-        const ref = e as Error
         message = `${e.name}(${e.message})`
       } else {
         message = `${e}`

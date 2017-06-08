@@ -18,9 +18,17 @@
 import { Option } from "../../src/funfix"
 import * as jv from "jsverify"
 
-export const arbOpt: jv.Arbitrary<Option<number>> =
-  jv.either(jv.number, jv.constant(null))
-    .smap(Option.of, opt => opt.orNull())
+export const arbAnyPrimitive: jv.Arbitrary<any> =
+  jv.either(
+    jv.either(jv.number, jv.string).smap(v => v.valueOf(), v => v),
+    jv.falsy)
+  .smap(v => v.valueOf(), v => v)
+
+export const arbOpt: jv.Arbitrary<Option<any>> =
+  arbAnyPrimitive.smap(Option.of, opt => opt.orNull())
 
 export const arbOptNonempty: jv.Arbitrary<Option<number>> =
   jv.number.smap(Option.of, opt => opt.orNull())
+
+export const arbAny: jv.Arbitrary<any> =
+  jv.either(arbAnyPrimitive, arbOpt).smap(v => v.valueOf(), v => v)

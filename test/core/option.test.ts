@@ -18,13 +18,14 @@
 import { Option } from "../../src/funfix"
 import { NoSuchElementException } from "../../src/funfix"
 import { equals, hashCode } from "../../src/funfix"
+
 import * as jv from "jsverify"
 import * as inst from "./instances"
 
 describe("Option#get", () => {
   jv.property("Option.some(number).get() equals number",
     jv.either(jv.number, jv.constant(null)),
-    n => equals(Option.some(n).get(), n)
+    n => equals(Option.some(n.valueOf()).get(), n.valueOf())
   )
 
   jv.property("Option.some(option).get() equals option",
@@ -214,6 +215,18 @@ describe("Option.flatMap", () => {
   )
 })
 
+describe("Option.filter", () => {
+  jv.property("opt.filter(x => true) === opt",
+    inst.arbOpt,
+    opt => opt.filter(x => true) === opt
+  )
+
+  jv.property("opt.filter(x => false) === none",
+    inst.arbOpt,
+    opt => opt.filter(x => false).equals(Option.none())
+  )
+})
+
 describe("Option.fold", () => {
   it("works for empty", () => {
     const x = Option.empty<number>().fold(() => 10, a => a)
@@ -278,7 +291,7 @@ describe("Option.forAll", () => {
 describe("Option.forEach", () => {
   it("works for empty", () => {
     let sum = 0
-    const x = Option.empty<number>().forEach(x => sum += x)
+    Option.empty<number>().forEach(x => sum += x)
     expect(sum).toBe(0)
   })
 
