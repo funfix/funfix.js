@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { cd, exec, echo, touch } from "shelljs"
-import { readFileSync } from "fs"
+import { readFileSync, existsSync } from "fs"
 import * as url from "url"
 import * as path from "path"
 
@@ -20,14 +20,14 @@ const parsedUrl: url.Url = url.parse(repoUrl)
 const repository = (parsedUrl.host || "") + (parsedUrl.path || "")
 const ghToken = process.env.GH_TOKEN
 
-const destDir = `${pkg.name}-docs`
+const destDir = `${pkg.name}-docs-${Math.floor(Math.random() * 100000)}`
 const sourceDir = path.resolve(".")
 const version = exec("git fetch && git tag | grep '^v' | sort | tail -1")
   .toString()
   .replace(/^\s+|\s+$/g, "")
 
 echo("Deploying docs!!!")
-cd(`${process.env.TMPDIR}`)
+if (existsSync(process.env.TMPDIR)) cd(`${process.env.TMPDIR}`)
 
 exec(`rm -rf "${destDir}"`)
 exec(`git clone "https://${ghToken}@${repository}" "${destDir}"`)
@@ -45,4 +45,7 @@ exec('git commit -m "docs(docs): update gh-pages"')
 exec(
   `git push --force --quiet "https://${ghToken}@${repository}" master:gh-pages`
 )
+
+cd("..")
+exec(`rm -rf ${destDir}`)
 echo("Docs deployed!!")
