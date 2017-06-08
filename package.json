@@ -30,7 +30,7 @@
   "scripts": {
     "lint": "tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "prebuild": "rimraf dist",
-    "build": "tsc && rollup -c && typedoc --out dist/docs --target es6 --theme minimal src",
+    "build": "tsc && rollup -c && typedoc --out dist/docs --target es6 src",
     "start": "tsc-watch --onSuccess 'rollup -c'",
     "test": "jest",
     "test:watch": "jest --watch",
