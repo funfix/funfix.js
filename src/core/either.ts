@@ -42,7 +42,7 @@ import { Option } from "./option"
  * }
  *
  * const result = tryParseInt("not an int")
- * if (result.isRight) {
+ * if (result.isRight()) {
  *   console.log(`Increment: ${result.get}`)
  * } else {
  *   console.log(`ERROR: could not parse ${result.swap.get}`)
