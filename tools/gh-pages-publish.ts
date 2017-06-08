@@ -42,7 +42,7 @@ exec("git add .")
 exec('git config user.name "Alexandru Nedelcu"')
 exec('git config user.email "noreply@alexn.org"')
 exec(`git commit -m "docs(docs): update gh-pages for ${version}"`)
-exec(`git push --force --quiet "https://${ghToken}@${repository}" master:gh-pages`)
+exec(`git push --force --quiet "https://${ghToken}@${repository}" gh-pages:gh-pages`)
 
 cd("..")
 exec(`rm -rf ${destDir}`)
