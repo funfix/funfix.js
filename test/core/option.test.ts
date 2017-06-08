@@ -17,20 +17,20 @@
 
 import { Option } from "../../src/funfix"
 import { NoSuchElementException } from "../../src/funfix"
-import { equals } from "../../src/funfix"
+import { equals, hashCode } from "../../src/funfix"
+import * as jv from "jsverify"
+import * as inst from "./instances"
 
 describe("Option#get", () => {
-  it("returns the enclosed value if nonempty",
-    forAllNonEmpty((opt, value) => {
-      expect(opt.get()).toBe(value)
-    }))
+  jv.property("Option.some(number).get() equals number",
+    jv.either(jv.number, jv.constant(null)),
+    n => equals(Option.some(n).get(), n)
+  )
 
-  it("should always return the same value", () => {
-    const arr = [1, 2, 3]
-    const ref = Option.of(arr)
-    expect(ref.get()).toBe(arr)
-    expect(ref.get()).toBe(arr)
-  })
+  jv.property("Option.some(option).get() equals option",
+    inst.arbOpt,
+    n => equals(Option.some(n).get(), n)
+  )
 
   it("should throw in case the option is empty", () => {
     const ref = Option.empty<number>()
@@ -43,11 +43,10 @@ describe("Option#get", () => {
 })
 
 describe("Option#getOrElse", () => {
-  it("should be equivalent with Option#get if nonempty",
-    forAllNonEmpty((opt, value) => {
-      expect(opt.getOrElse(10000)).toBe(opt.get())
-      expect(opt.getOrElseL(() => 10000)).toBe(opt.get())
-    }))
+  jv.property("equivalence with #get if nonempty",
+    inst.arbOptNonempty,
+    opt => equals(opt.getOrElse(1000), opt.get())
+  )
 
   it("should fallback in case the option is empty", () => {
     expect(Option.empty<number>().getOrElse(100)).toBe(100)
@@ -67,10 +66,10 @@ describe("Option#getOrElse", () => {
 })
 
 describe("Option#orNull", () => {
-  it("should behave like Option#get when nonempty",
-    forAllNonEmpty((opt, value) => {
-      expect(opt.orNull()).toBe(opt.get())
-    }))
+  jv.property("equivalence with #get if nonempty",
+    inst.arbOptNonempty,
+    opt => equals(opt.orNull(), opt.get())
+  )
 
   it("should return null in case the option is empty", () => {
     expect(Option.empty<number>().orNull()).toBeNull()
@@ -78,34 +77,35 @@ describe("Option#orNull", () => {
 })
 
 describe("Option#orElse", () => {
-  it("mirrors the source if nonempty",
-    forAllNonEmpty((opt, value) => {
-      expect(opt.orElse(Option.none())).toBe(opt)
-    }))
+  jv.property("mirrors the source if nonempty",
+    inst.arbOptNonempty,
+    opt => equals(opt.orElse(Option.none()), opt)
+  )
 
-  it("works as a fallback if the source is empty",
-    forAllNonEmpty((opt, value) => {
-      expect(Option.empty<number>().orElse(opt)).toBe(opt)
-    }))
+  it("works as a fallback if the source is empty", () => {
+    const other = Option.of(1000)
+    expect(Option.empty<number>().orElse(other)).toBe(other)
+  })
 })
 
 describe("Option#orElseL", () => {
-  it("mirrors the source if nonempty",
-    forAllNonEmpty((opt, value) => {
-      expect(opt.orElseL(() => Option.none())).toBe(opt)
-    }))
+  jv.property("mirrors the source if nonempty",
+    inst.arbOptNonempty,
+    opt => equals(opt.orElseL(() => Option.none()), opt)
+  )
 
-  it("works as a fallback if the source is empty",
-    forAllNonEmpty((opt, value) => {
-      expect(Option.empty<number>().orElseL(() => opt)).toBe(opt)
-    }))
+  jv.property("works as a fallback if the source is empty",
+    inst.arbOpt,
+    opt => equals(Option.empty<number>().orElseL(() => opt), opt)
+  )
 
-  it("doesn't evaluate if the source is non-empty",
-    forAllNonEmpty((opt, value) => {
+  jv.property("doesn't evaluate if the source is non-empty",
+    inst.arbOptNonempty,
+    opt => {
       let effect = false
       const received = opt.orElseL(() => { effect = true; return Option.none() })
-      expect(received).toBe(opt)
-    }))
+      return received === opt
+    })
 })
 
 describe("Option#isEmpty, Option#nonEmpty", () => {
@@ -116,35 +116,37 @@ describe("Option#isEmpty, Option#nonEmpty", () => {
     expect(Option.empty().nonEmpty()).toBe(false)
   })
 
-  it("should signal nonEmpty when non-empty",
-    forAllNonEmpty((opt, v) => {
-      expect(opt.nonEmpty()).toBe(true)
-    }))
+  jv.property("should signal nonEmpty when non-empty",
+    inst.arbOptNonempty,
+    opt => opt.nonEmpty()
+  )
 
-  it("should have consistent isEmpty and nonEmpty",
-    forAll((opt, v) => {
-      expect(opt.isEmpty()).toBe(!opt.nonEmpty())
-    }))
+  jv.property("should have consistent isEmpty and nonEmpty",
+    inst.arbOpt,
+    opt => opt.isEmpty() === !opt.nonEmpty()
+  )
 })
 
 describe("Option.equals", () => {
-  it("should yield true for self.equals(self)",
-    forAll((opt, v) => {
-      expect(opt.equals(opt)).toBe(true)
-    }))
+  jv.property("should yield true for self.equals(self)",
+    inst.arbOpt,
+    opt => opt.equals(opt)
+  )
 
-  it("should yield true for equals(self, self)",
-    forAll((opt, v) => {
-      expect(equals(opt, opt)).toBe(true)
-    }))
+  jv.property("should yield true for equals(self, self)",
+    inst.arbOpt,
+    opt => equals(opt, opt)
+  )
 
-  it("should have equal hash codes if equal",
-    forAll((opt1, v) => {
-      forAll((opt2, v) => {
-        expect(equals(opt1, opt2))
-          .toBe(opt1.hashCode() === opt2.hashCode())
-      })
-    }))
+  jv.property("self.hashCode() === self.hashCode() === hashCode(self)",
+    inst.arbOpt,
+    opt => opt.hashCode() === opt.hashCode() && opt.hashCode() === hashCode(opt)
+  )
+
+  jv.property("Option.of(v).hashCode() === Option.of(v).hashCode()",
+    jv.number,
+    n => Option.of(n).hashCode() === Option.of(n).hashCode()
+  )
 
   it("should have structural equality", () => {
     const opt1 = Option.some("hello1")
@@ -166,52 +168,50 @@ describe("Option.equals", () => {
 })
 
 describe("Option.map", () => {
-  it("should work", forAllNonEmpty((opt, v) => {
-    expect(opt.map(x => x + 1).get()).toBe(v + 1)
-  }))
+  jv.property("pure(n).map(f) === pure(f(n))",
+    jv.number, jv.fn(jv.number),
+    (n, f) => equals(Option.pure(n).map(f), Option.pure(f(n)))
+  )
 
-  it("covariant identity", forAll((opt, v) => {
-    expect(opt.map(x => x).equals(opt)).toBe(true)
-  }))
+  jv.property("covariant identity",
+    inst.arbOpt,
+    opt => opt.map(x => x).equals(opt)
+  )
 
-  it("covariant composition", forAll((opt, v) => {
-    const f = (x: number) => x * 2
-    const g = (x: number) => 10 - x
-    expect(opt.map(f).map(g).equals(opt.map(x => g(f(x))))).toBe(true)
-  }))
+  jv.property("covariant composition",
+    inst.arbOpt, jv.fn(jv.number), jv.fn(jv.number),
+    (opt, f, g) => opt.map(f).map(g).equals(opt.map(x => g(f(x))))
+  )
 })
 
 describe("Option.flatMap", () => {
-  it("should work", forAllNonEmpty((opt, v) => {
-    expect(opt.flatMap(x => Option.some(x + 1)).get()).toBe(v + 1)
-  }))
+  jv.property("pure(n).flatMap(f) === f(n)",
+    jv.number, jv.fn(inst.arbOpt),
+    (n, f) => Option.pure(n).flatMap(f).equals(f(n))
+  )
 
-  it("should filter", forAll((opt, v) => {
-    expect(opt.flatMap(x => Option.none()).isEmpty()).toBe(true)
-  }))
+  jv.property("expresses filter",
+    jv.number, jv.fn(jv.bool),
+    (n, p) => {
+      const f = (n: number) => p(n) ? Option.some(n) : Option.none()
+      return Option.of(n).flatMap(f).equals(f(n))
+    }
+  )
 
-  it("should express map", forAll((opt, v) => {
-    const f = (x: number) => 10 - x
-    const o1 = opt.flatMap(x => Option.some(f(x)))
-    const o2 = opt.map(f)
-    expect(o1.equals(o2)).toBe(true)
-  }))
+  jv.property("express map",
+    inst.arbOpt, jv.fn(jv.number),
+    (opt, f) => opt.flatMap(n => Option.some(f(n))).equals(opt.map(f))
+  )
 
-  it("should express filter", forAll((opt, v) => {
-    const p = (x: number) => (x % 2 === 0)
-    const o1 = opt.flatMap(x => p(x) ? Option.some(x) : Option.none())
-    const o2 = opt.filter(p)
-    expect(o1.equals(o2)).toBe(true)
-  }))
+  jv.property("left identity",
+    jv.number, jv.fn(inst.arbOpt),
+    (n, f) => Option.pure(n).flatMap(f).equals(f(n))
+  )
 
-  it("left identity", forAllNonEmpty((opt, v) => {
-    const f = (x: number) => (x % 2 === 0 ? Option.none() : Option.some(10 - x))
-    expect(opt.flatMap(f).equals(f(v))).toBe(true)
-  }))
-
-  it("right identity", forAllNonEmpty((opt, v) => {
-    expect(opt.flatMap(Option.some).equals(opt)).toBe(true)
-  }))
+  jv.property("right identity",
+    inst.arbOpt,
+    opt => opt.flatMap(Option.some).equals(opt)
+  )
 })
 
 describe("Option.fold", () => {
@@ -295,17 +295,3 @@ describe("Option.pure", () => {
     expect(equals(Option.some(10), Option.pure(10))).toBe(true)
   })
 })
-
-function forAllNonEmpty(f: (o: Option<number | null>, v: number | null) => void): (() => void) {
-  return () => {
-    f(Option.some(null), null)
-    for (let i = -500; i < 500; i++) f(Option.some(i), i)
-  }
-}
-
-function forAll(f: (o: Option<number | null>, v: number | null) => void): (() => void) {
-  return () => {
-    forAllNonEmpty(f)()
-    f(Option.empty<number>(), null)
-  }
-}

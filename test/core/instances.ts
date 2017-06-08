@@ -15,8 +15,12 @@
  * limitations under the License.
  */
 
-// Exporting everything
-export * from "./core/equals"
-export * from "./core/errors"
-export * from "./core/option"
-export * from "./exec/cancelable"
+import { Option } from "../../src/funfix"
+import * as jv from "jsverify"
+
+export const arbOpt: jv.Arbitrary<Option<number>> =
+  jv.either(jv.number, jv.constant(null))
+    .smap(Option.of, opt => opt.orNull())
+
+export const arbOptNonempty: jv.Arbitrary<Option<number>> =
+  jv.number.smap(Option.of, opt => opt.orNull())

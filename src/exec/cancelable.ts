@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { CompositeError } from "../funfix-core/errors"
+import { CompositeError } from "../core/errors"
 
 /**
  * `Cancelable` represents a one-time idempotent action that can be

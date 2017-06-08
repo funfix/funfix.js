@@ -32,6 +32,8 @@ import { NoSuchElementException } from "./errors"
  * @final
  */
 export class Option<A> implements eq.IEquals<Option<A>> {
+  // tslint:disable-next-line:variable-name
+  protected __self__: Option<A>
   private _isEmpty: boolean
   private _ref: A
 
@@ -40,6 +42,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
     if (isEmpty != null) this._isEmpty = isEmpty
     else this._isEmpty = (ref == null)
     this._ref = ref
+    this.__self__ = this
   }
 
   /**

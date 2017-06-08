@@ -88,6 +88,7 @@
     "cz-conventional-changelog": "^2.0.0",
     "husky": "^0.13.3",
     "jest": "^20.0.4",
+    "jsverify": "^0.8.2",
     "lodash": "^4.17.4",
     "prompt": "^1.0.0",
     "replace-in-file": "^2.5.0",

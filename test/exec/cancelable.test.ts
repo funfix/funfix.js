@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-import { Cancelable, BoolCancelable } from "../../src/funfix-exec/cancelable"
-import { DummyError, CompositeError } from "../../src/funfix-core/errors"
+import {
+  Cancelable, BoolCancelable,
+  DummyError, CompositeError
+} from "../../src/funfix"
 
 describe("Cancelable.from", () => {
   it("converts any callback", () => {
