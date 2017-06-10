@@ -39,12 +39,16 @@ import {Either, Left, Right} from "./either"
  *
  * ```typescript
  * function divide(dividendS: string, divisorS: string): string {
- *   const dividend = Try(parseInt(dividendS)).filter(_ => _ === _)
- *   const divisor = Try(parseInt(divisorS)).filter(_ => _ === _)
+ *   const dividend = Try(() => parseInt(dividendS))
+ *     .filter(_ => _ === _) // filter out NaN
+ *   const divisor = Try(() => parseInt(divisorS))
+ *     .filter(_ => _ === _)  // filter out NaN
  *
  *   // map2 executes the given function only if both results are
  *   // successful; we could also express this with flatMap / chain
- *   const result = Try.map2(dividend, divisor, (a, b) => a / b)
+ *   const result = Try.map2(dividend, divisor,
+ *     (a, b) => a / b
+ *   )
  *
  *   result.fold(
  *     error => `failure: ${error}`
