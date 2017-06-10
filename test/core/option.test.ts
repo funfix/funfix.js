@@ -235,6 +235,11 @@ describe("Option.flatMap", () => {
     inst.arbOpt,
     opt => opt.flatMap(Option.some).equals(opt)
   )
+
+  jv.property("chain is an alias of flatMap",
+    inst.arbOpt, jv.fn(inst.arbOpt),
+    (opt, f) => equals(opt.flatMap(f), opt.chain(f))
+  )
 })
 
 describe("Option.filter", () => {

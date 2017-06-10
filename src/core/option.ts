@@ -19,8 +19,8 @@ import * as eq from "./equals"
 import { NoSuchElementError } from "./errors"
 
 /**
- * Represents optional values, inspired by Scala"s `Option` and by
- * Haskell"s `Maybe` data types.
+ * Represents optional values, inspired by Scala's `Option` and by
+ * Haskell's `Maybe` data types.
  *
  * Instances of this type are immutable (values) and can be either
  * empty or can contain a single element.
@@ -44,7 +44,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   }
 
   /**
-   * Returns the option"s value.
+   * Returns the option's value.
    *
    * UNSAFETY NOTE: this function is partial, the option must be
    * non-empty, otherwise a runtime exception will get thrown.
@@ -58,7 +58,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   }
 
   /**
-   * Returns the option"s value if the option is nonempty, otherwise
+   * Returns the option's value if the option is nonempty, otherwise
    * return the given `fallback`.
    *
    * See [[Option.getOrElseL]] for a strict alternative.
@@ -69,7 +69,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   }
 
   /**
-   * Returns the option"s value if the option is nonempty, otherwise
+   * Returns the option's value if the option is nonempty, otherwise
    * return `null`.
    */
   orNull(): A | null {
@@ -78,7 +78,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   }
 
   /**
-   * Returns the option"s value if the option is nonempty, otherwise
+   * Returns the option's value if the option is nonempty, otherwise
    * return the result of evaluating `thunk`.
    *
    * See [[Option.getOrElse]] for an eager alternative.
@@ -121,7 +121,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
 
   /**
    * Returns an option containing the result of applying `f` to
-   * this option"s value, or an empty option if the source is empty.
+   * this option's value, or an empty option if the source is empty.
    *
    * NOTE: this is similar with `flatMap`, except with `map` the
    * result of `f` doesn't need to be wrapped in an `Option`.
@@ -169,7 +169,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   }
 
   /**
-   * Returns the result of applying `f` to this option"s value if
+   * Returns the result of applying `f` to this option's value if
    * the option is nonempty, otherwise returns an empty option.
    *
    * NOTE: this is similar with `map`, except that `flatMap` the
@@ -200,13 +200,18 @@ export class Option<A> implements eq.IEquals<Option<A>> {
     else return f(this._ref)
   }
 
+  /** Alias for [[flatMap]]. */
+  chain<B>(f: (a: A) => Option<B>): Option<B> {
+    return this.flatMap(f)
+  }
+
   /**
    * Returns this option if it is nonempty AND applying the
    * predicate `p` to the underlying value yields `true`,
    * otherwise return an empty option.
    *
    * @param p is the predicate function that is used to
-   *        apply filtering on the option"s value
+   *        apply filtering on the option's value
    *
    * @return a new option instance containing the value of the
    *         source filtered with the given predicate
@@ -217,7 +222,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   }
 
   /**
-   * Returns the result of applying `f` to this option"s value,
+   * Returns the result of applying `f` to this option's value,
    * or in case the option is empty, the return the result of
    * evaluating the `fallback` function.
    *
@@ -230,7 +235,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * @param fallback is the function to be evaluated in case this
    *        option is empty
    *
-   * @param f is the mapping function for transforming this option"s
+   * @param f is the mapping function for transforming this option's
    *        value in case it is nonempty
    */
   fold<B>(fallback: () => B, f: (a: A) => B): B {
@@ -248,7 +253,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
 
   /**
    * Returns `true` if this option is nonempty and the given
-   * predicate returns `true` when applied on this option"s value.
+   * predicate returns `true` when applied on this option's value.
    *
    * @param p is the predicate function to test
    */
@@ -258,7 +263,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
 
   /**
    * Returns true if this option is empty or the given predicate
-   * returns `true` when applied on this option"s value.
+   * returns `true` when applied on this option's value.
    *
    * @param p is the predicate function to test
    */
@@ -267,7 +272,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   }
 
   /**
-   * Apply the given procedure `cb` to the option"s value if
+   * Apply the given procedure `cb` to the option's value if
    * this option is nonempty, otherwise do nothing.
    *
    * @param cb the procedure to apply
