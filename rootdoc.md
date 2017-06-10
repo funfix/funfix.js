@@ -16,9 +16,15 @@ npm install --save funfix
 Usage sample:
 
 ```typescript
-import * as ff from 'funfix'
+import {Try, Option, Either} from 'funfix'
 
-const opt = ff.Option.of("hello")
+const opt1 = Option.of("hello")
+const opt2 = Try.of(() => "world").toOption()
+
+const greeting = 
+  Option.map2(opt1, opt2, (a, b) => a + " " + b)
+  
+console.log(greeting.getOrElse("Ooops!"))
 ```
 
 The library has been compiled using 
