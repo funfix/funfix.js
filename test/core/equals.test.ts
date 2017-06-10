@@ -1,4 +1,5 @@
-/*
+/**
+ * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -15,9 +16,10 @@
  * limitations under the License.
  */
 
-import { hashCode, equals } from "../../src/funfix"
+import { hashCode, is } from "../../src/funfix"
 import * as jv from "jsverify"
 import * as inst from "./instances"
+import {equals} from "../../src/core/std";
 
 describe("hashCode", () => {
   jv.property("hashCode(v) == hashCode(v)",
@@ -29,31 +31,49 @@ describe("hashCode", () => {
     jv.string, jv.string,
     (v1, v2) => hashCode(v1) === hashCode(v2) || v1 !== v2
   )
+
+  it("should work for Dates", () => {
+    const d = new Date()
+    expect(hashCode(d)).toBe(hashCode(d.valueOf()))
+  })
 })
 
-describe("equals", () => {
+describe("is / equals", () => {
   jv.property("equals(v, v) == true",
     inst.arbAny,
-    v => equals(v, v)
+    v => is(v, v)
   )
 
   jv.property("equals(v1, v2) == false => v1 != v2",
     inst.arbAny, inst.arbAny,
-    (v1, v2) => equals(v1, v2) || v1 !== v2
+    (v1, v2) => is(v1, v2) || v1 !== v2
   )
 
   jv.property("equals(v1, v2) == equals(v2, v1)",
     inst.arbAny, inst.arbAny,
-    (v1, v2) => equals(v1, v2) === equals(v2, v1)
+    (v1, v2) => is(v1, v2) === is(v2, v1)
   )
 
   jv.property("equals(v1, v2) && equals(v2, v3) => equals(v1, v3) (numbers)",
     jv.number, jv.number, jv.number,
-    (v1, v2, v3) => equals(v1, v2) && equals(v2, v3) ? equals(v1, v3) : true
+    (v1, v2, v3) => is(v1, v2) && is(v2, v3) ? is(v1, v3) : true
   )
 
   jv.property("equals(v1, v2) && equals(v2, v3) => equals(v1, v3) (strings)",
     jv.string, jv.string, jv.string,
-    (v1, v2, v3) => equals(v1, v2) && equals(v2, v3) ? equals(v1, v3) : true
+    (v1, v2, v3) => is(v1, v2) && is(v2, v3) ? is(v1, v3) : true
   )
+
+  jv.property("`is` is an alias of `equals`",
+    inst.arbAny, inst.arbAny,
+    (a, b) => is(a, b) === equals(a, b)
+  )
+
+  it("should work for Dates", () => {
+    const d1 = new Date()
+    const d2 = new Date(d1.valueOf())
+
+    expect(d1 === d2).toBe(false)
+    expect(is(d1, d2)).toBe(true)
+  })
 })

@@ -1,4 +1,5 @@
-/*
+/**
+ * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -15,15 +16,18 @@
  * limitations under the License.
  */
 
-import * as eq from "./equals"
+"use strict"
+
+import * as std from "./std"
 import { NoSuchElementError } from "./errors"
 
 /**
  * Represents optional values, inspired by Scala's `Option` and by
  * Haskell's `Maybe` data types.
  *
- * Instances of this type are immutable (values) and can be either
- * empty or can contain a single element.
+ * Option is an immutable data type, represented as a sum type, being
+ * either a [[Some]], in case it contains a single element, or a [[None]],
+ * in case it is empty.
  *
  * The most idiomatic way to use an `Option` instance is to treat it
  * as a collection or monad and use `map`,`flatMap`, `filter`,
@@ -31,12 +35,13 @@ import { NoSuchElementError } from "./errors"
  *
  * @final
  */
-export class Option<A> implements eq.IEquals<Option<A>> {
+export class Option<A> implements std.IEquals<Option<A>> {
   // tslint:disable-next-line:variable-name
   private _isEmpty: boolean
   private _ref: A
 
-  private constructor(ref: A, isEmpty?: boolean) {
+  protected constructor(ref: A, isEmpty?: boolean) {
+    std.checkSumType(this, Option, Some)
     /* tslint:disable-next-line:strict-type-predicates */
     if (isEmpty != null) this._isEmpty = isEmpty
     else this._isEmpty = (ref == null)
@@ -46,9 +51,10 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   /**
    * Returns the option's value.
    *
-   * UNSAFETY NOTE: this function is partial, the option must be
-   * non-empty, otherwise a runtime exception will get thrown.
-   * Use with care.
+   * WARNING!
+   *
+   * This function is partial, the option must be non-empty, otherwise
+   * a runtime exception will get thrown. Use with care.
    *
    * @throws [[NoSuchElementError]] in case the option is empty
    */
@@ -133,8 +139,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    *         source mapped by the given function
    */
   map<B>(f: (a: A) => B): Option<B> {
-    if (this._isEmpty) return Option.none()
-    else return Option.some(f(this._ref))
+    return this._isEmpty ? None : Some.of(f(this._ref))
   }
 
   /**
@@ -147,8 +152,8 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * Comparison:
    *
    * ```typescript
-   * Option.of(1).mapN(x => null) // none()
-   * Option.of(1).map(x => null)  // some(null)
+   * Option.of(1).mapN(x => null) // None
+   * Option.of(1).map(x => null)  // Some(null)
    *
    * Option.of(1).mapN(x => x+1)  // 2
    * Option.of(1).map(x => x+1)   // 2
@@ -164,8 +169,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * ```
    */
   mapN<B>(f: (a: A) => B): Option<B> {
-    if (this._isEmpty) return Option.none()
-    else return Option.of(f(this._ref))
+    return this._isEmpty ? None : Option.of(f(this._ref))
   }
 
   /**
@@ -183,9 +187,9 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    *
    * opt.flatMap(num => {
    *   if (num % 2 == 0)
-   *     Option.some(num + 1)
+   *     Some.of(num + 1)
    *   else
-   *     Option.none()
+   *     None
    * })
    * ```
    *
@@ -196,7 +200,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    *         source mapped by the given function
    */
   flatMap<B>(f: (a: A) => Option<B>): Option<B> {
-    if (this._isEmpty) return Option.none()
+    if (this._isEmpty) return None
     else return f(this._ref)
   }
 
@@ -217,7 +221,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    *         source filtered with the given predicate
    */
   filter(p: (a: A) => boolean): Option<A> {
-    if (this._isEmpty || !p(this._ref)) return Option.none()
+    if (this._isEmpty || !p(this._ref)) return None
     else return this
   }
 
@@ -248,7 +252,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * holds is equal to the given `elem`.
    */
   contains(elem: A): boolean {
-    return !this._isEmpty && eq.equals(this._ref, elem)
+    return !this._isEmpty && std.is(this._ref, elem)
   }
 
   /**
@@ -283,10 +287,12 @@ export class Option<A> implements eq.IEquals<Option<A>> {
 
   // Implemented from IEquals
   equals(that: Option<A>): boolean {
+    // tslint:disable-next-line:strict-type-predicates
+    if (that == null) return false
     if (this.nonEmpty() && that.nonEmpty()) {
       const l = this.get()
       const r = that.get()
-      return eq.equals(l, r)
+      return std.is(l, r)
     }
     return this.isEmpty() && that.isEmpty()
   }
@@ -295,7 +301,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   hashCode(): number {
     if (this._isEmpty) return 2433880
     else if (this._ref == null) return 2433881 << 2
-    else return eq.hashCode(this._ref) << 2
+    else return std.hashCode(this._ref) << 2
   }
 
   /**
@@ -305,7 +311,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * option will be empty.
    */
   static of<A>(value: A | null | undefined): Option<A> {
-    if (value == null) return Option.none()
+    if (value == null) return None
     else return new Option(value, false)
   }
 
@@ -317,7 +323,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * if you want to avoid this problem. This means:
    *
    * ```typescript
-   * const opt = Option.some<number | null>(null)
+   * const opt = Some<number | null>(null)
    *
    * opt.isEmpty()
    * //=> false
@@ -337,7 +343,7 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * same cached reference is on different calls.
    */
   static none(): Option<never> {
-    return Option._emptyRef
+    return None
   }
 
   /**
@@ -351,27 +357,27 @@ export class Option<A> implements eq.IEquals<Option<A>> {
    * same cached reference is on different calls.
    */
   static empty<B>(): Option<B> {
-    return Option.none()
+    return None
   }
 
   /**
-   * Alias for [[Option.some]].
+   * Alias for [[Some]].
    */
-  static pure<A>(value: A): Option<A> { return Option.some(value) }
+  static pure<A>(value: A): Option<A> { return Some.of(value) }
 
   /**
    * Maps 2 optional values by the mapping function, returning a new
-   * optional reference that is `some` only if both option values are
-   * `some`, otherwise it returns a `none`.
+   * optional reference that is `Some` only if both option values are
+   * `Some`, otherwise it returns a `None`.
    *
    * ```typescript
-   * // Yields Some(3)
-   * Option.map2(Some(1), Some(2),
+   * // Yields Some.of(3)
+   * Option.map2(Some.of(1), Some.of(2),
    *   (a, b) => a + b
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map2(Some(1), None,
+   * Option.map2(Some.of(1), None,
    *   (a, b) => a + b
    * )
    * ```
@@ -382,23 +388,23 @@ export class Option<A> implements eq.IEquals<Option<A>> {
     f: (a1: A1, a2: A2) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty()
-      ? Option.some(f(fa1.get(), fa2.get()))
-      : Option.none()
+      ? Some.of(f(fa1.get(), fa2.get()))
+      : None
   }
 
   /**
    * Maps 3 optional values by the mapping function, returning a new
-   * optional reference that is `some` only if all 3 option values are
-   * `some`, otherwise it returns a `none`.
+   * optional reference that is `Some` only if all 3 option values are
+   * `Some`, otherwise it returns a `None`.
    *
    * ```typescript
-   * // Yields Some(6)
-   * Option.map3(Some(1), Some(2), Some(3),
+   * // Yields Some.of(6)
+   * Option.map3(Some.of(1), Some.of(2), Some.of(3),
    *   (a, b, c) => a + b + c
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map3(Some(1), None, Some(3),
+   * Option.map3(Some.of(1), None, Some.of(3),
    *   (a, b, c) => a + b + c
    * )
    * ```
@@ -407,23 +413,23 @@ export class Option<A> implements eq.IEquals<Option<A>> {
     f: (a1: A1, a2: A2, a3: A3) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty()
-      ? Option.some(f(fa1.get(), fa2.get(), fa3.get()))
-      : Option.none()
+      ? Some.of(f(fa1.get(), fa2.get(), fa3.get()))
+      : None
   }
 
   /**
    * Maps 4 optional values by the mapping function, returning a new
-   * optional reference that is `some` only if all 4 option values are
-   * `some`, otherwise it returns a `none`.
+   * optional reference that is `Some` only if all 4 option values are
+   * `Some`, otherwise it returns a `None`.
    *
    * ```typescript
    * // Yields Some(10)
-   * Option.map4(Some(1), Some(2), Some(3), Some(4),
+   * Option.map4(Some.of(1), Some.of(2), Some.of(3), Some.of(4),
    *   (a, b, c, d) => a + b + c + d
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map4(Some(1), None, Some(3), Some(4),
+   * Option.map4(Some.of(1), None, Some.of(3), Some.of(4),
    *   (a, b, c, d) => a + b + c + d
    * )
    * ```
@@ -433,23 +439,23 @@ export class Option<A> implements eq.IEquals<Option<A>> {
     f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty()
-      ? Option.some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get()))
-      : Option.none()
+      ? Some.of(f(fa1.get(), fa2.get(), fa3.get(), fa4.get()))
+      : None
   }
 
   /**
    * Maps 5 optional values by the mapping function, returning a new
-   * optional reference that is `some` only if all 5 option values are
-   * `some`, otherwise it returns a `none`.
+   * optional reference that is `Some` only if all 5 option values are
+   * `Some`, otherwise it returns a `None`.
    *
    * ```typescript
    * // Yields Some(15)
-   * Option.map5(Some(1), Some(2), Some(3), Some(4), Some(5),
+   * Option.map5(Some.of(1), Some.of(2), Some.of(3), Some.of(4), Some.of(5),
    *   (a, b, c, d, e) => a + b + c + d + e
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map5(Some(1), None, Some(3), Some(4), Some(5),
+   * Option.map5(Some.of(1), None, Some.of(3), Some.of(4), Some.of(5),
    *   (a, b, c, d, e) => a + b + c + d + e
    * )
    * ```
@@ -459,23 +465,23 @@ export class Option<A> implements eq.IEquals<Option<A>> {
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty() && fa5.nonEmpty()
-      ? Option.some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get()))
-      : Option.none()
+      ? Some.of(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get()))
+      : None
   }
 
   /**
    * Maps 6 optional values by the mapping function, returning a new
-   * optional reference that is `some` only if all 6 option values are
-   * `some`, otherwise it returns a `none`.
+   * optional reference that is `Some` only if all 6 option values are
+   * `Some`, otherwise it returns a `None`.
    *
    * ```typescript
    * // Yields Some(21)
-   * Option.map6(Some(1), Some(2), Some(3), Some(4), Some(5), Some(6),
+   * Option.map6(Some.of(1), Some.of(2), Some.of(3), Some.of(4), Some.of(5), Some.of(6),
    *   (a, b, c, d, e, f) => a + b + c + d + e + f
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map6(Some(1), None, Some(3), Some(4), Some(5), Some(6),
+   * Option.map6(Some.of(1), None, Some.of(3), Some.of(4), Some.of(5), Some.of(6),
    *   (a, b, c, d, e, f) => a + b + c + d + e + f
    * )
    * ```
@@ -485,23 +491,35 @@ export class Option<A> implements eq.IEquals<Option<A>> {
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty() && fa5.nonEmpty() && fa6.nonEmpty()
-      ? Option.some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get(), fa6.get()))
-      : Option.none()
+      ? Some.of(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get(), fa6.get()))
+      : None
+  }
+}
+
+/**
+ * Class `Some<A>` represents existing values of type `A`.
+ *
+ * @final
+ * @see [[None]]
+ */
+export class Some<A> extends Option<A> {
+  constructor(value: A) {
+    super(value, false)
   }
 
   /**
-   * Reusable reference to use in [[Option.empty]].
-   * @private
+   * Wraps any value into a [[Some]].
+   *
+   * NOTE: `null` values are supported.
    */
-  private static _emptyRef: Option<never> =
-    new Option(null, true) as Option<never>
-}
-
-/** Shorthand for [[Option.some]]. */
-export function Some<A>(value: A): Option<A> {
-  return Option.some(value)
+  static of<A>(value: A) { return new Some(value) }
 }
 
 /** Shorthand for [[Option.none]]. */
 export const None: Option<never> =
-  Option.none()
+  (function () {
+    // Ugly workaround to get around the limitation of
+    // Option's private constructor
+    const F: any = Option
+    return new F(null, true) as Option<never>
+  })()

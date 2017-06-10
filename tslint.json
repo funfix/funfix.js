@@ -4,6 +4,7 @@
     "space-before-function-paren": false,
     "no-use-before-declare": false,
     "no-empty": false,
+    "no-unused-expression": false,
     "member-ordering": ["error", "fields-first"],
     "quotemark": [true, "double", "avoid-escape"]
   }

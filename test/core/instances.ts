@@ -1,4 +1,5 @@
-/*
+/**
+ * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -15,9 +16,9 @@
  * limitations under the License.
  */
 
-import { Option } from "../../src/funfix"
+import { Option, Some, Either, Try, DummyError, Failure, Success } from "../../src/funfix"
 import * as jv from "jsverify"
-import {Either} from "../../src/core/either";
+import {Left, Right} from "../../src/core/either"
 
 export const arbAnyPrimitive: jv.Arbitrary<any> =
   jv.sum([jv.number, jv.string, jv.falsy])
@@ -27,16 +28,24 @@ export const arbOpt: jv.Arbitrary<Option<any>> =
   arbAnyPrimitive.smap(Option.of, opt => opt.orNull())
 
 export const arbOptNonempty: jv.Arbitrary<Option<number>> =
-  jv.number.smap(Option.of, opt => opt.orNull())
+  jv.number.smap(Some.of, opt => opt.orNull())
 
-export const arbEither: jv.Arbitrary<Either<number, string>> =
-  jv.either(jv.number, jv.string).smap(
-    (v: number | string) => (typeof v === "string")
-      ? Either.right(v.valueOf())
-      : Either.left(v.valueOf()),
-    (e: Either<number, string>) => e.isRight()
-      ? e.getOrElse("")
-      : e.swap().getOrElse(0)
+export const arbEither: jv.Arbitrary<Either<number, number>> =
+  jv.number.smap(
+    i => i % 4 < 3 ? Right.of(i) : Left.of(i),
+    (fa: Either<number, number>) => fa.isRight() ? fa.get() : fa.left().get()
+  )
+
+export const arbSuccess: jv.Arbitrary<Try<number>> =
+  jv.number.smap(Try.pure, t => t.get())
+
+export const arbFailure: jv.Arbitrary<Try<number>> =
+  jv.constant(Try.failure<number>(new DummyError("dummy")))
+
+export const arbTry: jv.Arbitrary<Try<number>> =
+  jv.number.smap(
+    i => i % 4 < 3 ? Success.of(i) : Failure.of(i),
+    fa => fa.isSuccess() ? fa.get() : fa.failed().get()
   )
 
 export const arbAny: jv.Arbitrary<any> =

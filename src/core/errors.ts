@@ -1,4 +1,5 @@
-/*
+/**
+ * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -14,6 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+"use strict"
 
 /**
  * A composite error represents a list of errors that were caught
@@ -51,7 +54,7 @@ export class CompositeError extends Error {
  * A dummy error that can be used for testing purposes.
  */
 export class DummyError extends Error {
-  constructor(message: string) {
+  constructor(message?: string) {
     super(message)
     this.name = "DummyError"
   }
@@ -62,8 +65,33 @@ export class DummyError extends Error {
  * that the element being requested does not exist.
  */
 export class NoSuchElementError extends Error {
-  constructor(message: string) {
+  constructor(message?: string) {
     super(message)
     this.name = "NoSuchElementError"
+  }
+}
+
+/**
+ * Error throw in class constructors by implementations that
+ * are sealed or final.
+ */
+export class IllegalInheritanceError extends Error {
+  constructor(message?: string) {
+    super(message)
+    this.name = "IllegalInheritanceError"
+  }
+}
+
+/**
+ * Signals that a function has been invoked at an illegal
+ * or inappropriate time.
+ *
+ * In other words, environment or application is not in an
+ * appropriate state for the requested operation.
+ */
+export class IllegalStateError extends Error {
+  constructor(message?: string) {
+    super(message)
+    this.name = "IllegalStateError"
   }
 }

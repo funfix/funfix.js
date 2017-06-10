@@ -1,4 +1,5 @@
-/*
+/**
+ * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -14,6 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+"use strict"
+
+import { IllegalInheritanceError } from "./errors"
 
 /**
  * Interface for testing the equality of value objects.
@@ -48,13 +53,45 @@ export interface IEquals<A> {
   hashCode(): number
 }
 
+/**
+ * Test if the given reference is a value object.
+ *
+ * Value objects are objects that implement the [[IEquals]]
+ * interface.
+ *
+ * @param ref is the reference to test
+ */
 export function isValueObject(ref: any): boolean {
   return !!(ref &&
     typeof ref.equals === "function" &&
     typeof ref.hashCode === "function")
 }
 
-export function equals<A>(lh: A, rh: A): boolean {
+/**
+ * Tests for universal equality.
+ *
+ * First attempting a reference check with `===`,
+ * after which it tries to fallback on [[IEquals]], if the
+ * left-hand side is implementing it.
+ *
+ * ```typescript
+ * equals(10, 10) // true, because 10 === 10
+ *
+ * class Box implements IEquals<Box> {
+ *   constructor(value: number) { this.value = value }
+ *
+ *   equals(other) { return this.value === other.value  }
+ *   hashCode() { return this.value << 2 }
+ * }
+ *
+ * // false, because they are not the same reference
+ * new Box(10) === new Box(10)
+ *
+ * // true, because `Box#equals` gets called
+ * equals(new Box(10), new Box(10))
+ * ```
+ */
+export function is<A>(lh: A, rh: A): boolean {
   if (lh === rh || (lh !== lh && rh !== rh)) {
     return true
   }
@@ -72,13 +109,35 @@ export function equals<A>(lh: A, rh: A): boolean {
       return false
     }
   }
-  //noinspection PointlessBooleanExpressionJS
+  // noinspection PointlessBooleanExpressionJS
   return !!(
     isValueObject(lh) &&
-    isValueObject(rh) &&
-    (lh as any).equals(rh))
+    (lh as any).equals(rh)
+  )
 }
 
+/** Alias for [[is]]. */
+export function equals<A>(lh: A, rh: A): boolean {
+  return is(lh, rh)
+}
+
+/**
+ * Universal hash-code function.
+ *
+ * Depending on the given value, it calculates the hash-code like so:
+ *
+ *  1. if it's a `number`, then it gets truncated
+ *     to an integer and returned
+ *  2. if it's a "value object" (see [[isValueObject]]), then
+ *     its `hashCode` is used
+ *  3. if a `valueOf()` function is provided, then the
+ *     `hashCode` gets recursively invoked on its result
+ *  4. if all else fails, the value gets coerced to a `String`
+ *     and a hash code is calculated using [[hashCodeOfString]]
+ *
+ * @param ref is the value to use for calculating a hash code
+ * @return an integer with the aforementioned properties
+ */
 export function hashCode(ref: any): number {
   if (typeof ref === "number") {
     return ref & ref
@@ -93,6 +152,9 @@ export function hashCode(ref: any): number {
   return hashCodeOfString(String(ref))
 }
 
+/**
+ * Calculates a hash code out of any string.
+ */
 export function hashCodeOfString(str: string): number {
   let hash = 0
   /* tslint:disable-next-line:strict-type-predicates */
@@ -103,4 +165,16 @@ export function hashCodeOfString(str: string): number {
     hash = hash & hash // Convert to 32bit integer
   }
   return hash
+}
+
+/**
+ * Utility for checking if a given class hierarchy is sealed
+ * (i.e. it defines a sum type), by checking whether the `self`
+ * reference is directly constructed by any of the given `types`.
+ */
+export function checkSumType(self: any, ...types: any[]) {
+  for (const t of types) {
+    if (self.constructor === t) return
+  }
+  throw new IllegalInheritanceError(self.constructor.name)
 }

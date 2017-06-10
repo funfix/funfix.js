@@ -1,4 +1,5 @@
-/*
+/**
+ * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -15,10 +16,11 @@
  * limitations under the License.
  */
 
-import { hashCode, equals } from "../../src/funfix"
+import { hashCode, is } from "../../src/funfix"
 import * as jv from "jsverify"
 import * as inst from "./instances"
 import { Either, Option } from "../../src/funfix"
+import {Left, Right} from "../../src/core/either";
 
 describe("Either discrimination", () => {
   jv.property("isRight == !isLeft",
@@ -47,9 +49,20 @@ describe("Either discrimination", () => {
   })
 })
 
+describe("Either #get", () => {
+  it("works for right", () => {
+    expect(Right.of(10).get()).toBe(10)
+  })
+
+  it("works for left", () => {
+    expect(() => Left.of(10).get())
+      .toThrowError()
+  })
+})
+
 describe("Either #contains", () => {
   jv.property("left.contains(elem) == false",
-    inst.arbEither, jv.string,
+    inst.arbEither, jv.number,
     (e, b) => e.isRight() || !e.contains(b)
   )
 
@@ -107,12 +120,12 @@ describe("Either #filterOrElse", () => {
   jv.property("right.filterOrElse(x => false, zero) == left(zero)",
     inst.arbEither,
     e => e.isLeft() ||
-      equals(e.filterOrElse(b => false, () => 0), Either.left(0))
+      is(e.filterOrElse(b => false, () => 0), Either.left(0))
   )
 
   jv.property("left.filterOrElse(any) == left",
     inst.arbEither, jv.fn(jv.bool), jv.number,
-    (e, p, z) => e.filterOrElse(p, () => z).equals(e)
+    (e, p, z) => e.isRight() || e.filterOrElse(p, () => z).equals(e)
   )
 })
 
@@ -141,7 +154,7 @@ describe("Either #flatMap", () => {
 describe("Either #map", () => {
   jv.property("right(n).map(f) == right(f(n))",
     jv.number, jv.fn(jv.number),
-    (n, f) => equals(Either.right(n).map(f), Either.right(f(n)))
+    (n, f) => is(Either.right(n).map(f), Either.right(f(n)))
   )
 
   jv.property("covariant identity",
@@ -158,64 +171,67 @@ describe("Either #map", () => {
 describe("Either #fold", () => {
   jv.property("right(b).fold(???, f) == f(b)",
     inst.arbAny, jv.fn(inst.arbAny),
-    (b, f) => equals(Either.right(b).fold(x => x, f), f(b))
+    (b, f) => is(Either.right(b).fold(x => x, f), f(b))
   )
 
   jv.property("left(a).fold(f, ???) == f(a)",
     inst.arbAny, jv.fn(inst.arbAny),
-    (a, f) => equals(Either.left(a).fold(f, x => x), f(a))
+    (a, f) => is(Either.left(a).fold(f, x => x), f(a))
   )
 })
 
 describe("Either #getOrElse", () => {
   jv.property("right(b).getOrElse(???) == b",
     inst.arbAny,
-    b => equals(Either.right(b).getOrElse(null), b)
+    b => is(Either.right(b).getOrElse(null), b)
   )
 
   jv.property("left(a).getOrElse(b) == b",
     inst.arbAny, jv.string,
-    (a, b) => equals(Either.left(a).getOrElse(b), b)
+    (a, b) => is(Either.left(a).getOrElse(b), b)
   )
 })
 
 describe("Either #getOrElseL", () => {
   jv.property("right(b).getOrElseL(???) == b",
     inst.arbAny,
-    b => equals(Either.right(b).getOrElse(null), b)
+    b => is(Either.right(b).getOrElseL(() => null), b)
   )
 
   jv.property("left(a).getOrElseL(() => b) == b",
     inst.arbAny, jv.string,
-    (a, b) => equals(Either.left(a).getOrElseL(() => b), b)
+    (a, b) => {
+      const e = Either.left<any, string>(a)
+      return is(e.getOrElseL(() => b), b)
+    }
   )
 })
 
 describe("Either #swap", () => {
   jv.property("right(b).swap() == left(b)",
     inst.arbAny,
-    b => equals(Either.right(b).swap(), Either.left(b))
+    b => is(Either.right(b).swap(), Either.left(b))
   )
 
   jv.property("left(b).swap() == right(b)",
     inst.arbAny,
-    b => equals(Either.left(b).swap(), Either.right(b))
+    b => is(Either.left(b).swap(), Either.right(b))
   )
 })
 
 describe("Either #toOption", () => {
   jv.property("right(b).toOption == some(b)",
     inst.arbAny,
-    b => equals(Either.right(b).toOption(), Option.some(b))
+    b => is(Either.right(b).toOption(), Option.some(b))
   )
 
   jv.property("left(a).toOption == none()",
     inst.arbAny,
-    a => equals(Either.left(a).toOption(), Option.none())
+    a => is(Either.left(a).toOption(), Option.none())
   )
 })
 
-describe("Either.equals", () => {
+describe("Either #equals", () => {
   jv.property("should yield true for self.equals(self)",
     inst.arbEither,
     opt => opt.equals(opt)
@@ -223,7 +239,7 @@ describe("Either.equals", () => {
 
   jv.property("should yield true for equals(self, self)",
     inst.arbEither,
-    opt => equals(opt, opt)
+    opt => is(opt, opt)
   )
 
   jv.property("self.hashCode() === self.hashCode() === hashCode(self)",
@@ -247,15 +263,34 @@ describe("Either.equals", () => {
     const opt3 = Either.right("hello2")
 
     expect(opt1 === opt2).toBe(false)
-    expect(equals(opt1, opt2)).toBe(true)
-    expect(equals(opt2, opt1)).toBe(true)
+    expect(is(opt1, opt2)).toBe(true)
+    expect(is(opt2, opt1)).toBe(true)
 
     expect(opt1.equals(opt3)).toBe(false)
-    expect(equals(opt1, opt3)).toBe(false)
-    expect(equals(opt3, opt1)).toBe(false)
+    expect(is(opt1, opt3)).toBe(false)
+    expect(is(opt3, opt1)).toBe(false)
 
-    expect(equals(Either.right(opt1), Either.right(opt2))).toBe(true)
-    expect(equals(Either.right(opt1), Either.right(opt3))).toBe(false)
-    expect(equals(Either.right(opt1), Either.left(1))).toBe(false)
+    expect(is(Either.right(opt1), Either.right(opt2))).toBe(true)
+    expect(is(Either.right(opt1), Either.right(opt3))).toBe(false)
+    expect(is(Either.right<any,any>(opt1), Either.left(1))).toBe(false)
+  })
+
+  jv.property("protects against other ref being null",
+    inst.arbEither,
+    fa => fa.equals(null) === false
+  )
+})
+
+describe("Either #forEach", () => {
+  it("works for right", () => {
+    let effect = 0
+    Right.of(10).forEach(() => effect = 10)
+    expect(effect).toBe(10)
+  })
+
+  it("does nothing for left", () => {
+    let effect = 0
+    Left.of(10).forEach(() => effect = 10)
+    expect(effect).toBe(0)
   })
 })

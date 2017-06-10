@@ -1,4 +1,5 @@
-/*
+/**
+ * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -16,8 +17,9 @@
  */
 
 // Exporting everything
-export * from "./core/equals"
+export * from "./core/std"
 export * from "./core/errors"
 export * from "./core/option"
 export * from "./core/either"
+export * from "./core/try"
 export * from "./exec/cancelable"
