@@ -138,6 +138,37 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   }
 
   /**
+   * Returns an optioning containing the result of the source mapped
+   * by the given function `f`.
+   *
+   * Similar to `map`, except that if the mapping function `f` returns
+   * `null`, then the final result returned will be [[Option.none]].
+   *
+   * Comparison:
+   *
+   * ```typescript
+   * Option.of(1).mapN(x => null) // none()
+   * Option.of(1).map(x => null)  // some(null)
+   *
+   * Option.of(1).mapN(x => x+1)  // 2
+   * Option.of(1).map(x => x+1)   // 2
+   * ```
+   *
+   * What this operation does is to allow for safe chaining of multiple
+   * method calls or functions that might produce `null` results:
+   *
+   * ```typescript
+   * Option.of(user)
+   *   .mapN(_ => _.contacts)
+   *   .mapN(_ => _.length)
+   * ```
+   */
+  mapN<B>(f: (a: A) => B): Option<B> {
+    if (this._isEmpty) return Option.none()
+    else return Option.of(f(this._ref))
+  }
+
+  /**
    * Returns the result of applying `f` to this option"s value if
    * the option is nonempty, otherwise returns an empty option.
    *
@@ -324,9 +355,148 @@ export class Option<A> implements eq.IEquals<Option<A>> {
   static pure<A>(value: A): Option<A> { return Option.some(value) }
 
   /**
+   * Maps 2 optional values by the mapping function, returning a new
+   * optional reference that is `some` only if both option values are
+   * `some`, otherwise it returns a `none`.
+   *
+   * ```typescript
+   * // Yields Some(3)
+   * Option.map2(Some(1), Some(2),
+   *   (a, b) => a + b
+   * )
+   *
+   * // Yields None, because the second arg is None
+   * Option.map2(Some(1), None,
+   *   (a, b) => a + b
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map2`.
+   */
+  static map2<A1,A2,R>(fa1: Option<A1>, fa2: Option<A2>,
+    f: (a1: A1, a2: A2) => R): Option<R> {
+
+    return fa1.nonEmpty() && fa2.nonEmpty()
+      ? Option.some(f(fa1.get(), fa2.get()))
+      : Option.none()
+  }
+
+  /**
+   * Maps 3 optional values by the mapping function, returning a new
+   * optional reference that is `some` only if all 3 option values are
+   * `some`, otherwise it returns a `none`.
+   *
+   * ```typescript
+   * // Yields Some(6)
+   * Option.map3(Some(1), Some(2), Some(3),
+   *   (a, b, c) => a + b + c
+   * )
+   *
+   * // Yields None, because the second arg is None
+   * Option.map3(Some(1), None, Some(3),
+   *   (a, b, c) => a + b + c
+   * )
+   * ```
+   */
+  static map3<A1,A2,A3,R>(fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>,
+    f: (a1: A1, a2: A2, a3: A3) => R): Option<R> {
+
+    return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty()
+      ? Option.some(f(fa1.get(), fa2.get(), fa3.get()))
+      : Option.none()
+  }
+
+  /**
+   * Maps 4 optional values by the mapping function, returning a new
+   * optional reference that is `some` only if all 4 option values are
+   * `some`, otherwise it returns a `none`.
+   *
+   * ```typescript
+   * // Yields Some(10)
+   * Option.map4(Some(1), Some(2), Some(3), Some(4),
+   *   (a, b, c, d) => a + b + c + d
+   * )
+   *
+   * // Yields None, because the second arg is None
+   * Option.map4(Some(1), None, Some(3), Some(4),
+   *   (a, b, c, d) => a + b + c + d
+   * )
+   * ```
+   */
+  static map4<A1,A2,A3,A4,R>(
+    fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Option<R> {
+
+    return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty()
+      ? Option.some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get()))
+      : Option.none()
+  }
+
+  /**
+   * Maps 5 optional values by the mapping function, returning a new
+   * optional reference that is `some` only if all 5 option values are
+   * `some`, otherwise it returns a `none`.
+   *
+   * ```typescript
+   * // Yields Some(15)
+   * Option.map5(Some(1), Some(2), Some(3), Some(4), Some(5),
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   *
+   * // Yields None, because the second arg is None
+   * Option.map5(Some(1), None, Some(3), Some(4), Some(5),
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   * ```
+   */
+  static map5<A1,A2,A3,A4,A5,R>(
+    fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>, fa5: Option<A5>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Option<R> {
+
+    return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty() && fa5.nonEmpty()
+      ? Option.some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get()))
+      : Option.none()
+  }
+
+  /**
+   * Maps 6 optional values by the mapping function, returning a new
+   * optional reference that is `some` only if all 6 option values are
+   * `some`, otherwise it returns a `none`.
+   *
+   * ```typescript
+   * // Yields Some(21)
+   * Option.map6(Some(1), Some(2), Some(3), Some(4), Some(5), Some(6),
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   *
+   * // Yields None, because the second arg is None
+   * Option.map6(Some(1), None, Some(3), Some(4), Some(5), Some(6),
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   * ```
+   */
+  static map6<A1,A2,A3,A4,A5,A6,R>(
+    fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>, fa5: Option<A5>, fa6: Option<A6>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Option<R> {
+
+    return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty() && fa5.nonEmpty() && fa6.nonEmpty()
+      ? Option.some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get(), fa6.get()))
+      : Option.none()
+  }
+
+  /**
    * Reusable reference to use in [[Option.empty]].
    * @private
    */
   private static _emptyRef: Option<never> =
     new Option(null, true) as Option<never>
 }
+
+/** Shorthand for [[Option.some]]. */
+export function Some<A>(value: A): Option<A> {
+  return Option.some(value)
+}
+
+/** Shorthand for [[Option.none]]. */
+export const None: Option<never> =
+  Option.none()
