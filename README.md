@@ -17,7 +17,7 @@ and [Monix](https://monix.io/).
 npm install --save funfix
 ```
 
-See [API Docs](https://funfix.org).
+See [API Docs](https://funfix.org/api).
 
 ## Recommended Companions
 
