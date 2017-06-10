@@ -1,5 +1,6 @@
 {
   "presets": [
+    ["es2015-rollup"],
     ["env", {
       "targets": {
         "browsers": ["last 2 versions", "safari >= 7"],
@@ -7,5 +8,6 @@
       },
       "modules": false
     }]
-  ]
+  ],
+  "comments": false
 }
