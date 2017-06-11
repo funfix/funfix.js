@@ -1,4 +1,4 @@
-/**
+/*
  * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
@@ -17,5 +17,8 @@
  */
 
 // Exporting everything
-export * from "./core"
-export * from "./exec"
+export * from "./std"
+export * from "./errors"
+export * from "./option"
+export * from "./either"
+export * from "./try"

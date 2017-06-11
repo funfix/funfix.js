@@ -1,4 +1,4 @@
-/**
+/*
  * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
@@ -16,6 +16,4 @@
  * limitations under the License.
  */
 
-// Exporting everything
-export * from "./core"
-export * from "./exec"
+export * from "./cancelable"
