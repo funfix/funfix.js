@@ -41,7 +41,7 @@ import { Option } from "./option"
  * ```typescript
  * function tryParseInt(str: string): Either<string, number> {
  *   const i = parseInt(value)
- *   return isNaN(i) ? Left.of(str) : Right.of(i)
+ *   return isNaN(i) ? Left(str) : Right(i)
  * }
  *
  * const result = tryParseInt("not an int")
@@ -59,8 +59,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   private _rightRef: R
   private _leftRef: L
 
-  protected constructor(_leftRef: L, _rightRef: R, _isRight: boolean) {
-    std.checkSumType(this, Left, Right)
+  private constructor(_leftRef: L, _rightRef: R, _isRight: boolean) {
+    std.checkSealedClass(this, Either)
     this._isRight = _isRight
     if (_isRight) this._rightRef = _rightRef
     else this._leftRef = _leftRef
@@ -70,8 +70,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * Returns `true` if this is a `left`, `false` otherwise.
    *
    * ```typescript
-   * Left.of("hello").isLeft() // true
-   * Right.of(10).isLeft() // false
+   * Left("hello").isLeft() // true
+   * Right(10).isLeft() // false
    * ```
    */
   isLeft(): boolean { return !this._isRight }
@@ -87,8 +87,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    *
    * @throws NoSuchElementError
    */
-  left(): Left<L> {
-    if (!this._isRight) return (this as any) as Left<L>
+  left(): Either<L, never> {
+    if (!this._isRight) return this as any
     throw new NoSuchElementError("either.left")
   }
 
@@ -96,8 +96,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * Returns `true` if this is a `right`, `false` otherwise.
    *
    * ```typescript
-   * Left.of("hello").isRight() // false
-   * Right.of(10).isRight() // true
+   * Left("hello").isRight() // false
+   * Right(10).isRight() // true
    * ```
    */
   isRight(): boolean { return this._isRight }
@@ -113,8 +113,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    *
    * @throws NoSuchElementError
    */
-  right(): Right<R> {
-    if (this._isRight) return (this as any) as Right<R>
+  right(): Either<never, R> {
+    if (this._isRight) return this as any
     throw new NoSuchElementError("either.right")
   }
 
@@ -124,13 +124,13 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    *
    * ```typescript
    * // True
-   * Right.of("something").contains("something")
+   * Right("something").contains("something")
    *
    * // False because the values are different
-   * Right.of("something").contains("anything") // false
+   * Right("something").contains("anything") // false
    *
    * // False because the source is a `left`
-   * Left.of("something").contains("something") // false
+   * Left("something").contains("something") // false
    * ```
    */
   contains(elem: R): boolean {
@@ -143,13 +143,13 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    *
    * ```typescript
    * // True, because it is a right and predicate holds
-   * Right.of(20).exists(n => n > 10)
+   * Right(20).exists(n => n > 10)
    *
    * // False, because the predicate returns false
-   * Right.of(10).exists(n => n % 2 != 0)
+   * Right(10).exists(n => n % 2 != 0)
    *
    * // False, because it is a left
-   * Left.of(10).exists(n => n == 10)
+   * Left(10).exists(n => n == 10)
    * ```
    */
   exists(p: (r: R) => boolean): boolean {
@@ -177,7 +177,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    */
   filterOrElse(p: (r: R) => boolean, zero: () => L): Either<L, R> {
     return this._isRight
-      ? (p(this._rightRef) ? this.right() : Left.of(zero()))
+      ? (p(this._rightRef) ? this.right() : Left(zero()))
       : this.left()
   }
 
@@ -217,13 +217,13 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    *
    * ```typescript
    * // True, because it is a `left`
-   * Left.of("hello").forAll(x => x > 10)
+   * Left("hello").forAll(x => x > 10)
    *
    * // True, because the predicate holds
-   * Right.of(20).forAll(x => x > 10)
+   * Right(20).forAll(x => x > 10)
    *
    * // False, it's a right and the predicate doesn't hold
-   * Right.of(7).forAll(x => x > 10)
+   * Right(7).forAll(x => x > 10)
    * ```
    */
   forAll(p: (r: R) => boolean): boolean {
@@ -251,8 +251,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * `or` value if this is a `left`.
    *
    * ```typescript
-   * Right.of(10).getOrElse(27) // 10
-   * Left.of(10).getOrElse(27)  // 27
+   * Right(10).getOrElse(27) // 10
+   * Left(10).getOrElse(27)  // 27
    * ```
    */
   getOrElse(or: R): R {
@@ -264,8 +264,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * by the given `thunk` if this is a `left`.
    *
    * ```typescript
-   * Right.of(10).getOrElseL(() => 27) // 10
-   * Left.of(10).getOrElseL(() => 27)  // 27
+   * Right(10).getOrElseL(() => 27) // 10
+   * Left(10).getOrElseL(() => 27)  // 27
    * ```
    */
   getOrElseL(thunk: () => R): R {
@@ -277,13 +277,13 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * mapping function.
    *
    * ```typescript
-   * Right.of(10).map(x => x + 17) // right(27)
-   * Left.of(10).map(x => x + 17)  // left(10)
+   * Right(10).map(x => x + 17) // right(27)
+   * Left(10).map(x => x + 17)  // left(10)
    * ```
    */
   map<C>(f: (r: R) => C): Either<L, C> {
     return this._isRight
-      ? Right.of(f(this._rightRef))
+      ? Right(f(this._rightRef))
       : this.left()
   }
 
@@ -292,8 +292,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * source is a `right` value.
    *
    * ```typescript
-   * Right.of(12).forAll(console.log) // prints 12
-   * Left.of(10).forAll(console.log)  // silent
+   * Right(12).forAll(console.log) // prints 12
+   * Left(10).forAll(console.log)  // silent
    * ```
    */
   forEach(cb: (r: R) => void): void {
@@ -305,14 +305,14 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * or vice versa.
    *
    * ```typescript
-   * Right.of(10).swap() // left(10)
-   * Left.of(20).swap()  // right(20)
+   * Right(10).swap() // left(10)
+   * Left(20).swap()  // right(20)
    * ```
    */
   swap(): Either<R, L> {
     return this._isRight
-      ? Left.of(this._rightRef)
-      : Right.of(this._leftRef)
+      ? Left(this._rightRef)
+      : Right(this._leftRef)
   }
 
   /**
@@ -341,40 +341,26 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   }
 
   static left<L, R>(value: L): Either<L, R> {
-    return new Left(value)
+    return Left(value)
   }
 
   static right<L, R>(value: R): Either<L, R> {
-    return new Right(value)
+    return Right(value)
   }
 }
 
 /**
- * The `Left` data type represents the left side of the [[Either]]
- * disjoint union, as opposed to the [[Right]] side.
+ * The `Left` data constructor represents the left side of the
+ * [[Either]] disjoint union, as opposed to the [[Right]] side.
  */
-export class Left<L> extends Either<L, never> {
-  constructor(value: L) {
-    super(value, null as never, false)
-  }
-
-  /** Builds a [[Left]] reference by wrapping any value. */
-  static of<L>(value: L): Left<L> {
-    return new Left(value)
-  }
+export function Left<L>(value: L): Either<L, never> {
+  return new (Either as any)(value, null as never, false)
 }
 
 /**
- * The `Right` data type represents the left side of the [[Either]]
- * disjoint union, as opposed to the [[Left]] side.
+ * The `Right` data constructor represents the right side of the
+ * [[Either]] disjoint union, as opposed to the [[Left]] side.
  */
-export class Right<R> extends Either<never, R> {
-  constructor(value: R) {
-    super(null as never, value, true)
-  }
-
-  /** Builds a [[Right]] reference by wrapping any value. */
-  static of<R>(value: R): Right<R> {
-    return new Right(value)
-  }
+export function Right<R>(value: R): Either<never, R> {
+  return new (Either as any)(null as never, value, true)
 }

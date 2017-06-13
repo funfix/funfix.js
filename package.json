@@ -28,9 +28,10 @@
     "node": ">=6.0.0"
   },
   "scripts": {
-    "lint": "tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
+    "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "prebuild": "rimraf dist",
-    "build": "tsc && rollup -c && typedoc --out dist/docs --target es6 --readme rootdoc.md src",
+    "copy-flow": "ts-node tools/copy-flow.ts",
+    "build": "tsc && rollup -c && typedoc --out dist/docs --target es6 --readme rootdoc.md src && yarn run copy-flow",
     "start": "tsc-watch --onSuccess 'rollup -c'",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -89,6 +90,8 @@
     "coveralls": "^2.13.1",
     "cross-env": "^5.0.0",
     "cz-conventional-changelog": "^2.0.0",
+    "flow": "^0.2.3",
+    "flow-bin": "^0.48.0",
     "husky": "^0.13.3",
     "jest": "^20.0.4",
     "jsverify": "^0.8.2",

@@ -25,53 +25,15 @@ import { is, hashCode } from "../../src/funfix"
 import * as jv from "jsverify"
 import * as inst from "./instances"
 
-describe("Try's constructor", () => {
-  it("should not allow inheritance of Try", () => {
-    class Test extends Try<number> {
-      constructor() { super(100, null, true) }
-    }
-
-    let error: Error | null = null
-    try { new Test() } catch (e) { error = e }
-
-    expect(error).toBeTruthy()
-    expect(error).toBeInstanceOf(IllegalInheritanceError)
-  })
-
-  it("should not allow inheritance of Success", () => {
-    class Test extends Success<number> {
-      constructor() { super(100) }
-    }
-
-    let error: Error | null = null
-    try { new Test() } catch (e) { error = e }
-
-    expect(error).toBeTruthy()
-    expect(error).toBeInstanceOf(IllegalInheritanceError)
-  })
-
-  it("should not allow inheritance of Failure", () => {
-    class Test extends Failure {
-      constructor() { super(100) }
-    }
-
-    let error: Error | null = null
-    try { new Test() } catch (e) { error = e }
-
-    expect(error).toBeTruthy()
-    expect(error).toBeInstanceOf(IllegalInheritanceError)
-  })
-})
-
 describe("Try.of", () => {
   jv.property("should work for successful functions",
     jv.number,
-    v => is(Try.of(() => v), Success.of(v))
+    v => is(Try.of(() => v), Success(v))
   )
 
   it("should catch exceptions", () => {
     const error = new DummyError("dummy")
-    expect(is(Try.of(() => { throw error }), Failure.of(error))).toBe(true)
+    expect(is(Try.of(() => { throw error }), Failure(error))).toBe(true)
   })
 })
 
@@ -103,15 +65,15 @@ describe("Try #equals", () => {
     fa => fa.hashCode() === fa.hashCode() && fa.hashCode() === hashCode(fa)
   )
 
-  jv.property("Success.of(v).hashCode() === Success.of(v).hashCode()",
+  jv.property("Success(v).hashCode() === Success(v).hashCode()",
     jv.number,
-    n => Success.of(n).hashCode() === Success.of(n).hashCode()
+    n => Success(n).hashCode() === Success(n).hashCode()
   )
 
   it("Success should have structural equality", () => {
-    const fa1 = Success.of("hello1")
-    const fa2 = Success.of("hello1")
-    const fa3 = Success.of("hello2")
+    const fa1 = Success("hello1")
+    const fa2 = Success("hello1")
+    const fa3 = Success("hello2")
 
     expect(fa1 === fa2).toBe(false)
     expect(is(fa1, fa2)).toBe(true)
@@ -121,15 +83,15 @@ describe("Try #equals", () => {
     expect(is(fa1, fa3)).toBe(false)
     expect(is(fa3, fa1)).toBe(false)
 
-    expect(is(Success.of(fa1), Success.of(fa2))).toBe(true)
-    expect(is(Success.of(fa1), Success.of(fa3))).toBe(false)
-    expect(is(Success.of(fa1), Success.of(Success.of("100")))).toBe(false)
+    expect(is(Success(fa1), Success(fa2))).toBe(true)
+    expect(is(Success(fa1), Success(fa3))).toBe(false)
+    expect(is(Success(fa1), Success(Success("100")))).toBe(false)
   })
 
   it("Failure should have structural equality", () => {
-    const fa1 = Failure.of("hello1")
-    const fa2 = Failure.of("hello1")
-    const fa3 = Failure.of("hello2")
+    const fa1 = Failure("hello1")
+    const fa2 = Failure("hello1")
+    const fa3 = Failure("hello2")
 
     expect(fa1 === fa2).toBe(false)
     expect(is(fa1, fa2)).toBe(true)
@@ -139,9 +101,9 @@ describe("Try #equals", () => {
     expect(is(fa1, fa3)).toBe(false)
     expect(is(fa3, fa1)).toBe(false)
 
-    expect(is(Failure.of(fa1), Failure.of(fa2))).toBe(true)
-    expect(is(Failure.of(fa1), Failure.of(fa3))).toBe(false)
-    expect(is(Failure.of(fa1), Failure.of(Failure.of("100")))).toBe(false)
+    expect(is(Failure(fa1), Failure(fa2))).toBe(true)
+    expect(is(Failure(fa1), Failure(fa3))).toBe(false)
+    expect(is(Failure(fa1), Failure(Failure("100")))).toBe(false)
   })
 
   jv.property("protects against other ref being null",
@@ -158,7 +120,7 @@ describe("Try #failed", () => {
 
   jv.property("Failure #failed",
     jv.constant(new DummyError("dummy")),
-    ex => is(Failure.of(ex).failed(), Success.of(ex))
+    ex => is(Failure(ex).failed(), Success(ex))
   )
 })
 
@@ -195,19 +157,19 @@ describe("Try #filter", () => {
     fa => {
       const dummy = new DummyError("dummy")
       const p = _ => { throw dummy }
-      return is(fa.filter(p), Failure.of(dummy))
+      return is(fa.filter(p), Failure(dummy))
     }
   )
 })
 
 describe("Try #fold", () => {
   it("works for success", () => {
-    const r = Success.of(1).fold(e => 0, a => a + 1)
+    const r = Success(1).fold(e => 0, a => a + 1)
     expect(r).toBe(2)
   })
 
   it("works for failure", () => {
-    const r = Failure.of(1).fold(e => 0, a => a)
+    const r = Failure(1).fold(e => 0, a => a)
     expect(r).toBe(0)
   })
 })
@@ -238,7 +200,7 @@ describe("Try #flatMap", () => {
     fa => {
       const dummy = new DummyError("dummy")
       const f = _ => { throw dummy }
-      return is(fa.flatMap(f), Failure.of(dummy))
+      return is(fa.flatMap(f), Failure(dummy))
     }
   )
 
@@ -273,12 +235,12 @@ describe("Try.map", () => {
 describe("Try #forEach", () => {
   it("should work for success", () => {
     let effect = 0
-    Success.of(10).forEach(a => { effect = a })
+    Success(10).forEach(a => { effect = a })
     expect(effect).toBe(10)
   })
 
   it("should do nothing for failure", () => {
-    Failure.of("error").forEach(a => { throw new IllegalStateError() })
+    Failure("error").forEach(a => { throw new IllegalStateError() })
   })
 })
 
@@ -338,14 +300,14 @@ describe("Try #recover", () => {
 
   jv.property("fa.recover(_ => b) == fb for failure",
     inst.arbFailure, jv.number,
-    (fa, b) => is(fa.recover(_ => b), Success.of(b))
+    (fa, b) => is(fa.recover(_ => b), Success(b))
   )
 
   it("protects against user error", () => {
     const error1 = new DummyError("error1")
     const error2 = new DummyError("error2")
 
-    const fa = Failure.of(error1).recover(_ => { throw error2 })
+    const fa = Failure(error1).recover(_ => { throw error2 })
     expect(fa.failed().get()).toBe(error2)
   })
 })
@@ -365,7 +327,7 @@ describe("Try #recoverWith", () => {
     const error1 = new DummyError("error1")
     const error2 = new DummyError("error2")
 
-    const fa = Failure.of(error1).recoverWith(_ => { throw error2 })
+    const fa = Failure(error1).recoverWith(_ => { throw error2 })
     expect(fa.failed().get()).toBe(error2)
   })
 })
@@ -373,7 +335,7 @@ describe("Try #recoverWith", () => {
 describe("Try translations", () => {
   jv.property("success.toOption() == Some",
     inst.arbSuccess,
-    fa => is(fa.toOption(), Some.of(fa.get()))
+    fa => is(fa.toOption(), Some(fa.get()))
   )
 
   jv.property("failure.toOption() == None",
@@ -383,12 +345,12 @@ describe("Try translations", () => {
 
   jv.property("success.toEither() translation",
     inst.arbSuccess,
-    fa => is(fa.toEither(), Right.of(fa.get()))
+    fa => is(fa.toEither(), Right(fa.get()))
   )
 
   jv.property("failure.toEither() translation",
     inst.arbFailure,
-    fa => is(fa.toEither(), Left.of(fa.failed().get()))
+    fa => is(fa.toEither(), Left(fa.failed().get()))
   )
 })
 
@@ -455,7 +417,7 @@ describe("Try map2, map3, map4, map5, map6", () => {
     const received =
       Try.map2(fa, fa, _ => { throw dummy })
 
-    expect(is(received, Failure.of(dummy))).toBe(true)
+    expect(is(received, Failure(dummy))).toBe(true)
   })
 
   it("map3 protects against user error", () => {
@@ -464,7 +426,7 @@ describe("Try map2, map3, map4, map5, map6", () => {
     const received =
       Try.map3(fa, fa, fa, _ => { throw dummy })
 
-    expect(is(received, Failure.of(dummy))).toBe(true)
+    expect(is(received, Failure(dummy))).toBe(true)
   })
 
   it("map4 protects against user error", () => {
@@ -473,7 +435,7 @@ describe("Try map2, map3, map4, map5, map6", () => {
     const received =
       Try.map4(fa, fa, fa, fa, _ => { throw dummy })
 
-    expect(is(received, Failure.of(dummy))).toBe(true)
+    expect(is(received, Failure(dummy))).toBe(true)
   })
 
   it("map5 protects against user error", () => {
@@ -482,7 +444,7 @@ describe("Try map2, map3, map4, map5, map6", () => {
     const received =
       Try.map5(fa, fa, fa, fa, fa, _ => { throw dummy })
 
-    expect(is(received, Failure.of(dummy))).toBe(true)
+    expect(is(received, Failure(dummy))).toBe(true)
   })
 
   it("map6 protects against user error", () => {
@@ -491,6 +453,6 @@ describe("Try map2, map3, map4, map5, map6", () => {
     const received =
       Try.map6(fa, fa, fa, fa, fa, fa, _ => { throw dummy })
 
-    expect(is(received, Failure.of(dummy))).toBe(true)
+    expect(is(received, Failure(dummy))).toBe(true)
   })
 })

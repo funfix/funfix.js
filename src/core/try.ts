@@ -74,8 +74,8 @@ export class Try<A> implements std.IEquals<Try<A>> {
   private _successRef: A
   private _failureRef: any
 
-  protected constructor(_success: A, _failure: any, _isSuccess: boolean) {
-    std.checkSumType(this, Success, Failure)
+  private constructor(_success: A, _failure: any, _isSuccess: boolean) {
+    std.checkSealedClass(this, Try)
     this._isSuccess = _isSuccess
     if (_isSuccess) this._successRef = _success
     else this._failureRef = _failure
@@ -112,8 +112,8 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * value if this is a `Failure`.
    *
    * ```typescript
-   * Success.of(10).getOrElse(27) // 10
-   * Failure.of("error").getOrElse(27)  // 27
+   * Success(10).getOrElse(27) // 10
+   * Failure("error").getOrElse(27)  // 27
    * ```
    */
   getOrElse(or: A): A {
@@ -125,8 +125,8 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * by a given `thunk` in case this is a `Failure`.
    *
    * ```typescript
-   * Success.of(10).getOrElseL(() => 27) // 10
-   * Failure.of("error").getOrElseL(() => 27)  // 27
+   * Success(10).getOrElseL(() => 27) // 10
+   * Failure("error").getOrElseL(() => 27)  // 27
    * ```
    */
   getOrElseL(thunk: () => A): A {
@@ -138,8 +138,8 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * if the source is a [[Failure]] then return `null`.
    *
    * ```typescript
-   * Success.of(10).orNull()      // 10
-   * Failure.of("error").orNull() // null
+   * Success(10).orNull()      // 10
+   * Failure("error").orNull() // null
    * ```
    *
    * This can be useful for use-cases such as:
@@ -158,8 +158,8 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * the source is a [[Failure]] then return `other`.
    *
    * ```typescript
-   * Success.of(10).orElse(Success.of(17))      // 10
-   * Failure.of("error").orElse(Success.of(17)) // 17
+   * Success(10).orElse(Success(17))      // 10
+   * Failure("error").orElse(Success(17)) // 17
    * ```
    */
   orElse(other: Try<A>): Try<A> {
@@ -172,10 +172,10 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * in a [[Success]]. If this is a `Success`, returns a `Failure` containing a
    * [[NoSuchElementError]].
    */
-  failed(): Success<any> {
+  failed(): Try<any> {
     return this._isSuccess
-      ? Failure.of(new NoSuchElementError("try.failed()"))
-      : Success.of(this._failureRef)
+      ? Failure(new NoSuchElementError("try.failed()"))
+      : Success(this._failureRef)
   }
 
   /**
@@ -209,12 +209,12 @@ export class Try<A> implements std.IEquals<Try<A>> {
     if (!this._isSuccess) return this
     try {
       if (p(this._successRef)) return this
-      return Failure.of(
+      return Failure(
         new NoSuchElementError(
           `Predicate does not hold for ${this._successRef}`
         ))
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 
@@ -237,7 +237,7 @@ export class Try<A> implements std.IEquals<Try<A>> {
     try {
       return f(this._successRef)
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 
@@ -291,7 +291,7 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * })
    *
    * Note that on rethrow, the error is being caught in `recover` and
-   * it still returns it as a `Failure.of(e)`.
+   * it still returns it as a `Failure(e)`.
    * ```
    */
   recover(f: (error: any) => A): Try<A> {
@@ -315,14 +315,14 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * })
    *
    * Note that on rethrow, the error is being caught in `recover` and
-   * it still returns it as a `Failure.of(e)`.
+   * it still returns it as a `Failure(e)`.
    * ```
    */
   recoverWith(f: (error: any) => Try<A>): Try<A> {
     try {
       return this._isSuccess ? this : f(this._failureRef)
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 
@@ -334,12 +334,12 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * value is returned.
    *
    * ```typescript
-   * Success.of("value").toOption() // Some("value")
-   * Failure.of("error").toOption() // None
+   * Success("value").toOption() // Some("value")
+   * Failure("error").toOption() // None
    * ```
    */
   toOption(): Option<A> {
-    return this._isSuccess ? Some.of(this._successRef) : None
+    return this._isSuccess ? Some(this._successRef) : None
   }
 
   /**
@@ -350,14 +350,14 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * value is returned.
    *
    * ```typescript
-   * Success.of("value").toEither() // Right("value")
-   * Failure.of("error").toEither() // Left("error")
+   * Success("value").toEither() // Right("value")
+   * Failure("error").toEither() // Left("error")
    * ```
    */
   toEither(): Either<any, A> {
     return this._isSuccess
-      ? Right.of(this._successRef)
-      : Left.of(this._failureRef)
+      ? Right(this._successRef)
+      : Left(this._failureRef)
   }
 
   // Implemented from IEquals
@@ -383,9 +383,9 @@ export class Try<A> implements std.IEquals<Try<A>> {
    */
   static of<A>(thunk: () => A): Try<A> {
     try {
-      return Success.of(thunk())
+      return Success(thunk())
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 
@@ -399,7 +399,7 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * (i.e. wrapped in [[Success]]).
    */
   static success<A>(value: A): Try<A> {
-    return Success.of(value)
+    return Success(value)
   }
 
   /**
@@ -407,7 +407,7 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * (i.e. an exception wrapped in [[Faiure]]).
    */
   static failure<A>(e: any): Try<A> {
-    return Failure.of(e)
+    return Failure(e)
   }
 
   /**
@@ -416,13 +416,13 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * a `Success`, otherwise it returns the first `Failure` noticed.
    *
    * ```typescript
-   * // Yields Success.of(3)
-   * Try.map2(Success.of(1), Success.of(2),
+   * // Yields Success(3)
+   * Try.map2(Success(1), Success(2),
    *   (a, b) => a + b
    * )
    *
    * // Yields Failure, because the second arg is a Failure
-   * Try.map2(Success.of(1), Failure.of("error"),
+   * Try.map2(Success(1), Failure("error"),
    *   (a, b) => a + b
    * )
    * ```
@@ -435,9 +435,9 @@ export class Try<A> implements std.IEquals<Try<A>> {
     if (fa1.isFailure()) return ((fa1 as any) as Try<R>)
     if (fa2.isFailure()) return ((fa2 as any) as Try<R>)
     try {
-      return Success.of(f(fa1._successRef, fa2._successRef))
+      return Success(f(fa1._successRef, fa2._successRef))
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 
@@ -447,8 +447,8 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * a `Success`, otherwise it returns the first `Failure` noticed.
    *
    * ```typescript
-   * // Yields Success.of(6)
-   * Try.map3(Success.of(1), Success.of(2), Success.of(3),
+   * // Yields Success(6)
+   * Try.map3(Success(1), Success(2), Success(3),
    *   (a, b, c) => {
    *     return a + b + c
    *   }
@@ -456,9 +456,9 @@ export class Try<A> implements std.IEquals<Try<A>> {
    *
    * // Yields Failure, because the second arg is a Failure
    * Try.map3(
-   *   Success.of(1),
-   *   Failure.of("error"),
-   *   Success.of(3),
+   *   Success(1),
+   *   Failure("error"),
+   *   Success(3),
    *
    *   (a, b, c) => {
    *     return a + b + c
@@ -474,12 +474,12 @@ export class Try<A> implements std.IEquals<Try<A>> {
     if (fa2.isFailure()) return ((fa2 as any) as Try<R>)
     if (fa3.isFailure()) return ((fa3 as any) as Try<R>)
     try {
-      return Success.of(f(
+      return Success(f(
         fa1._successRef,
         fa2._successRef,
         fa3._successRef))
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 
@@ -489,8 +489,8 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * a `Success`, otherwise it returns the first `Failure` noticed.
    *
    * ```typescript
-   * // Yields Success.of(10)
-   * Try.map4(Success.of(1), Success.of(2), Success.of(3), Success.of(4),
+   * // Yields Success(10)
+   * Try.map4(Success(1), Success(2), Success(3), Success(4),
    *   (a, b, c, d) => {
    *     return a + b + c + d
    *   }
@@ -498,10 +498,10 @@ export class Try<A> implements std.IEquals<Try<A>> {
    *
    * // Yields Failure, because the second arg is a Failure
    * Try.map3(
-   *   Success.of(1),
-   *   Failure.of("error"),
-   *   Success.of(3),
-   *   Success.of(4),
+   *   Success(1),
+   *   Failure("error"),
+   *   Success(3),
+   *   Success(4),
    *
    *   (a, b, c, d) => {
    *     return a + b + c + d
@@ -518,13 +518,13 @@ export class Try<A> implements std.IEquals<Try<A>> {
     if (fa3.isFailure()) return ((fa3 as any) as Try<R>)
     if (fa4.isFailure()) return ((fa4 as any) as Try<R>)
     try {
-      return Success.of(f(
+      return Success(f(
         fa1._successRef,
         fa2._successRef,
         fa3._successRef,
         fa4._successRef))
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 
@@ -534,13 +534,13 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * a `Success`, otherwise it returns the first `Failure` noticed.
    *
    * ```typescript
-   * // Yields Success.of(15)
+   * // Yields Success(15)
    * Try.map5(
-   *   Success.of(1),
-   *   Success.of(2),
-   *   Success.of(3),
-   *   Success.of(4),
-   *   Success.of(5),
+   *   Success(1),
+   *   Success(2),
+   *   Success(3),
+   *   Success(4),
+   *   Success(5),
    *
    *   (a, b, c, d, e) => {
    *     return a + b + c + d + e
@@ -549,11 +549,11 @@ export class Try<A> implements std.IEquals<Try<A>> {
    *
    * // Yields Failure, because the second arg is a Failure
    * Try.map5(
-   *   Success.of(1),
-   *   Failure.of("error"),
-   *   Success.of(3),
-   *   Success.of(4),
-   *   Success.of(5),
+   *   Success(1),
+   *   Failure("error"),
+   *   Success(3),
+   *   Success(4),
+   *   Success(5),
    *
    *   (a, b, c, d, e) => {
    *     return a + b + c + d + e
@@ -571,14 +571,14 @@ export class Try<A> implements std.IEquals<Try<A>> {
     if (fa4.isFailure()) return ((fa4 as any) as Try<R>)
     if (fa5.isFailure()) return ((fa5 as any) as Try<R>)
     try {
-      return Success.of(f(
+      return Success(f(
         fa1._successRef,
         fa2._successRef,
         fa3._successRef,
         fa4._successRef,
         fa5._successRef))
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 
@@ -588,14 +588,14 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * a `Success`, otherwise it returns the first `Failure` noticed.
    *
    * ```typescript
-   * // Yields Success.of(21)
+   * // Yields Success(21)
    * Try.map6(
-   *   Success.of(1),
-   *   Success.of(2),
-   *   Success.of(3),
-   *   Success.of(4),
-   *   Success.of(5),
-   *   Success.of(6),
+   *   Success(1),
+   *   Success(2),
+   *   Success(3),
+   *   Success(4),
+   *   Success(5),
+   *   Success(6),
    *
    *   (a, b, c, d, e, f) => {
    *     return a + b + c + d + e + f
@@ -604,12 +604,12 @@ export class Try<A> implements std.IEquals<Try<A>> {
    *
    * // Yields Failure, because the second arg is a Failure
    * Try.map6(
-   *   Success.of(1),
-   *   Failure.of("error"),
-   *   Success.of(3),
-   *   Success.of(4),
-   *   Success.of(5),
-   *   Success.of(6),
+   *   Success(1),
+   *   Failure("error"),
+   *   Success(3),
+   *   Success(4),
+   *   Success(5),
+   *   Success(6),
    *
    *   (a, b, c, d, e, f) => {
    *     return a + b + c + d + e + f
@@ -628,7 +628,7 @@ export class Try<A> implements std.IEquals<Try<A>> {
     if (fa5.isFailure()) return ((fa5 as any) as Try<R>)
     if (fa6.isFailure()) return ((fa6 as any) as Try<R>)
     try {
-      return Success.of(f(
+      return Success(f(
         fa1._successRef,
         fa2._successRef,
         fa3._successRef,
@@ -636,39 +636,23 @@ export class Try<A> implements std.IEquals<Try<A>> {
         fa5._successRef,
         fa6._successRef))
     } catch (e) {
-      return Failure.of(e)
+      return Failure(e)
     }
   }
 }
 
 /**
- * The `Success` type represents the successful state of the [[Try]] sum type.
- *
- * @see [[Failure]]
- * @final
+ * The `Success` data constructor is for building [[Try]] values that
+ * are successful results of computations, as opposed to [[Failure]].
  */
-export class Success<A> extends Try<A> {
-  constructor(value: A) {
-    super(value, null, true)
-  }
-
-  static of<A>(value: A): Success<A> {
-    return new Success(value)
-  }
+export function Success<A>(value: A): Try<A> {
+  return new (Try as any)(value, null, true)
 }
 
 /**
- * The `Failure` type represents the successful state of the [[Try]] sum type.
- *
- * @see [[Success]]
- * @final
+ * The `Failure` data constructor is for building [[Try]] values that
+ * represent failures, as opposed to [[Success]].
  */
-export class Failure extends Try<never> {
-  constructor(e: any) {
-    super(null as never, e, false)
-  }
-
-  static of(e: any): Failure {
-    return new Failure(e)
-  }
+export function Failure(e: any): Try<never> {
+  return new (Try as any)(null as never, e, false)
 }

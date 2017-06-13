@@ -36,29 +36,17 @@ describe("Option's constructor", () => {
     expect(error).toBeTruthy()
     expect(error).toBeInstanceOf(IllegalInheritanceError)
   })
-
-  it("should not allow inheritance of Some", () => {
-    // Workaround for the constructor being private
-    const F: { new (n: number) } = (Some as any)
-    class Test extends F { constructor() { super(10) } }
-
-    let error: Error | null = null
-    try { new Test() } catch (e) { error = e }
-
-    expect(error).toBeTruthy()
-    expect(error).toBeInstanceOf(IllegalInheritanceError)
-  })
 })
 
 describe("Option#get", () => {
-  jv.property("Some.of(number).get() equals number",
+  jv.property("Some(number).get() equals number",
     jv.either(jv.number, jv.constant(null)),
-    n => is(Some.of(n.valueOf()).get(), n.valueOf())
+    n => is(Some(n.valueOf()).get(), n.valueOf())
   )
 
-  jv.property("Some.of(option).get() equals option",
+  jv.property("Some(option).get() equals option",
     inst.arbOpt,
-    n => is(Some.of(n).get(), n)
+    n => is(Some(n).get(), n)
   )
 
   it("should throw in case the option is empty", () => {
@@ -178,9 +166,9 @@ describe("Option #equals", () => {
   )
 
   it("should have structural equality", () => {
-    const opt1 = Some.of("hello1")
-    const opt2 = Some.of("hello1")
-    const opt3 = Some.of("hello2")
+    const opt1 = Some("hello1")
+    const opt2 = Some("hello1")
+    const opt3 = Some("hello2")
 
     expect(opt1 === opt2).toBe(false)
     expect(is(opt1, opt2)).toBe(true)
@@ -190,9 +178,9 @@ describe("Option #equals", () => {
     expect(is(opt1, opt3)).toBe(false)
     expect(is(opt3, opt1)).toBe(false)
 
-    expect(is(Some.of(opt1), Some.of(opt2))).toBe(true)
-    expect(is(Some.of(opt1), Some.of(opt3))).toBe(false)
-    expect(is(Some.of(opt1), Some.of(None))).toBe(false)
+    expect(is(Some(opt1), Some(opt2))).toBe(true)
+    expect(is(Some(opt1), Some(opt3))).toBe(false)
+    expect(is(Some(opt1), Some(None))).toBe(false)
   })
 
   jv.property("protects against other ref being null",
@@ -217,9 +205,9 @@ describe("Option.map", () => {
     (opt, f, g) => opt.map(f).map(g).equals(opt.map(x => g(f(x))))
   )
 
-  jv.property("Some.of(n).map(_ => null) == Some.of(null)",
+  jv.property("Some(n).map(_ => null) == Some(null)",
     inst.arbOptNonempty,
-    opt => is(opt.map(_ => null), Some.of(null))
+    opt => is(opt.map(_ => null), Some(null))
   )
 })
 
@@ -234,7 +222,7 @@ describe("Option.mapN", () => {
     opt => opt.mapN(x => x).equals(opt)
   )
 
-  jv.property("Some.of(n).mapN(_ => null) == None",
+  jv.property("Some(n).mapN(_ => null) == None",
     inst.arbOptNonempty,
     opt => is(opt.mapN(_ => null), None)
   )
@@ -249,14 +237,14 @@ describe("Option.flatMap", () => {
   jv.property("expresses filter",
     jv.number, jv.fn(jv.bool),
     (n, p) => {
-      const f = (n: number) => p(n) ? Some.of(n) : None
+      const f = (n: number) => p(n) ? Some(n) : None
       return Option.of(n).flatMap(f).equals(f(n))
     }
   )
 
   jv.property("express map",
     inst.arbOpt, jv.fn(jv.number),
-    (opt, f) => opt.flatMap(n => Some.of(f(n))).equals(opt.map(f))
+    (opt, f) => opt.flatMap(n => Some(f(n))).equals(opt.map(f))
   )
 
   jv.property("left identity",
@@ -294,7 +282,7 @@ describe("Option.fold", () => {
   })
 
   it("works for nonempty", () => {
-    const x = Some.of(100).fold(() => 10, a => a)
+    const x = Some(100).fold(() => 10, a => a)
     expect(x).toBe(100)
   })
 })
@@ -306,16 +294,16 @@ describe("Option.contains", () => {
   })
 
   it("works for primitive", () => {
-    const x1 = Some.of(10).contains(10)
+    const x1 = Some(10).contains(10)
     expect(x1).toBe(true)
-    const x2 = Some.of(10).contains(20)
+    const x2 = Some(10).contains(20)
     expect(x2).toBe(false)
   })
 
   it("works for boxed value", () => {
-    const x1 = Some.of(Some.of(10)).contains(Some.of(10))
+    const x1 = Some(Some(10)).contains(Some(10))
     expect(x1).toBe(true)
-    const x2 = Some.of(Some.of(10)).contains(Some.of(20))
+    const x2 = Some(Some(10)).contains(Some(20))
     expect(x2).toBe(false)
   })
 })
@@ -327,9 +315,9 @@ describe("Option.exists", () => {
   })
 
   it("works for nonempty", () => {
-    const x1 = Some.of(10).exists(a => a % 2 === 0)
+    const x1 = Some(10).exists(a => a % 2 === 0)
     expect(x1).toBe(true)
-    const x2 = Some.of(10).exists(a => a % 2 !== 0)
+    const x2 = Some(10).exists(a => a % 2 !== 0)
     expect(x2).toBe(false)
   })
 })
@@ -341,9 +329,9 @@ describe("Option.forAll", () => {
   })
 
   it("works for nonempty", () => {
-    const x1 = Some.of(10).forAll(a => a % 2 === 0)
+    const x1 = Some(10).forAll(a => a % 2 === 0)
     expect(x1).toBe(true)
-    const x2 = Some.of(10).forAll(a => a % 2 !== 0)
+    const x2 = Some(10).forAll(a => a % 2 !== 0)
     expect(x2).toBe(false)
   })
 })
@@ -357,22 +345,22 @@ describe("Option.forEach", () => {
 
   it("works for nonempty", () => {
     let sum = 0
-    Some.of(10).forEach(x => sum += x)
-    Some.of(10).forEach(x => sum += x)
+    Some(10).forEach(x => sum += x)
+    Some(10).forEach(x => sum += x)
     expect(sum).toBe(20)
   })
 })
 
 describe("Option.pure", () => {
   it("is an alias for some", () => {
-    expect(is(Some.of(10), Option.pure(10))).toBe(true)
+    expect(is(Some(10), Option.pure(10))).toBe(true)
   })
 })
 
 describe("Option shorthands", () => {
-  jv.property("Some.of(x) == Some.of(x)",
+  jv.property("Some(x) == Some(x)",
     jv.either(jv.number, jv.constant(null)),
-    n => is(Some.of(n.value), Some.of(n.value))
+    n => is(Some(n.value), Some(n.value))
   )
 
   it("None == None", () => {

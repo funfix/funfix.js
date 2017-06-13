@@ -172,7 +172,7 @@ export function hashCodeOfString(str: string): number {
  * (i.e. it defines a sum type), by checking whether the `self`
  * reference is directly constructed by any of the given `types`.
  */
-export function checkSumType(self: any, ...types: any[]) {
+export function checkSealedClass(self: any, ...types: any[]): void {
   for (const t of types) {
     if (self.constructor === t) return
   }

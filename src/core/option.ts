@@ -40,8 +40,8 @@ export class Option<A> implements std.IEquals<Option<A>> {
   private _isEmpty: boolean
   private _ref: A
 
-  protected constructor(ref: A, isEmpty?: boolean) {
-    std.checkSumType(this, Option, Some)
+  private constructor(ref: A, isEmpty?: boolean) {
+    std.checkSealedClass(this, Option)
     /* tslint:disable-next-line:strict-type-predicates */
     if (isEmpty != null) this._isEmpty = isEmpty
     else this._isEmpty = (ref == null)
@@ -139,7 +139,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
    *         source mapped by the given function
    */
   map<B>(f: (a: A) => B): Option<B> {
-    return this._isEmpty ? None : Some.of(f(this._ref))
+    return this._isEmpty ? None : Some(f(this._ref))
   }
 
   /**
@@ -187,7 +187,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
    *
    * opt.flatMap(num => {
    *   if (num % 2 == 0)
-   *     Some.of(num + 1)
+   *     Some(num + 1)
    *   else
    *     None
    * })
@@ -356,14 +356,14 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * NOTE: Because `Option` is immutable, this function returns the
    * same cached reference is on different calls.
    */
-  static empty<B>(): Option<B> {
+  static empty<A>(): Option<A> {
     return None
   }
 
   /**
    * Alias for [[Some]].
    */
-  static pure<A>(value: A): Option<A> { return Some.of(value) }
+  static pure<A>(value: A): Option<A> { return Some(value) }
 
   /**
    * Maps 2 optional values by the mapping function, returning a new
@@ -371,13 +371,13 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * `Some`, otherwise it returns a `None`.
    *
    * ```typescript
-   * // Yields Some.of(3)
-   * Option.map2(Some.of(1), Some.of(2),
+   * // Yields Some(3)
+   * Option.map2(Some(1), Some(2),
    *   (a, b) => a + b
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map2(Some.of(1), None,
+   * Option.map2(Some(1), None,
    *   (a, b) => a + b
    * )
    * ```
@@ -388,7 +388,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
     f: (a1: A1, a2: A2) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty()
-      ? Some.of(f(fa1.get(), fa2.get()))
+      ? Some(f(fa1.get(), fa2.get()))
       : None
   }
 
@@ -398,13 +398,13 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * `Some`, otherwise it returns a `None`.
    *
    * ```typescript
-   * // Yields Some.of(6)
-   * Option.map3(Some.of(1), Some.of(2), Some.of(3),
+   * // Yields Some(6)
+   * Option.map3(Some(1), Some(2), Some(3),
    *   (a, b, c) => a + b + c
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map3(Some.of(1), None, Some.of(3),
+   * Option.map3(Some(1), None, Some(3),
    *   (a, b, c) => a + b + c
    * )
    * ```
@@ -413,7 +413,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
     f: (a1: A1, a2: A2, a3: A3) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty()
-      ? Some.of(f(fa1.get(), fa2.get(), fa3.get()))
+      ? Some(f(fa1.get(), fa2.get(), fa3.get()))
       : None
   }
 
@@ -424,12 +424,12 @@ export class Option<A> implements std.IEquals<Option<A>> {
    *
    * ```typescript
    * // Yields Some(10)
-   * Option.map4(Some.of(1), Some.of(2), Some.of(3), Some.of(4),
+   * Option.map4(Some(1), Some(2), Some(3), Some(4),
    *   (a, b, c, d) => a + b + c + d
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map4(Some.of(1), None, Some.of(3), Some.of(4),
+   * Option.map4(Some(1), None, Some(3), Some(4),
    *   (a, b, c, d) => a + b + c + d
    * )
    * ```
@@ -439,7 +439,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
     f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty()
-      ? Some.of(f(fa1.get(), fa2.get(), fa3.get(), fa4.get()))
+      ? Some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get()))
       : None
   }
 
@@ -450,12 +450,12 @@ export class Option<A> implements std.IEquals<Option<A>> {
    *
    * ```typescript
    * // Yields Some(15)
-   * Option.map5(Some.of(1), Some.of(2), Some.of(3), Some.of(4), Some.of(5),
+   * Option.map5(Some(1), Some(2), Some(3), Some(4), Some(5),
    *   (a, b, c, d, e) => a + b + c + d + e
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map5(Some.of(1), None, Some.of(3), Some.of(4), Some.of(5),
+   * Option.map5(Some(1), None, Some(3), Some(4), Some(5),
    *   (a, b, c, d, e) => a + b + c + d + e
    * )
    * ```
@@ -465,7 +465,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty() && fa5.nonEmpty()
-      ? Some.of(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get()))
+      ? Some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get()))
       : None
   }
 
@@ -476,12 +476,12 @@ export class Option<A> implements std.IEquals<Option<A>> {
    *
    * ```typescript
    * // Yields Some(21)
-   * Option.map6(Some.of(1), Some.of(2), Some.of(3), Some.of(4), Some.of(5), Some.of(6),
+   * Option.map6(Some(1), Some(2), Some(3), Some(4), Some(5), Some(6),
    *   (a, b, c, d, e, f) => a + b + c + d + e + f
    * )
    *
    * // Yields None, because the second arg is None
-   * Option.map6(Some.of(1), None, Some.of(3), Some.of(4), Some.of(5), Some.of(6),
+   * Option.map6(Some(1), None, Some(3), Some(4), Some(5), Some(6),
    *   (a, b, c, d, e, f) => a + b + c + d + e + f
    * )
    * ```
@@ -491,31 +491,27 @@ export class Option<A> implements std.IEquals<Option<A>> {
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty() && fa5.nonEmpty() && fa6.nonEmpty()
-      ? Some.of(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get(), fa6.get()))
+      ? Some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get(), fa6.get()))
       : None
   }
 }
 
 /**
- * Class `Some<A>` represents existing values of type `A`.
+ * The `Some<A>` data constructor for [[Option]] represents existing
+ * values of type `A`.
  *
- * @final
- * @see [[None]]
+ * Using this function is equivalent with [[Option.some]].
  */
-export class Some<A> extends Option<A> {
-  constructor(value: A) {
-    super(value, false)
-  }
-
-  /**
-   * Wraps any value into a [[Some]].
-   *
-   * NOTE: `null` values are supported.
-   */
-  static of<A>(value: A) { return new Some(value) }
+export function Some<A>(value: A): Option<A> {
+  return new (Option as any)(value, false)
 }
 
-/** Shorthand for [[Option.none]]. */
+/**
+ * The `None` data constructor for [[Option]] represents non-existing
+ * values for any type.
+ *
+ * Using this reference directly is equivalent with [[Option.none]].
+ */
 export const None: Option<never> =
   (function () {
     // Ugly workaround to get around the limitation of

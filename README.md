@@ -19,6 +19,11 @@ npm install --save funfix
 
 See [API Docs](https://funfix.org/api).
 
+## Typescript or Flow?
+
+Funfix supports both [Typescript](https://www.typescriptlang.org/)
+and [Flow](https://flow.org/).
+
 ## Recommended Companions
 
 Projects for usage in combination with Funfix:

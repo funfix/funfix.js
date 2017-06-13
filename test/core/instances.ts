@@ -28,11 +28,11 @@ export const arbOpt: jv.Arbitrary<Option<any>> =
   arbAnyPrimitive.smap(Option.of, opt => opt.orNull())
 
 export const arbOptNonempty: jv.Arbitrary<Option<number>> =
-  jv.number.smap(Some.of, opt => opt.orNull())
+  jv.number.smap(Some, opt => opt.orNull())
 
 export const arbEither: jv.Arbitrary<Either<number, number>> =
   jv.number.smap(
-    i => i % 4 < 3 ? Right.of(i) : Left.of(i),
+    i => i % 4 < 3 ? Right(i) : Left(i),
     (fa: Either<number, number>) => fa.isRight() ? fa.get() : fa.left().get()
   )
 
@@ -44,7 +44,7 @@ export const arbFailure: jv.Arbitrary<Try<number>> =
 
 export const arbTry: jv.Arbitrary<Try<number>> =
   jv.number.smap(
-    i => i % 4 < 3 ? Success.of(i) : Failure.of(i),
+    i => i % 4 < 3 ? Success(i) : Failure(i),
     fa => fa.isSuccess() ? fa.get() : fa.failed().get()
   )
 

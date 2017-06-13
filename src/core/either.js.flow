@@ -1,0 +1,49 @@
+/**
+ * @license
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @flow
+ */
+
+import { Option } from "./option"
+
+declare export class Either<+L, +R> {
+  isLeft(): boolean;
+  left(): Either<L, empty>;
+  isRight(): boolean;
+  right(): Either<empty, R>;
+  contains(elem: R): boolean;
+  exists(p: (r: R) => boolean): boolean;
+  filterOrElse(p: (r: R) => boolean, zero: () => L): Either<L, R>;
+  flatMap<S>(f: (r: R) => Either<L, S>): Either<L, S>;
+  fold<S>(left: (l: L) => S, right: (r: R) => S): S;
+  forAll(p: (r: R) => boolean): boolean;
+  get(): R;
+  getOrElse(or: R): R;
+  getOrElseL(thunk: () => R): R;
+  map<C>(f: (r: R) => C): Either<L, C>;
+  forEach(cb: (r: R) => void): void;
+  swap(): Either<R, L>;
+  toOption(): Option<R>;
+  equals(other: Either<L, R>): boolean;
+  hashCode(): number;
+
+  static left<L, R>(value: L): Either<L, R>;
+  static right<L, R>(value: R): Either<L, R>;
+}
+
+declare export function Left<L>(value: L): Either<L, empty>;
+declare export function Right<R>(value: R): Either<empty, R>;

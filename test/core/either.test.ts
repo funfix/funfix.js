@@ -51,11 +51,11 @@ describe("Either discrimination", () => {
 
 describe("Either #get", () => {
   it("works for right", () => {
-    expect(Right.of(10).get()).toBe(10)
+    expect(Right(10).get()).toBe(10)
   })
 
   it("works for left", () => {
-    expect(() => Left.of(10).get())
+    expect(() => Left(10).get())
       .toThrowError()
   })
 })
@@ -284,13 +284,13 @@ describe("Either #equals", () => {
 describe("Either #forEach", () => {
   it("works for right", () => {
     let effect = 0
-    Right.of(10).forEach(() => effect = 10)
+    Right(10).forEach(() => effect = 10)
     expect(effect).toBe(10)
   })
 
   it("does nothing for left", () => {
     let effect = 0
-    Left.of(10).forEach(() => effect = 10)
+    Left(10).forEach(() => effect = 10)
     expect(effect).toBe(0)
   })
 })
