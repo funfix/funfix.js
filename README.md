@@ -17,12 +17,27 @@ and [Monix](https://monix.io/).
 npm install --save funfix
 ```
 
-See [API Docs](https://funfix.org/api).
+Features:
 
-## Typescript or Flow?
+- [Option](https://funfix.org/api/classes/_core_option_.option.html),
+  which is like the "Maybe" monadic type from Haskell
+- [Either](https://funfix.org/api/classes/_core_either_.either.html),
+  for working with values of two possible types
+- [Try](https://funfix.org/api/classes/_core_try_.try.html),
+  for capturing exceptional results and manipulating them as values
+- [IEquals](https://funfix.org/api/interfaces/_core_std_.iequals.html) interface
+  for structural equality in [is](https://funfix.org/api/modules/_core_std_.html#is)
+- [Cancelable](https://funfix.org/api/classes/_exec_cancelable_.cancelable.html) /
+  [BoolCancelable](https://funfix.org/api/classes/_exec_cancelable_.boolcancelable.html),
+  for describing composable cancellation actions
+- more is coming (e.g. `Eval`, `Task`)
+
+See **[API Docs](https://funfix.org/api)**.
+
+### Typescript or Flow?
 
 Funfix supports both [Typescript](https://www.typescriptlang.org/)
-and [Flow](https://flow.org/).
+and [Flow](https://flow.org/) out of the box.
 
 ## Recommended Companions
 
