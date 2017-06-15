@@ -69,11 +69,51 @@ describe("is / equals", () => {
     (a, b) => is(a, b) === equals(a, b)
   )
 
+  it("should work for NaN", () => {
+    expect(is(NaN, 1)).toBe(false)
+    expect(is(1, NaN)).toBe(false)
+    expect(is(NaN, NaN)).toBe(true)
+  })
+
   it("should work for Dates", () => {
     const d1 = new Date()
     const d2 = new Date(d1.valueOf())
 
     expect(d1 === d2).toBe(false)
     expect(is(d1, d2)).toBe(true)
+  })
+
+  it("should work for Box(value) with valueOf", () => {
+    class Box<A> {
+      constructor(value: A) { this.value = value }
+      valueOf() { return this.value }
+    }
+
+    expect(new Box("value").valueOf()).toBe("value")
+    expect(is(new Box(null), new Box(null))).toBe(true)
+    expect(is(new Box("value"), new Box("value"))).toBe(true)
+    expect(is(new Box("value"), new Box(null))).toBe(false)
+    expect(is(new Box(null), new Box("value"))).toBe(false)
+
+    expect(is(new Box(NaN), new Box(1))).toBe(false)
+    expect(is(new Box(1), new Box(NaN))).toBe(false)
+    expect(is(new Box(NaN), new Box(NaN))).toBe(true)
+  })
+
+  it("should work for Box(value) implements IEquals", () => {
+    class Box<A> implements IEquals<Box<A>> {
+      constructor(value: A) { this.value = value }
+      equals(other: Box<A>) { return is(this.value, other.value) }
+      hashCode() { return hashCode(this.value) }
+    }
+
+    expect(is(new Box(null), new Box(null))).toBe(true)
+    expect(is(new Box("value"), new Box("value"))).toBe(true)
+    expect(is(new Box("value"), new Box(null))).toBe(false)
+    expect(is(new Box(null), new Box("value"))).toBe(false)
+
+    expect(is(new Box(NaN), new Box(1))).toBe(false)
+    expect(is(new Box(1), new Box(NaN))).toBe(false)
+    expect(is(new Box(NaN), new Box(NaN))).toBe(true)
   })
 })

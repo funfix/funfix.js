@@ -294,3 +294,61 @@ describe("Either #forEach", () => {
     expect(effect).toBe(0)
   })
 })
+
+describe("Either map2, map3, map4, map5, map6", () => {
+  jv.property("map2 equivalence with flatMap",
+    inst.arbEither, inst.arbEither, jv.fn(jv.number),
+    (o1, o2, fn) => {
+      const f = (...args: any[]) => fn(args)
+      return is(Either.map2(o1, o2, f), o1.flatMap(a1 => o2.map(a2 => f(a1, a2))))
+    }
+  )
+
+  jv.property("map3 equivalence with flatMap",
+    inst.arbEither, inst.arbEither, inst.arbEither, jv.fn(jv.number),
+    (o1, o2, o3, fn) => {
+      const f = (...args: any[]) => fn(args)
+      return is(
+        Either.map3(o1, o2, o3, f),
+        o1.flatMap(a1 => o2.flatMap(a2 => o3.map(a3 => f(a1, a2, a3))))
+      )
+    }
+  )
+
+  jv.property("map4 equivalence with flatMap",
+    inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, jv.fn(jv.number),
+    (o1, o2, o3, o4, fn) => {
+      const f = (...args: any[]) => fn(args)
+      return is(
+        Either.map4(o1, o2, o3, o4, f),
+        o1.flatMap(a1 => o2.flatMap(a2 => o3.flatMap(a3 =>
+          o4.map(a4 => f(a1, a2, a3, a4)))))
+      )
+    }
+  )
+
+  jv.property("map5 equivalence with flatMap",
+    inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, jv.fn(jv.number),
+    (o1, o2, o3, o4, o5, fn) => {
+      const f = (...args: any[]) => fn(args)
+      return is(
+        Either.map5(o1, o2, o3, o4, o5, f),
+        o1.flatMap(a1 => o2.flatMap(a2 => o3.flatMap(a3 =>
+          o4.flatMap(a4 => o5.map(a5 => f(a1, a2, a3, a4, a5))))))
+      )
+    }
+  )
+
+  jv.property("map6 equivalence with flatMap",
+    inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, jv.fn(jv.number),
+    (o1, o2, o3, o4, o5, o6, fn) => {
+      const f = (...args: any[]) => fn(args)
+      return is(
+        Either.map6(o1, o2, o3, o4, o5, o6, f),
+        o1.flatMap(a1 => o2.flatMap(a2 => o3.flatMap(a3 =>
+          o4.flatMap(a4 => o5.flatMap(a5 => o6.map(a6 =>
+            f(a1, a2, a3, a4, a5, a6)))))))
+      )
+    }
+  )
+})

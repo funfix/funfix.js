@@ -43,6 +43,20 @@ declare export class Either<+L, +R> {
 
   static left<L, R>(value: L): Either<L, R>;
   static right<L, R>(value: R): Either<L, R>;
+
+  static map2<A1,A2,L,R>(fa1: Either<L,A1>, fa2: Either<L,A2>,
+    f: (A1, A2) => R): Either<L, R>;
+  static map3<A1,A2,A3,L,R>(fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>,
+    f: (A1, A2, A3) => R): Either<L, R>;
+  static map4<A1,A2,A3,A4,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>,
+    f: (A1, A2, A3, A4) => R): Either<L, R>;
+  static map5<A1,A2,A3,A4,A5,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>, fa5: Either<L,A5>,
+    f: (A1, A2, A3, A4, A5) => R): Either<L, R>;
+  static map6<A1,A2,A3,A4,A5,A6,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>, fa5: Either<L,A5>, fa6: Either<L,A6>,
+    f: (A1, A2, A3, A4, A5, A6) => R): Either<L, R>;
 }
 
 declare export function Left<L>(value: L): Either<L, empty>;

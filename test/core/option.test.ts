@@ -25,6 +25,13 @@ import * as jv from "jsverify"
 import * as inst from "./instances"
 
 describe("Option's constructor", () => {
+  it("Option.of <-> new Option(isEmpty=null)", () => {
+    const F = Option as any
+    is(new F("value"), Option.some("value"))
+    is(new F(null), Option.none())
+    is(new F(undefined), Option.none())
+  })
+
   it("should not allow inheritance of Option", () => {
     class Test extends Option<number> {
       constructor() { super(null, false) }
@@ -144,7 +151,7 @@ describe("Option#isEmpty, Option#nonEmpty", () => {
   )
 })
 
-describe("Option #equals", () => {
+describe("Option #equals and #hashCode", () => {
   jv.property("should yield true for self.equals(self)",
     inst.arbOpt,
     opt => opt.equals(opt)
@@ -164,6 +171,11 @@ describe("Option #equals", () => {
     jv.number,
     n => Option.of(n).hashCode() === Option.of(n).hashCode()
   )
+
+  it("should do hashCode for none() and some(null)", () => {
+    expect(hashCode(Option.none())).toBe(2433880)
+    expect(hashCode(Option.some(null))).toBe(2433881 << 2)
+  })
 
   it("should have structural equality", () => {
     const opt1 = Some("hello1")

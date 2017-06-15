@@ -347,6 +347,147 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   static right<L, R>(value: R): Either<L, R> {
     return Right(value)
   }
+
+  /**
+   * Maps 2 `Either` values by the mapping function, returning a new
+   * `Either` reference that is a `Right` only if both `Either` values are
+   * `Right` values, otherwise it returns the first `Left` value noticed.
+   *
+   * ```typescript
+   * // Yields Right(3)
+   * Try.map2(Right(1), Right(2),
+   *   (a, b) => a + b
+   * )
+   *
+   * // Yields Left, because the second arg is a Left
+   * Try.map2(Right(1), Left("error"),
+   *   (a, b) => a + b
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map2`.
+   */
+  static map2<A1,A2,L,R>(fa1: Either<L,A1>, fa2: Either<L,A2>,
+    f: (a1: A1, a2: A2) => R): Either<L, R> {
+
+    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
+    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
+    return Right(f(fa1._rightRef, fa2._rightRef))
+  }
+
+  /**
+   * Maps 3 `Either` values by the mapping function, returning a new
+   * `Either` reference that is a `Right` only if all 3 `Either` values are
+   * `Right` values, otherwise it returns the first `Left` value noticed.
+   *
+   * ```typescript
+   * // Yields Right(6)
+   * Try.map3(Right(1), Right(2), Right(3),
+   *   (a, b, c) => a + b + c
+   * )
+   *
+   * // Yields Left, because the second arg is a Left
+   * Try.map3(Right(1), Left("error"), Right(3),
+   *   (a, b, c) => a + b + c
+   * )
+   * ```
+   */
+  static map3<A1,A2,A3,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>,
+    f: (a1: A1, a2: A2, a3: A3) => R): Either<L, R> {
+
+    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
+    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
+    if (fa3.isLeft()) return ((fa3 as any) as Either<L, R>)
+    return Right(f(fa1._rightRef, fa2._rightRef, fa3._rightRef))
+  }
+
+  /**
+   * Maps 4 `Either` values by the mapping function, returning a new
+   * `Either` reference that is a `Right` only if all 4 `Either` values are
+   * `Right` values, otherwise it returns the first `Left` value noticed.
+   *
+   * ```typescript
+   * // Yields Right(10)
+   * Try.map4(Right(1), Right(2), Right(3), Right(4),
+   *   (a, b, c, d) => a + b + c + d
+   * )
+   *
+   * // Yields Left, because the second arg is a Left
+   * Try.map4(Right(1), Left("error"), Right(3), Right(4),
+   *   (a, b, c, d) => a + b + c + d
+   * )
+   * ```
+   */
+  static map4<A1,A2,A3,A4,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Either<L, R> {
+
+    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
+    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
+    if (fa3.isLeft()) return ((fa3 as any) as Either<L, R>)
+    if (fa4.isLeft()) return ((fa4 as any) as Either<L, R>)
+    return Right(f(fa1._rightRef, fa2._rightRef, fa3._rightRef, fa4._rightRef))
+  }
+
+  /**
+   * Maps 5 `Either` values by the mapping function, returning a new
+   * `Either` reference that is a `Right` only if all 5 `Either` values are
+   * `Right` values, otherwise it returns the first `Left` value noticed.
+   *
+   * ```typescript
+   * // Yields Right(15)
+   * Try.map5(Right(1), Right(2), Right(3), Right(4), Right(5),
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   *
+   * // Yields Left, because the second arg is a Left
+   * Try.map5(Right(1), Left("error"), Right(3), Right(4), Right(5),
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   * ```
+   */
+  static map5<A1,A2,A3,A4,A5,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>, fa5: Either<L,A5>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Either<L, R> {
+
+    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
+    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
+    if (fa3.isLeft()) return ((fa3 as any) as Either<L, R>)
+    if (fa4.isLeft()) return ((fa4 as any) as Either<L, R>)
+    if (fa5.isLeft()) return ((fa5 as any) as Either<L, R>)
+    return Right(f(fa1._rightRef, fa2._rightRef, fa3._rightRef, fa4._rightRef, fa5._rightRef))
+  }
+
+  /**
+   * Maps 6 `Either` values by the mapping function, returning a new
+   * `Either` reference that is a `Right` only if all 6 `Either` values are
+   * `Right` values, otherwise it returns the first `Left` value noticed.
+   *
+   * ```typescript
+   * // Yields Right(21)
+   * Try.map5(Right(1), Right(2), Right(3), Right(4), Right(5), Right(6),
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   *
+   * // Yields Left, because the second arg is a Left
+   * Try.map5(Right(1), Left("error"), Right(3), Right(4), Right(5), Right(6),
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   * ```
+   */
+  static map6<A1,A2,A3,A4,A5,A6,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>, fa5: Either<L,A5>, fa6: Either<L,A6>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Either<L, R> {
+
+    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
+    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
+    if (fa3.isLeft()) return ((fa3 as any) as Either<L, R>)
+    if (fa4.isLeft()) return ((fa4 as any) as Either<L, R>)
+    if (fa5.isLeft()) return ((fa5 as any) as Either<L, R>)
+    if (fa6.isLeft()) return ((fa6 as any) as Either<L, R>)
+    return Right(f(fa1._rightRef, fa2._rightRef, fa3._rightRef, fa4._rightRef, fa5._rightRef, fa6._rightRef))
+  }
 }
 
 /**

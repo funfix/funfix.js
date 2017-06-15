@@ -43,8 +43,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
   private constructor(ref: A, isEmpty?: boolean) {
     std.checkSealedClass(this, Option)
     /* tslint:disable-next-line:strict-type-predicates */
-    if (isEmpty != null) this._isEmpty = isEmpty
-    else this._isEmpty = (ref == null)
+    this._isEmpty = isEmpty != null ? isEmpty : (ref === null || ref === undefined)
     this._ref = ref
   }
 
@@ -311,8 +310,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * option will be empty.
    */
   static of<A>(value: A | null | undefined): Option<A> {
-    if (value == null) return None
-    else return new Option(value, false)
+    return value != null ? Some(value) : None
   }
 
   /**

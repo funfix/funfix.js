@@ -16,7 +16,13 @@
  * limitations under the License.
  */
 
-import { DummyError, CompositeError } from "../../src/funfix"
+import {
+  DummyError,
+  CompositeError,
+  IllegalInheritanceError,
+  IllegalStateError,
+  NoSuchElementError
+} from "../../src/funfix"
 
 describe("DummyError", () => {
   it("has custom message", () => {
@@ -62,3 +68,31 @@ describe("CompositeError", () => {
     expect(composite.errors().length).toBe(0)
   })
 })
+
+describe("IllegalStateError", () => {
+  it("has custom message", () => {
+    const ex = new IllegalStateError("dummy")
+
+    expect(ex.name).toBe("IllegalStateError")
+    expect(ex.message).toBe("dummy")
+  })
+})
+
+describe("IllegalInheritanceError", () => {
+  it("has custom message", () => {
+    const ex = new IllegalInheritanceError("dummy")
+
+    expect(ex.name).toBe("IllegalInheritanceError")
+    expect(ex.message).toBe("dummy")
+  })
+})
+
+describe("NoSuchElementError", () => {
+  it("has custom message", () => {
+    const ex = new NoSuchElementError("dummy")
+
+    expect(ex.name).toBe("NoSuchElementError")
+    expect(ex.message).toBe("dummy")
+  })
+})
+
