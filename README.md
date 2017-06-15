@@ -11,7 +11,7 @@ Funfix is a library of data types for functional and asynchronous
 programming in Javascript.
 
 Inspired by [Scala](http://www.scala-lang.org/), [Cats](http://typelevel.org/cats/)
-and [Funfix](https://Funfix.io/).
+and [Monix](https://monix.io/).
 
 ## Usage
 
