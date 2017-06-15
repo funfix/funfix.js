@@ -18,13 +18,13 @@ if [ "$CI" != true ]; then
   exit 1;
 fi;
 
-cat <<EOT > ./index.js.flow
+cat > ./index.js.flow <<EOF
 /**
  * @flow
  *
- * File auto-generated. Neded because Flow needs an `index.js.flow`
+ * File auto-generated. Needed because Flow needs an "index.js.flow"
  * in the root to work out of the box.
  */
 
 export * from "./dist/funfix";
-EOT
+EOF
