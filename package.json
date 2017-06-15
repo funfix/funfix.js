@@ -15,7 +15,7 @@
   "main": "dist/funfix.umd.js",
   "module": "dist/funfix.es5.js",
   "typings": "dist/types/funfix.d.ts",
-  "files": ["dist", "src"],
+  "files": ["dist", "src", "index.js.flow"],
   "repository": {
     "type": "git",
     "url": "https://github.com/alexandru/funfix.git"
