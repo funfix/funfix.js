@@ -18,7 +18,7 @@ if [ "$CI" != true ]; then
   exit 1;
 fi;
 
-cat <<EOT >> ./index.js.flow
+cat <<EOT > ./index.js.flow
 /**
  * @flow
  *
