@@ -11,7 +11,7 @@ Funfix is a library of data types for functional and asynchronous
 programming in Javascript.
 
 Inspired by [Scala](http://www.scala-lang.org/), [Cats](http://typelevel.org/cats/)
-and [Monix](https://monix.io/).
+and [Funfix](https://Funfix.io/).
 
 ## Usage
 
@@ -49,3 +49,21 @@ Projects for usage in combination with Funfix:
   a library exposing immutable collections, by Facebook
 - [JSVerify](https://jsverify.github.io/):
   property based testing
+
+## Contributing
+
+The Funfix project welcomes contributions from anybody wishing to
+participate.  All code or documentation that is provided must be
+licensed with the same license that Funfix is licensed with (Apache
+2.0).
+
+Feel free to open an issue if you notice a bug, have an idea for a
+feature, or have a question about the code. Pull requests are also
+gladly accepted. For more information, check out the
+[contributor guide](CONTRIBUTING.md).
+
+## License
+
+All code in this repository is licensed under the Apache License,
+Version 2.0.  See [LICENCE](./LICENSE).
+
