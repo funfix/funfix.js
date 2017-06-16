@@ -21,11 +21,12 @@ import commonjs from "rollup-plugin-commonjs"
 
 const pkg = require("./package.json")
 const { camelCase } = require("lodash")
+const typescript = require("rollup-plugin-typescript2")
 
 const libraryName = "funfix"
 
 export default {
-  entry: `dist/${libraryName}.js`,
+  entry: `src/${libraryName}.ts`,
   targets: [
 		{ dest: pkg.main, moduleName: camelCase(libraryName), format: "umd" },
 		{ dest: pkg.module, format: "es" }
@@ -34,6 +35,7 @@ export default {
   // Indicate here external modules you don't wanna include in your bundle (i.e.: 'lodash')
   external: [],
   plugins: [
+    typescript(),
     // Allow bundling cjs modules (unlike webpack, rollup doesn't understand cjs)
     commonjs(),
      // Allow node_modules resolution, so you can use 'external' to control
