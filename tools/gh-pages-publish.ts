@@ -5,12 +5,16 @@ import { readFileSync, existsSync } from "fs"
 import * as url from "url"
 import * as path from "path"
 
+console.info(`CI=${process.env["CI"]}`)
+console.info(`TRAVIS_BRANCH=${process.env["TRAVIS_BRANCH"]}`)
+console.info(`TRAVIS_PULL_REQUEST=${process.env["TRAVIS_PULL_REQUEST"]}`)
+
 if (!process.env["CI"]) {
   console.info("Not running on top of Travis, cannot deploy docs")
   process.exit(1)
 }
 
-if (process.env["TRAVIS_BRANCH"] !== "master" || process.env["TRAVIS_PULL_REQUEST"]) {
+if (process.env["TRAVIS_BRANCH"] !== "master" || process.env["TRAVIS_PULL_REQUEST"] !== "false") {
   console.info("Only deploying docs on the master branch and not for pull requests, exiting!")
   process.exit(0)
 }
