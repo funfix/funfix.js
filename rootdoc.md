@@ -1,5 +1,7 @@
 # Funfix
 
+<img src="https://funfix.org/public/logo/funfix-512.png" width="100" align="right" style="float:right; display: block; width:100px;" />
+
 Library of data types for functional and asynchronous programming in Javascript.
 
 Inspired by [Scala](http://www.scala-lang.org/), [Cats](http://typelevel.org/cats/)
