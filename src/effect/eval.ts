@@ -49,6 +49,27 @@ import { IllegalStateError } from "../core/errors"
  * another `Eval` instance -- this can defeat the trampolining and
  * lead to stack overflows.
  *
+ * ```typescript
+ * const rndInt = Eval.of(() => {
+ *   const nr = Math.random() * 1000000
+ *   return nr & nr
+ * })
+ *
+ * const evenInt = () =>
+ *   rndInt.flatMap(int => {
+ *     if (i % 2 == 0)
+ *       return Eval.now(i)
+ *     else // Retry until we have an even number!
+ *       return evenInt()
+ *   })
+ *
+ * const cached = evenInt().memoize()
+ *
+ * // Nothing happens until now, this triggers the
+ * // actual evaluation:
+ * const n: number = cached.get()
+ * ```
+ *
  * This type is inspired by `cats.Eval` from
  * {@link http://typelevel.org/cats/|Typelevel Cats}
  * and by `monix.eval.Coeval` from {@link https://monix.io|Monix}.
