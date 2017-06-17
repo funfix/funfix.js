@@ -25,6 +25,7 @@ declare export class Eval<+A> {
   run(): Try<A>;
   getOrElse<AA : $Supertype<A>>(fallback: AA): AA;
   getOrElseL<AA : $Supertype<A>>(thunk: () => AA): AA;
+
   map<B>(f: (a: A) => B): Eval<B>;
   flatMap<B>(f: (a: A) => Eval<B>): Eval<B>;
   chain<B>(f: (a: A) => Eval<B>): Eval<B>;

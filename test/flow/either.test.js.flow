@@ -23,8 +23,10 @@ import { Either, Left, Right } from "../../src/funfix"
 const optLeft: Either<number, string> = Left(1)
 const optRight: Either<number, string> = Right("unu")
 
+class Human { isHuman: boolean }
 class Animal { isAnimal: boolean }
 class Dog extends Animal { isDog: boolean }
+class Cat extends Animal { isCat: boolean }
 
 // Either is covariant on Left!
 const animal1: Either<Animal, string> = Left(new Dog())
@@ -35,3 +37,18 @@ const dog1: Either<Dog, string> = Left(new Animal())
 const animal2: Either<string, Animal> = Right(new Dog())
 // $ExpectError
 const dog2: Either<string, Dog> = Right(new Animal())
+
+// Covariant behavior for getOrElse and orElse
+const r21: Animal = dog2.getOrElse(new Animal())
+const r22: Animal = dog2.getOrElseL(() => new Animal())
+const r23: Animal = dog2.getOrElse(new Cat())
+const r24: Animal = dog2.getOrElseL(() => new Cat())
+const r25: Object = dog2.getOrElse(new Human())
+
+const lDog: Either<Dog, string> = Left(new Dog())
+const r26: Either<Animal, string> =
+  lDog.filterOrElse(_ => _ === "not", () => new Animal())
+
+// $ExpectError
+const r27: Either<Dog, string> =
+  lDog.filterOrElse(_ => _ === "not", () => new Animal())

@@ -22,13 +22,15 @@ import { Option } from "./option"
 import { Either } from "./either"
 
 declare export class Try<+A> {
+  get(): A;
+  getOrElse<AA : $Supertype<A>>(fallback: AA): AA;
+  getOrElseL<AA : $Supertype<A>>(thunk: () => AA): AA;
+  orElse<AA : $Supertype<A>>(fallback: Try<AA>): Try<AA>;
+  orElseL<AA : $Supertype<A>>(thunk: () => Try<AA>): Try<AA>;
+  orNull(): A | null;
+
   isSuccess(): boolean;
   isFailure(): boolean;
-  get(): A;
-  getOrElse(or: A): A;
-  getOrElseL(thunk: () => A): A;
-  orNull(): A | null;
-  orElse(other: Try<A>): Try<A>;
   failed(): Try<any>;
   fold<R>(failure: any => R, success: A => R): R;
   filter(p: A => boolean): Try<A>;
