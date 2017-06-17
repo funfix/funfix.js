@@ -27,6 +27,9 @@ Features:
   for working with values of two possible types
 - [Try](https://funfix.org/api/classes/_core_try_.try.html),
   for capturing exceptional results and manipulating them as values
+- [Eval](https://funfix.org/api/classes/_effect_eval_.eval.html)
+  for suspending synchronous side effects and controlling evaluation
+  (e.g. memoization, error handling)
 - [IEquals](https://funfix.org/api/interfaces/_core_std_.iequals.html) interface
   for structural equality in [is](https://funfix.org/api/modules/_core_std_.html#is)
 - [Cancelable](https://funfix.org/api/classes/_exec_cancelable_.cancelable.html) /
