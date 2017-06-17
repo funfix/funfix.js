@@ -5,6 +5,16 @@ import { readFileSync, existsSync } from "fs"
 import * as url from "url"
 import * as path from "path"
 
+if (!process.env["CI"]) {
+  console.info("Not running on top of Travis, cannot deploy docs")
+  process.exit(1)
+}
+
+if (process.env["TRAVIS_BRANCH"] !== "master") {
+  console.info("Only deploying docs on the master branch, exiting!")
+  process.exit(0)
+}
+
 let repoUrl
 let pkg = JSON.parse(readFileSync("package.json") as any)
 if (typeof pkg.repository === "object") {
