@@ -60,7 +60,6 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   private _leftRef: L
 
   private constructor(_leftRef: L, _rightRef: R, _isRight: boolean) {
-    std.checkSealedClass(this, Either)
     this._isRight = _isRight
     if (_isRight) this._rightRef = _rightRef
     else this._leftRef = _leftRef

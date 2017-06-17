@@ -16,11 +16,9 @@
  * limitations under the License.
  */
 
-import { hashCode, is } from "../../src/funfix"
+import { hashCode, is, Left, Right, Either, Option } from "../../src/funfix"
 import * as jv from "jsverify"
-import * as inst from "./instances"
-import { Either, Option } from "../../src/funfix"
-import {Left, Right} from "../../src/core/either";
+import * as inst from "../instances"
 
 describe("Either discrimination", () => {
   jv.property("isRight == !isLeft",

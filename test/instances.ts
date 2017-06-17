@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-import { Option, Some, Either, Try, DummyError, Failure, Success } from "../../src/funfix"
+import { Option, Some, Either, Try, DummyError, Failure, Success, Eval } from "../src/funfix"
 import * as jv from "jsverify"
-import {Left, Right} from "../../src/core/either"
+import {Left, Right} from "../src/core/either"
 
 export const arbAnyPrimitive: jv.Arbitrary<any> =
   jv.sum([jv.number, jv.string, jv.falsy])
@@ -51,3 +51,24 @@ export const arbTry: jv.Arbitrary<Try<number>> =
 export const arbAny: jv.Arbitrary<any> =
   jv.sum([jv.number, jv.string, jv.falsy, arbOpt, arbEither])
     .smap(v => v.valueOf(), v => v)
+
+export const arbEval: jv.Arbitrary<Eval<number>> =
+  jv.pair(jv.number, jv.number).smap(
+    v => {
+      switch (v[0] % 6) {
+        case 0:
+          return Eval.now(v[1])
+        case 1:
+          return Eval.raise(v[1])
+        case 2:
+          return Eval.always(() => v[1])
+        case 3:
+          return Eval.once(() => v[1])
+        case 4:
+          return Eval.suspend(() => Eval.now(v[1]))
+        default:
+          return Eval.now(0).flatMap(_ => Eval.now(v[1]))
+      }
+    },
+    u => [u.get(), u.get()]
+  )

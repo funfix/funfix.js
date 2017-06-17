@@ -26,8 +26,8 @@ import {
   equals,
   hashCode,
   isValueObject,
-  hashCodeOfString,
-  checkSealedClass } from "../../src/core"
+  hashCodeOfString
+} from "../../src/core"
 
 // IEquals test (1)
 const opt: ff.Option<number> = ff.Option.of(1)
@@ -58,4 +58,4 @@ hashCodeOfString("test")
 // $ExpectError
 hashCodeOfString(10)
 
-checkSealedClass(opt, ff.Option)
+isValueObject(1)

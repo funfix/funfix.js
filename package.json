@@ -15,7 +15,11 @@
   "main": "dist/funfix.umd.js",
   "module": "dist/funfix.es5.js",
   "typings": "dist/types/funfix.d.ts",
-  "files": ["dist", "src", "index.js.flow"],
+  "files": [
+    "dist",
+    "src",
+    "index.js.flow"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/alexandru/funfix.git"
@@ -29,7 +33,7 @@
     "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "prebuild": "rimraf dist",
     "copy-flow": "ts-node tools/copy-flow.ts",
-    "build": "tsc && rollup -c && typedoc --out dist/docs --target es6 --readme rootdoc.md src && yarn run copy-flow",
+    "build": "tsc && rollup -c && typedoc --excludePrivate --out dist/docs --target es6 --readme rootdoc.md src && yarn run copy-flow",
     "start": "tsc-watch --onSuccess 'rollup -c'",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -102,6 +106,7 @@
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-typescript2": "^0.4.3",
     "semantic-release": "^6.3.6",
     "ts-jest": "^20.0.4",
     "ts-node": "^3.0.4",

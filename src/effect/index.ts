@@ -14,17 +14,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * @flow
  */
 
-export interface IEquals<A> {
-  equals(other: A): boolean;
-  hashCode(): number;
-}
-
-declare export function isValueObject(ref: any): boolean;
-declare export function is<A>(lh: A, rh: A): boolean;
-declare export function equals<A>(lh: A, rh: A): boolean;
-declare export function hashCode(ref: any): number;
-declare export function hashCodeOfString(str: string): number;
+export * from "./eval"
