@@ -1,6 +1,6 @@
 # Funfix
 
-<img src="https://funfix.org/public/logo/funfix-512.png" width="280" align="right" style="float:right; display: block; width:280px;" />
+<img src="https://funfix.org/public/logo/funfix-512.png" width="120" align="right" style="float:right; display: block; width:120px;" />
 
 Library of data types for functional and asynchronous programming in Javascript.
 
