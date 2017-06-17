@@ -10,8 +10,8 @@ if (!process.env["CI"]) {
   process.exit(1)
 }
 
-if (process.env["TRAVIS_BRANCH"] !== "master") {
-  console.info("Only deploying docs on the master branch, exiting!")
+if (process.env["TRAVIS_BRANCH"] !== "master" || process.env["TRAVIS_PULL_REQUEST"]) {
+  console.info("Only deploying docs on the master branch and not for pull requests, exiting!")
   process.exit(0)
 }
 
