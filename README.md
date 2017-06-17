@@ -2,8 +2,8 @@
 
 <img src="https://funfix.org/public/logo/funfix-512.png" width="280" align="right" style="float:right; display: block; width:280px;" />
 
-[![Travis](https://img.shields.io/travis/alexandru/funfix.svg)](https://travis-ci.org/alexandru/funfix)
-[![Coverage Status](https://coveralls.io/repos/github/alexandru/funfix/badge.svg?branch=master)](https://coveralls.io/github/alexandru/funfix?branch=master)
+[![Travis](https://img.shields.io/travis/funfix/funfix.svg)](https://travis-ci.org/funfix/funfix)
+[![Coverage Status](https://codecov.io/gh/funfix/funfix/coverage.svg?branch=master)](https://codecov.io/gh/funfix/funfix?branch=master)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 [![npm](https://img.shields.io/npm/v/funfix.svg)](https://www.npmjs.com/package/funfix)
 

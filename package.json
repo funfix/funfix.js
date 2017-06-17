@@ -22,7 +22,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/alexandru/funfix.git"
+    "url": "https://github.com/funfix/funfix.git"
   },
   "author": "Alexandru Nedelcu <noreply@alexn.org>",
   "license": "Apache-2.0",
@@ -39,7 +39,7 @@
     "test:watch": "jest --watch",
     "test:prod": "yarn run lint && yarn run test -- --coverage --no-cache",
     "deploy-docs": "ts-node tools/gh-pages-publish.ts",
-    "report-coverage": "cat ./coverage/lcov.info | coveralls",
+    "report-coverage": "codecov",
     "commit": "git-cz",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post",
     "prepush": "npm run test:prod && npm run build",
@@ -73,10 +73,10 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 60,
-        "functions": 80,
-        "lines": 80,
-        "statements": 80
+        "branches": 90,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
       }
     }
   },
@@ -88,9 +88,9 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.5.1",
     "babel-preset-es2015-rollup": "^3.0.0",
+    "codecov": "^2.2.0",
     "colors": "^1.1.2",
     "commitizen": "^2.9.6",
-    "coveralls": "^2.13.1",
     "cross-env": "^5.0.0",
     "cz-conventional-changelog": "^2.0.0",
     "flow": "^0.2.3",
