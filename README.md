@@ -35,7 +35,7 @@ Features:
 - [Cancelable](https://funfix.org/api/classes/_exec_cancelable_.cancelable.html) /
   [BoolCancelable](https://funfix.org/api/classes/_exec_cancelable_.boolcancelable.html),
   for describing composable cancellation actions
-- more is coming (e.g. `Eval`, `Task`)
+- more is coming (e.g. `Task`, etc)
 
 See **[API Docs](https://funfix.org/api)**.
 

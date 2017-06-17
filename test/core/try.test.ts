@@ -292,6 +292,18 @@ describe("Try #orElse", () => {
   )
 })
 
+describe("Try #orElseL", () => {
+  jv.property("fa.orElseL(() => fb) == fa for success",
+    inst.arbSuccess, inst.arbTry,
+    (fa, fb) => is(fa.orElseL(() => fb), fa)
+  )
+
+  jv.property("fa.orElseL(() => fb) == fb for failure",
+    inst.arbFailure, inst.arbTry,
+    (fa, fb) => is(fa.orElseL(() => fb), fb)
+  )
+})
+
 describe("Try #recover", () => {
   jv.property("fa.recover(f) == fa for success",
     inst.arbSuccess, jv.number,

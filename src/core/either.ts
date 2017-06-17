@@ -246,16 +246,16 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   }
 
   /**
-   * Returns the value from this `right` or a fallback
-   * `or` value if this is a `left`.
+   * Returns the value from this `right` or the given `fallback`
+   * value if this is a `left`.
    *
    * ```typescript
    * Right(10).getOrElse(27) // 10
    * Left(10).getOrElse(27)  // 27
    * ```
    */
-  getOrElse(or: R): R {
-    return this._isRight ? this._rightRef : or
+  getOrElse(fallback: R): R {
+    return this._isRight ? this._rightRef : fallback
   }
 
   /**

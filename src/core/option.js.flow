@@ -19,6 +19,13 @@
  */
 
 declare export class Option<+A> {
+  get(): A;
+  getOrElse<AA : $Supertype<A>>(fallback: AA): AA;
+  getOrElseL<AA : $Supertype<A>>(thunk: () => AA): AA;
+  orElse<AA : $Supertype<A>>(fallback: Option<AA>): Option<AA>;
+  orElseL<AA : $Supertype<A>>(thunk: () => Option<AA>): Option<AA>;
+  orNull(): A | null;
+
   chain<B>(f: A => Option<B>): Option<B>;
   contains(elem: A): boolean;
   equals(that: Option<A>): boolean;
@@ -28,17 +35,11 @@ declare export class Option<+A> {
   fold<B>(fallback: () => B, f: A => B): B;
   forAll(p: A => boolean): boolean;
   forEach(cb: A => void): void;
-  get(): A;
-  getOrElse(fallback: A): A;
-  getOrElseL(thunk: () => A): A;
   hashCode(): number;
   isEmpty(): boolean;
   map<B>(f: A => B): Option<B>;
   mapN<B>(f: A => B): Option<B>;
   nonEmpty(): boolean;
-  orElse(alternative: Option<A>): Option<A>;
-  orElseL(thunk: () => Option<A>): Option<A>;
-  orNull(): A | null;
 
   static empty<A>(): Option<A>;
   static none(): Option<empty>;

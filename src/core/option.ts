@@ -94,11 +94,11 @@ export class Option<A> implements std.IEquals<Option<A>> {
 
   /**
    * Returns this option if it is nonempty, otherwise returns the
-   * given `alternative`.
+   * given `fallback`.
    */
-  orElse(alternative: Option<A>): Option<A> {
+  orElse(fallback: Option<A>): Option<A> {
     if (!this._isEmpty) return this
-    else return alternative
+    else return fallback
   }
 
   /**

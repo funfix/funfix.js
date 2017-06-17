@@ -23,50 +23,72 @@ import { Option, Some, None } from "../../src/funfix"
 const opt: Option<number> = Option.of(1)
 
 // Option is covariant!
+class Human { isHuman: boolean }
 class Animal { isAnimal: boolean }
 class Dog extends Animal { isDog: boolean }
+class Cat extends Animal { isCat: boolean }
+
 const animalOpt: Option<Animal> = Option.of(new Dog())
 // $ExpectError
-const dogOpt: Option<Dog> = Option.of(new Animal())
+const errDog: Option<Dog> = Option.of(new Animal())
 
 const r1: Option<string> =
   Option.of(1).chain(a => Option.of(String(a)))
+
 const r2: boolean =
   Option.of(1).contains(2)
+
 const r3: boolean =
   Option.of(1).equals(Option.of(2))
+
 const r4: boolean =
   Option.of(1).exists(_ => _ === 1)
+
 const r5: Option<number> =
   Option.of(1).filter(_ => _ % 2 === 0)
+
 const r6: Option<string> =
   Option.of(1).flatMap(a => Option.of(String(a)))
+
 const r7: string =
   Option.of(1).fold(() => "error", _ => String(_))
+
 const r8: boolean =
   Option.of(1).forAll(_ => _ % 2 === 0)
+
 const r9: void =
   Option.of(1).forEach(_ => console.log(1))
+
 const r10: number =
   Option.of(1).get()
+
 const r11: number =
   Option.of(1).getOrElse(0)
+
 const r12: number =
   Option.of(1).getOrElseL(() => 0)
+
 const r13: number =
   Option.of(1).hashCode()
+
 const r14: boolean =
   Option.of(1).isEmpty()
+
 const r15: Option<string> =
   Option.of(1).map((n: number) => String(n))
+
 const r16: Option<string> =
   Option.of(1).mapN((n: number) => String(n))
+
 const r17: boolean =
   Option.of(1).nonEmpty()
+
 const r18: Option<number> =
   Option.of(1).orElse(Option.of(2))
+
 const r19: Option<number> =
   Option.of(1).orElseL(() => Option.of(2))
+
 const r20: number | null =
   Option.of(1).orNull()
 
@@ -78,3 +100,17 @@ const optStr4: Option<string> = Option.empty()
 const optStr5: Option<string> = Option.pure("")
 const optStr6: Option<string> = Option.some("")
 const optStr7: Option<string> = Some("")
+
+// Covariant behavior for getOrElse and orElse
+const dogOpt: Option<Dog> = Option.of(new Dog())
+
+const r21: Animal = dogOpt.getOrElse(new Animal())
+const r22: Animal = dogOpt.getOrElseL(() => new Animal())
+const r23: Animal = dogOpt.getOrElse(new Cat())
+const r24: Animal = dogOpt.getOrElseL(() => new Cat())
+const r25: Object = dogOpt.getOrElse(new Human())
+
+const r26: Option<Animal> = dogOpt.orElse(Option.of(new Cat()))
+const r27: Option<Animal> = dogOpt.orElseL(() => Option.of(new Cat()))
+const r28: Option<Object> = dogOpt.orElse(Option.of(new Human()))
+const r29: Option<Object> = dogOpt.orElseL(() => Option.of(new Human()))

@@ -21,19 +21,20 @@
 import { Option } from "./option"
 
 declare export class Either<+L, +R> {
+  get(): R;
+  getOrElse<RR : $Supertype<R>>(fallback: RR): RR;
+  getOrElseL<RR : $Supertype<R>>(thunk: () => RR): RR;
+
   isLeft(): boolean;
   left(): Either<L, empty>;
   isRight(): boolean;
   right(): Either<empty, R>;
   contains(elem: R): boolean;
   exists(p: (r: R) => boolean): boolean;
-  filterOrElse(p: (r: R) => boolean, zero: () => L): Either<L, R>;
+  filterOrElse<LL : $Supertype<L>>(p: (r: R) => boolean, zero: () => LL): Either<LL, R>;
   flatMap<S>(f: (r: R) => Either<L, S>): Either<L, S>;
   fold<S>(left: (l: L) => S, right: (r: R) => S): S;
   forAll(p: (r: R) => boolean): boolean;
-  get(): R;
-  getOrElse(or: R): R;
-  getOrElseL(thunk: () => R): R;
   map<C>(f: (r: R) => C): Either<L, C>;
   forEach(cb: (r: R) => void): void;
   swap(): Either<R, L>;
