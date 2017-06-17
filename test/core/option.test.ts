@@ -19,10 +19,9 @@
 import { Option, Some, None } from "../../src/funfix"
 import { NoSuchElementError } from "../../src/funfix"
 import { is, hashCode } from "../../src/funfix"
-import { IllegalInheritanceError } from "../../src/funfix"
 
 import * as jv from "jsverify"
-import * as inst from "./instances"
+import * as inst from "../instances"
 
 describe("Option's constructor", () => {
   it("Option.of <-> new Option(isEmpty=null)", () => {
@@ -30,18 +29,6 @@ describe("Option's constructor", () => {
     is(new F("value"), Option.some("value"))
     is(new F(null), Option.none())
     is(new F(undefined), Option.none())
-  })
-
-  it("should not allow inheritance of Option", () => {
-    class Test extends Option<number> {
-      constructor() { super(null, false) }
-    }
-
-    let error: Error | null = null
-    try { new Test() } catch (e) { error = e }
-
-    expect(error).toBeTruthy()
-    expect(error).toBeInstanceOf(IllegalInheritanceError)
   })
 })
 

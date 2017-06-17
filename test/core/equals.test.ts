@@ -16,10 +16,16 @@
  * limitations under the License.
  */
 
-import { hashCode, is } from "../../src/funfix"
+import { IEquals, hashCode, is, equals, id } from "../../src/funfix"
 import * as jv from "jsverify"
-import * as inst from "./instances"
-import {equals} from "../../src/core/std";
+import * as inst from "../instances"
+
+describe("utils", () => {
+  jv.property("id always return the same thing",
+    inst.arbAny,
+    a => is(id(a), a)
+  )
+})
 
 describe("hashCode", () => {
   jv.property("hashCode(v) == hashCode(v)",
@@ -85,7 +91,7 @@ describe("is / equals", () => {
 
   it("should work for Box(value) with valueOf", () => {
     class Box<A> {
-      constructor(value: A) { this.value = value }
+      constructor(public value: A) {}
       valueOf() { return this.value }
     }
 
@@ -102,7 +108,7 @@ describe("is / equals", () => {
 
   it("should work for Box(value) implements IEquals", () => {
     class Box<A> implements IEquals<Box<A>> {
-      constructor(value: A) { this.value = value }
+      constructor(public value: A) {}
       equals(other: Box<A>) { return is(this.value, other.value) }
       hashCode() { return hashCode(this.value) }
     }

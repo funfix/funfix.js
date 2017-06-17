@@ -75,7 +75,6 @@ export class Try<A> implements std.IEquals<Try<A>> {
   private _failureRef: any
 
   private constructor(_success: A, _failure: any, _isSuccess: boolean) {
-    std.checkSealedClass(this, Try)
     this._isSuccess = _isSuccess
     if (_isSuccess) this._successRef = _success
     else this._failureRef = _failure

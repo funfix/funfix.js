@@ -41,7 +41,6 @@ export class Option<A> implements std.IEquals<Option<A>> {
   private _ref: A
 
   private constructor(ref: A, isEmpty?: boolean) {
-    std.checkSealedClass(this, Option)
     /* tslint:disable-next-line:strict-type-predicates */
     this._isEmpty = isEmpty != null ? isEmpty : (ref === null || ref === undefined)
     this._ref = ref
@@ -66,7 +65,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * Returns the option's value if the option is nonempty, otherwise
    * return the given `fallback`.
    *
-   * See [[Option.getOrElseL]] for a strict alternative.
+   * See [[Option.getOrElseL]] for a lazy alternative.
    */
   getOrElse(fallback: A): A {
     if (!this._isEmpty) return this._ref
@@ -86,7 +85,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * Returns the option's value if the option is nonempty, otherwise
    * return the result of evaluating `thunk`.
    *
-   * See [[Option.getOrElse]] for an eager alternative.
+   * See [[Option.getOrElse]] for a strict alternative.
    */
   getOrElseL(thunk: () => A): A {
     if (!this._isEmpty) return this._ref

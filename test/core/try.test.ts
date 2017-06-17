@@ -20,10 +20,10 @@
 
 import { Try, Success, Failure, DummyError, NoSuchElementError } from "../../src/funfix"
 import { None, Some, Left, Right } from "../../src/funfix"
-import { IllegalInheritanceError, IllegalStateError } from "../../src/funfix"
+import { IllegalStateError } from "../../src/funfix"
 import { is, hashCode } from "../../src/funfix"
 import * as jv from "jsverify"
-import * as inst from "./instances"
+import * as inst from "../instances"
 
 describe("Try.of", () => {
   jv.property("should work for successful functions",

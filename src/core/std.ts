@@ -18,8 +18,6 @@
 
 "use strict"
 
-import { IllegalInheritanceError } from "./errors"
-
 /**
  * Interface for testing the equality of value objects.
  */
@@ -167,14 +165,7 @@ export function hashCodeOfString(str: string): number {
   return hash
 }
 
-/**
- * Utility for checking if a given class hierarchy is sealed
- * (i.e. it defines a sum type), by checking whether the `self`
- * reference is directly constructed by any of the given `types`.
- */
-export function checkSealedClass(self: any, ...types: any[]): void {
-  for (const t of types) {
-    if (self.constructor === t) return
-  }
-  throw new IllegalInheritanceError(self.constructor.name)
+/** The identity function. */
+export function id<A>(a: A): A {
+  return a
 }

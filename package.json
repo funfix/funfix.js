@@ -33,7 +33,7 @@
     "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "prebuild": "rimraf dist",
     "copy-flow": "ts-node tools/copy-flow.ts",
-    "build": "tsc && rollup -c && typedoc --out dist/docs --target es6 --readme rootdoc.md src && yarn run copy-flow",
+    "build": "tsc && rollup -c && typedoc --excludePrivate --out dist/docs --target es6 --readme rootdoc.md src && yarn run copy-flow",
     "start": "tsc-watch --onSuccess 'rollup -c'",
     "test": "jest",
     "test:watch": "jest --watch",

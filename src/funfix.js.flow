@@ -18,5 +18,6 @@
  * @flow
  */
 
-export * from "./core";
-export * from "./exec";
+declare export * from "./core";
+declare export * from "./exec";
+declare export * from "./effect";
