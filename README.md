@@ -1,5 +1,7 @@
 # Funfix
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/funfix/funfix.svg)](https://greenkeeper.io/)
+
 <img src="https://funfix.org/public/logo/funfix-512.png" width="280" align="right" style="float:right; display: block; width:280px;" />
 
 [![Travis](https://img.shields.io/travis/funfix/funfix.svg)](https://travis-ci.org/funfix/funfix)
