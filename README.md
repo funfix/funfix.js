@@ -49,7 +49,7 @@ It also makes the best use of the capabilities of each. For example Typescript h
 
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-Funfix versioning follows [sematic versioning](http://semver.org/), meaning that versions have the `$major.$minor.$patch` format. It's also configured with a fully automated release process, triggered by any commits on master.
+Funfix versioning follows the [sematic versioning (semver)](http://semver.org/) specification, meaning that versions have the `$major.$minor.$patch` format, where any `$major` increment means that a breaking change happened. It's also configured with a fully automated release process, triggered by any commits on master.
 
 ## Recommended Companions
 
