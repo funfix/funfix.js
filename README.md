@@ -1,13 +1,11 @@
 # Funfix
 
-[![Join the chat at https://gitter.im/funfix/funfix](https://badges.gitter.im/funfix/funfix.svg)](https://gitter.im/funfix/funfix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 <img src="https://funfix.org/public/logo/funfix-512.png" width="280" align="right" style="float:right; display: block; width:280px;" />
 
 [![Travis](https://img.shields.io/travis/funfix/funfix.svg)](https://travis-ci.org/funfix/funfix)
 [![Coverage Status](https://codecov.io/gh/funfix/funfix/coverage.svg?branch=master)](https://codecov.io/gh/funfix/funfix?branch=master)
-[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 [![npm](https://img.shields.io/npm/v/funfix.svg)](https://www.npmjs.com/package/funfix)
+[![Join chat](https://badges.gitter.im/funfix/funfix.svg)](https://gitter.im/funfix/funfix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Funfix is a library of data types for functional and asynchronous
 programming in Javascript.
@@ -21,7 +19,7 @@ and [Monix](https://monix.io/).
 npm install --save funfix
 ```
 
-Features:
+### Features
 
 - [Option](https://funfix.org/api/classes/_core_option_.option.html),
   which is like the "Maybe" monadic type from Haskell
@@ -43,8 +41,15 @@ See **[API Docs](https://funfix.org/api)**.
 
 ### Typescript or Flow?
 
-Funfix supports both [Typescript](https://www.typescriptlang.org/)
-and [Flow](https://flow.org/) out of the box.
+Funfix supports both [Typescript](https://www.typescriptlang.org/) and [Flow](https://flow.org/) type annotations out of the box.
+
+It also makes the best use of the capabilities of each. For example Typescript has bivariant generics, but Flow supports variance annotations and Funfix makes use of them. Development happens in Typescript, due to better tooling, but both are first class citizens.
+
+### Semantic versioning
+
+[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
+
+Funfix versioning follows [sematic versioning](http://semver.org/), meaning that versions have the `$major.$minor.$patch` format. It's also configured with a fully automated release process, triggered by any commits on master.
 
 ## Recommended Companions
 
