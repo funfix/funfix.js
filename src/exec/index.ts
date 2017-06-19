@@ -1,5 +1,4 @@
 /*
- * @license
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
