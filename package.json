@@ -87,7 +87,7 @@
   },
   "devDependencies": {
     "@types/jest": "^20.0.0",
-    "@types/node": "^7.0.22",
+    "@types/node": "^8.0.0",
     "babel-core": "^6.24.1",
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-transform-runtime": "^6.23.0",
