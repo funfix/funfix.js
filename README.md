@@ -1,6 +1,6 @@
 # Funfix
 
-<img src="https://funfix.org/public/logo/funfix-512.png" width="280" align="right" style="float:right; display: block; width:280px;" />
+<img src="https://funfix.org/public/logo/funfix-512.png" width="200" align="right" style="float:right; display: block; width:200px;" />
 
 [![Travis](https://img.shields.io/travis/funfix/funfix.svg)](https://travis-ci.org/funfix/funfix)
 [![Coverage Status](https://codecov.io/gh/funfix/funfix/coverage.svg?branch=master)](https://codecov.io/gh/funfix/funfix?branch=master)
