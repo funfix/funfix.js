@@ -3865,7 +3865,7 @@ tslint-config-standard@^6.0.1:
   dependencies:
     tslint-eslint-rules "^4.0.0"
 
-tslint-eslint-rules@^4.0.0:
+tslint-eslint-rules@^4.0.0, tslint-eslint-rules@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/tslint-eslint-rules/-/tslint-eslint-rules-4.1.1.tgz#7c30e7882f26bc276bff91d2384975c69daf88ba"
   dependencies:

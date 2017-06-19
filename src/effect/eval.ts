@@ -1,5 +1,4 @@
-/**
- * @license
+/*
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -15,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-"use strict"
 
 import { Try } from "../core/try"
 import { IllegalStateError } from "../core/errors"
@@ -199,7 +196,7 @@ export class Eval<A> {
    * it can also transform errors and not just successful results.
    *
    * @param success is a function for transforming a successful result
-   * @param error is function for transforming failures
+   * @param failure is function for transforming failures
    */
   transform<R>(failure: (e: any) => R, success: (a: A) => R): Eval<R> {
     return this.transformWith(
@@ -218,7 +215,7 @@ export class Eval<A> {
    * results.
    *
    * @param success is a function for transforming a successful result
-   * @param error is function for transforming failures
+   * @param failure is function for transforming failures
    */
   transformWith<R>(failure: (e: any) => Eval<R>, success: (a: A) => Eval<R>): Eval<R> {
     const f: any = (a: A) => success(a)
