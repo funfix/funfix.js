@@ -42,6 +42,9 @@ export default {
      // which external modules to include in the bundle
     resolve(),
     // Don't transpile node_modules. You may change this if you wanna transpile something in there
-    babel({ exclude: "node_modules/**" })
+    babel({
+      exclude: "node_modules/**",
+      shouldPrintComment: _ => false
+    })
   ]
 }
