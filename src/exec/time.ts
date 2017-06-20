@@ -60,8 +60,9 @@ export abstract class TimeUnit {
 /** @hidden */ const MAX = 9007199254740992
 
 /** @hidden */
-const trunc: (x: number) => number =
-  Math.trunc || function(x) {
+const trunc: (x: number) => number = Math.trunc ||
+  /* istanbul ignore next */
+  function (x) {
     if (isNaN(x)) return NaN
     if (x > 0) return Math.floor(x)
     return Math.ceil(x)
@@ -103,7 +104,7 @@ export const NANOSECONDS: TimeUnit =
   })()
 
 export const MICROSECONDS: TimeUnit =
-  new (class Nanoseconds extends TimeUnit {
+  new (class Microseconds extends TimeUnit {
     convert(duration: number, unit: TimeUnit): number {
       return unit.toMicros(duration)
     }
@@ -127,5 +128,61 @@ export const MICROSECONDS: TimeUnit =
     }
     toDays(d: number): number {
       return trunc(d / (C6 / C1))
+    }
+  })()
+
+export const MILLISECONDS: TimeUnit =
+  new (class Milliseconds extends TimeUnit {
+    convert(duration: number, unit: TimeUnit): number {
+      return unit.toMillis(duration)
+    }
+    toNanos(d: number): number {
+      return x(d, C2 / C0, trunc(MAX / (C2 / C0)))
+    }
+    toMicros(d: number): number {
+      return x(d, C2 / C1, trunc(MAX / (C2 / C1)))
+    }
+    toMillis(d: number): number {
+      return d
+    }
+    toSeconds(d: number): number {
+      return trunc(d / (C3 / C2))
+    }
+    toMinutes(d: number): number {
+      return trunc(d / (C4 / C2))
+    }
+    toHours(d: number): number {
+      return trunc(d / (C5 / C2))
+    }
+    toDays(d: number): number {
+      return trunc(d / (C6 / C2))
+    }
+  })()
+
+export const SECONDS: TimeUnit =
+  new (class Milliseconds extends TimeUnit {
+    convert(duration: number, unit: TimeUnit): number {
+      return unit.toSeconds(duration)
+    }
+    toNanos(d: number): number {
+      return x(d, C3 / C0, trunc(MAX / (C3 / C0)))
+    }
+    toMicros(d: number): number {
+      return x(d, C3 / C1, trunc(MAX / (C3 / C1)))
+    }
+    toMillis(d: number): number {
+      return x(d, C3 / C2, trunc(MAX / (C3 / C2)))
+    }
+    toSeconds(d: number): number {
+      return d
+    }
+    toMinutes(d: number): number {
+      return trunc(d / (C4 / C3))
+    }
+    toHours(d: number): number {
+      return trunc(d / (C5 / C3))
+    }
+    toDays(d: number): number {
+      return trunc(d / (C6 / C3))
     }
   })()
