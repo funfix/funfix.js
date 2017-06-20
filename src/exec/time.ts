@@ -160,7 +160,7 @@ export const MILLISECONDS: TimeUnit =
   })()
 
 export const SECONDS: TimeUnit =
-  new (class Milliseconds extends TimeUnit {
+  new (class Seconds extends TimeUnit {
     convert(duration: number, unit: TimeUnit): number {
       return unit.toSeconds(duration)
     }
