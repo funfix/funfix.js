@@ -28,6 +28,8 @@ export abstract class TimeUnit {
    *
    * ```typescript
    * MILLISECONDS.convert(10, MINUTES)
+   * // ... or ...
+   * MINUTES.toMillis(10)
    * ```
    *
    * @param duration the time duration in the given `unit`
