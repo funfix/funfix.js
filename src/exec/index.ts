@@ -16,3 +16,4 @@
  */
 
 export * from "./cancelable"
+export * from "./time"
