@@ -13,7 +13,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * @flow
  */
 
-export * from "./cancelable"
-export * from "./time"
+import {
+  TimeUnit,
+  NANOSECONDS,
+  MICROSECONDS,
+  MILLISECONDS,
+  SECONDS,
+  MINUTES,
+  HOURS,
+  DAYS
+} from "../../src/funfix"
+
+const d1: number = NANOSECONDS.convert(1000, MICROSECONDS)
+const d2: number = MICROSECONDS.toNanos(1000)
+const d3: number = MILLISECONDS.toMicros(1000)
+const d4: number = SECONDS.toMillis(1000)
+const d5: number = MINUTES.toSeconds(1000)
+const d6: number = HOURS.toMinutes(1000)
+const d7: number = DAYS.toHours(1000)

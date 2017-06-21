@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @flow
+ */
+
+declare export class TimeUnit {
+  convert(duration: number, unit: TimeUnit): number;
+  toNanos(d: number): number;
+  toMicros(d: number): number;
+  toMillis(d: number): number;
+  toSeconds(d: number): number;
+  toMinutes(d: number): number;
+  toHours(d: number): number;
+  toDays(d: number): number;
+}
+
+declare export var NANOSECONDS: TimeUnit;
+declare export var MICROSECONDS: TimeUnit;
+declare export var MILLISECONDS: TimeUnit;
+declare export var SECONDS: TimeUnit;
+declare export var MINUTES: TimeUnit;
+declare export var HOURS: TimeUnit;
+declare export var DAYS: TimeUnit;
+
+declare export class Duration {
+  isFinite(): boolean;
+  toNanos(): number;
+  toMicros(): number;
+  toMillis(): number;
+  toSeconds(): number;
+  toMinutes(): number;
+  toHours(): number;
+  toDays(): number;
+  equals(other: Duration): boolean;
+  hashCode(): number;
+
+  static zero(): Duration;
+  static inf(): Duration;
+  static negInf(): Duration;
+  static nanos(d: number): Duration;
+  static micros(d: number): Duration;
+  static millis(d: number): Duration;
+  static seconds(d: number): Duration;
+  static minutes(d: number): Duration;
+  static hours(d: number): Duration;
+  static days(d: number): Duration;
+}
