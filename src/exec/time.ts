@@ -77,6 +77,10 @@ function x(d: number, m: number, over: number): number {
   return d * m
 }
 
+ /**
+  * Time unit for representing nanoseconds, where 1 nanosecond is
+  * one thousandth of a microsecond.
+  */
 export const NANOSECONDS: TimeUnit =
   new (class Nanoseconds extends TimeUnit {
     convert(duration: number, unit: TimeUnit): number {
@@ -105,6 +109,10 @@ export const NANOSECONDS: TimeUnit =
     }
   })()
 
+ /**
+  * Time unit for representing microseconds, where 1 microsecond is
+  * one thousandth of a millisecond.
+  */
 export const MICROSECONDS: TimeUnit =
   new (class Microseconds extends TimeUnit {
     convert(duration: number, unit: TimeUnit): number {
@@ -133,6 +141,10 @@ export const MICROSECONDS: TimeUnit =
     }
   })()
 
+ /**
+  * Time unit for representing milliseconds, where 1 millisecond is
+  * one thousandth of a second.
+  */
 export const MILLISECONDS: TimeUnit =
   new (class Milliseconds extends TimeUnit {
     convert(duration: number, unit: TimeUnit): number {
@@ -161,6 +173,9 @@ export const MILLISECONDS: TimeUnit =
     }
   })()
 
+ /**
+  * Time unit for representing seconds.
+  */
 export const SECONDS: TimeUnit =
   new (class Seconds extends TimeUnit {
     convert(duration: number, unit: TimeUnit): number {
@@ -186,5 +201,98 @@ export const SECONDS: TimeUnit =
     }
     toDays(d: number): number {
       return trunc(d / (C6 / C3))
+    }
+  })()
+
+ /**
+  * Time unit for representing minutes.
+  */
+export const MINUTES: TimeUnit =
+  new (class Minutes extends TimeUnit {
+    convert(duration: number, unit: TimeUnit): number {
+      return unit.toMinutes(duration)
+    }
+    toNanos(d: number): number {
+      return x(d, C4 / C0, trunc(MAX / (C4 / C0)))
+    }
+    toMicros(d: number): number {
+      return x(d, C4 / C1, trunc(MAX / (C4 / C1)))
+    }
+    toMillis(d: number): number {
+      return x(d, C4 / C2, trunc(MAX / (C4 / C2)))
+    }
+    toSeconds(d: number): number {
+      return x(d, C4 / C3, trunc(MAX / (C4 / C3)))
+    }
+    toMinutes(d: number): number {
+      return d
+    }
+    toHours(d: number): number {
+      return trunc(d / (C5 / C4))
+    }
+    toDays(d: number): number {
+      return trunc(d / (C6 / C4))
+    }
+  })()
+
+ /**
+  * Time unit for representing hours.
+  */
+export const HOURS: TimeUnit =
+  new (class Hours extends TimeUnit {
+    convert(duration: number, unit: TimeUnit): number {
+      return unit.toHours(duration)
+    }
+    toNanos(d: number): number {
+      return x(d, C5 / C0, trunc(MAX / (C5 / C0)))
+    }
+    toMicros(d: number): number {
+      return x(d, C5 / C1, trunc(MAX / (C5 / C1)))
+    }
+    toMillis(d: number): number {
+      return x(d, C5 / C2, trunc(MAX / (C5 / C2)))
+    }
+    toSeconds(d: number): number {
+      return x(d, C5 / C3, trunc(MAX / (C5 / C3)))
+    }
+    toMinutes(d: number): number {
+      return x(d, C5 / C4, trunc(MAX / (C5 / C4)))
+    }
+    toHours(d: number): number {
+      return d
+    }
+    toDays(d: number): number {
+      return trunc(d / (C6 / C5))
+    }
+  })()
+
+ /**
+  * Time unit for representing days.
+  */
+export const DAYS: TimeUnit =
+  new (class Days extends TimeUnit {
+    convert(duration: number, unit: TimeUnit): number {
+      return unit.toDays(duration)
+    }
+    toNanos(d: number): number {
+      return x(d, C6 / C0, trunc(MAX / (C6 / C0)))
+    }
+    toMicros(d: number): number {
+      return x(d, C6 / C1, trunc(MAX / (C6 / C1)))
+    }
+    toMillis(d: number): number {
+      return x(d, C6 / C2, trunc(MAX / (C6 / C2)))
+    }
+    toSeconds(d: number): number {
+      return x(d, C6 / C3, trunc(MAX / (C6 / C3)))
+    }
+    toMinutes(d: number): number {
+      return x(d, C6 / C4, trunc(MAX / (C6 / C4)))
+    }
+    toHours(d: number): number {
+      return x(d, C6 / C5, trunc(MAX / (C6 / C5)))
+    }
+    toDays(d: number): number {
+      return d
     }
   })()
