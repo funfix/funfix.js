@@ -23,7 +23,8 @@ import {
   SECONDS,
   MINUTES,
   HOURS,
-  DAYS } from "../../src/funfix"
+  DAYS
+} from "../../src/funfix"
 
 describe("NANOSECONDS", () => {
   jv.property("NANOSECONDS.toNanos(d) === d",
@@ -511,6 +512,16 @@ describe("HOURS", () => {
     n => HOURS.toSeconds(n) === Math.floor(n * 3600)
   )
 
+  test("HOURS.toMinutes(1) === 60", () => {
+    expect(HOURS.toMinutes(1)).toBe(60)
+    expect(MINUTES.toHours(60)).toBe(1)
+  })
+
+  jv.property("HOURS.toMinutes(positiveInt) === Math.floor(positiveInt * 60)",
+    jv.uint32,
+    n => HOURS.toSeconds(n) === Math.floor(n * 3600)
+  )
+
   jv.property("HOURS.toDays(positiveInt) === Math.floor(positiveInt / 24)",
     jv.uint32,
     n => HOURS.toDays(n) === Math.floor(n / 24)
@@ -596,6 +607,26 @@ describe("DAYS", () => {
   jv.property("DAYS.toSeconds(positiveInt) === Math.floor(positiveInt * 3600 * 24)",
     jv.uint32,
     n => DAYS.toSeconds(n) === Math.floor(n * 3600 * 24)
+  )
+
+  test("DAYS.toMinutes(1) === 60 * 24", () => {
+    expect(DAYS.toMinutes(1)).toBe(60 * 24)
+    expect(MINUTES.toDays(60 * 24)).toBe(1)
+  })
+
+  jv.property("DAYS.toMinutes(positiveInt) === Math.floor(positiveInt * 60 * 24)",
+    jv.uint32,
+    n => DAYS.toMinutes(n) === Math.floor(n * 60 * 24)
+  )
+
+  test("DAYS.toHours(1) === 24", () => {
+    expect(DAYS.toHours(1)).toBe(24)
+    expect(HOURS.toDays(24)).toBe(1)
+  })
+
+  jv.property("DAYS.toHours(positiveInt) === Math.floor(positiveInt * 24)",
+    jv.uint32,
+    n => DAYS.toHours(n) === Math.floor(n * 24)
   )
 
   jv.property("DAYS.convert(d, NANOSECONDS) === NANOSECONDS.toDays(d)",
