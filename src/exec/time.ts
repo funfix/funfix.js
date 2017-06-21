@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import { IEquals } from "../core/std"
+
 export abstract class TimeUnit {
   /**
    * Converts the given time duration in the given unit to this unit.
@@ -41,13 +43,101 @@ export abstract class TimeUnit {
    */
   abstract convert(duration: number, unit: TimeUnit): number
 
+  /**
+   * Converts the given `d` value to nanoseconds.
+   *
+   * Equivalent with `NANOSECONDS.convert(duration, this)`.
+   *
+   * @param d is the converted duration
+   * @return the converted duration, or `Number.MAX_SAFE_INTEGER + 1`
+   * (or `2^53`) if it overflows, or `Number.MIN_SAFE_INTEGER - 1` if it
+   * underflows (or `-2^53`).
+   */
   abstract toNanos(d: number): number
+
+  /**
+   * Converts the given `d` value to microseconds.
+   *
+   * Equivalent with `MICROSECONDS.convert(duration, this)`.
+   *
+   * @param d is the converted duration
+   * @return the converted duration, or `Number.MAX_SAFE_INTEGER + 1`
+   * (or `2^53`) if it overflows, or `Number.MIN_SAFE_INTEGER - 1` if it
+   * underflows (or `-2^53`).
+   */
   abstract toMicros(d: number): number
+
+  /**
+   * Converts the given `d` value to milliseconds.
+   *
+   * Equivalent with `MILLISECONDS.convert(duration, this)`.
+   *
+   * @param d is the converted duration
+   * @return the converted duration, or `Number.MAX_SAFE_INTEGER + 1`
+   * (or `2^53`) if it overflows, or `Number.MIN_SAFE_INTEGER - 1` if it
+   * underflows (or `-2^53`).
+   */
   abstract toMillis(d: number): number
+
+  /**
+   * Converts the given `d` value to seconds.
+   *
+   * Equivalent with `SECONDS.convert(duration, this)`.
+   *
+   * @param d is the converted duration
+   * @return the converted duration, or `Number.MAX_SAFE_INTEGER + 1`
+   * (or `2^53`) if it overflows, or `Number.MIN_SAFE_INTEGER - 1` if it
+   * underflows (or `-2^53`).
+   */
   abstract toSeconds(d: number): number
+
+  /**
+   * Converts the given `d` value to minutes.
+   *
+   * Equivalent with `MINUTES.convert(duration, this)`.
+   *
+   * @param d is the converted duration
+   * @return the converted duration, or `Number.MAX_SAFE_INTEGER + 1`
+   * (or `2^53`) if it overflows, or `Number.MIN_SAFE_INTEGER - 1` if it
+   * underflows (or `-2^53`).
+   */
   abstract toMinutes(d: number): number
+
+  /**
+   * Converts the given `d` value to hours.
+   *
+   * Equivalent with `HOURS.convert(duration, this)`.
+   *
+   * @param d is the converted duration
+   * @return the converted duration, or `Number.MAX_SAFE_INTEGER + 1`
+   * (or `2^53`) if it overflows, or `Number.MIN_SAFE_INTEGER - 1` if it
+   * underflows (or `-2^53`).
+   */
   abstract toHours(d: number): number
+
+  /**
+   * Converts the given `d` value to days.
+   *
+   * Equivalent with `DAYS.convert(duration, this)`.
+   *
+   * @param d is the converted duration
+   * @return the converted duration, or `Number.MAX_SAFE_INTEGER + 1`
+   * (or `2^53`) if it overflows, or `Number.MIN_SAFE_INTEGER - 1` if it
+   * underflows (or `-2^53`).
+   */
   abstract toDays(d: number): number
+
+  /**
+   * A number representing the unit's ordering in the `TimeUnit`
+   * enumeration, useful for doing comparisons to find out which unit
+   * is more coarse grained.
+   *
+   * ```typescript
+   * MINUTES.ord < DAYS.ord // true
+   * SECONDS.ord > MICROSECONDS.org // true
+   * ```
+   */
+  abstract ord: number
 }
 
 /** @hidden */ const C0 = 1
@@ -83,6 +173,8 @@ function x(d: number, m: number, over: number): number {
   */
 export const NANOSECONDS: TimeUnit =
   new (class Nanoseconds extends TimeUnit {
+    ord: number = 0
+
     convert(duration: number, unit: TimeUnit): number {
       return unit.toNanos(duration)
     }
@@ -115,6 +207,8 @@ export const NANOSECONDS: TimeUnit =
   */
 export const MICROSECONDS: TimeUnit =
   new (class Microseconds extends TimeUnit {
+    ord: number = 1
+
     convert(duration: number, unit: TimeUnit): number {
       return unit.toMicros(duration)
     }
@@ -147,6 +241,8 @@ export const MICROSECONDS: TimeUnit =
   */
 export const MILLISECONDS: TimeUnit =
   new (class Milliseconds extends TimeUnit {
+    ord: number = 2
+
     convert(duration: number, unit: TimeUnit): number {
       return unit.toMillis(duration)
     }
@@ -178,6 +274,8 @@ export const MILLISECONDS: TimeUnit =
   */
 export const SECONDS: TimeUnit =
   new (class Seconds extends TimeUnit {
+    ord: number = 3
+
     convert(duration: number, unit: TimeUnit): number {
       return unit.toSeconds(duration)
     }
@@ -209,6 +307,8 @@ export const SECONDS: TimeUnit =
   */
 export const MINUTES: TimeUnit =
   new (class Minutes extends TimeUnit {
+    ord: number = 4
+
     convert(duration: number, unit: TimeUnit): number {
       return unit.toMinutes(duration)
     }
@@ -240,6 +340,8 @@ export const MINUTES: TimeUnit =
   */
 export const HOURS: TimeUnit =
   new (class Hours extends TimeUnit {
+    ord: number = 5
+
     convert(duration: number, unit: TimeUnit): number {
       return unit.toHours(duration)
     }
@@ -271,6 +373,8 @@ export const HOURS: TimeUnit =
   */
 export const DAYS: TimeUnit =
   new (class Days extends TimeUnit {
+    ord: number = 6
+
     convert(duration: number, unit: TimeUnit): number {
       return unit.toDays(duration)
     }
@@ -296,3 +400,162 @@ export const DAYS: TimeUnit =
       return d
     }
   })()
+
+/**
+ * A simple representation for time durations, based on [[TimeUnit]].
+ */
+export class Duration implements IEquals<Duration> {
+  constructor(public duration: number, public unit: TimeUnit) {}
+
+  /**
+   * This method returns `true` if this duration is finite,
+   * or `false otherwise.
+   */
+  isFinite(): boolean { return isFinite(this.duration) }
+
+  /**
+   * Calculates the nanoseconds described by the source [[Duration]].
+   */
+  toNanos(): number {
+    return NANOSECONDS.convert(this.duration, this.unit)
+  }
+
+  /**
+   * Calculates the microseconds described by the source [[Duration]].
+   */
+  toMicros(): number {
+    return MICROSECONDS.convert(this.duration, this.unit)
+  }
+
+  /**
+   * Calculates the milliseconds described by the source [[Duration]].
+   */
+  toMillis(): number {
+    return MILLISECONDS.convert(this.duration, this.unit)
+  }
+
+  /**
+   * Calculates the seconds described by the source [[Duration]].
+   */
+  toSeconds(): number {
+    return SECONDS.convert(this.duration, this.unit)
+  }
+
+  /**
+   * Calculates the minutes described by the source [[Duration]].
+   */
+  toMinutes(): number {
+    return MINUTES.convert(this.duration, this.unit)
+  }
+
+  /**
+   * Calculates the hours described by the source [[Duration]].
+   */
+  toHours(): number {
+    return HOURS.convert(this.duration, this.unit)
+  }
+
+  /**
+   * Calculates the days described by the source [[Duration]].
+   */
+  toDays(): number {
+    return DAYS.convert(this.duration, this.unit)
+  }
+
+  /** @inheritdoc */
+  equals(other: Duration): boolean {
+    function cmp(s: Duration, o: Duration) {
+      const n = s.unit.convert(o.duration, o.unit)
+      return n === s.duration
+    }
+
+    if (!isFinite(this.duration)) {
+      return !isFinite(other.duration) &&
+        this.duration === other.duration
+    }
+    return this.unit.ord <= other.unit.ord
+      ? cmp(this, other) : cmp(other, this)
+  }
+
+  /** @inheritdoc */
+  hashCode(): number {
+    if (this.isFinite()) {
+      return this.toNanos()
+    } else if (this.duration === Infinity) {
+      return 7540833725118015
+    } else {
+      return 422082410550358
+    }
+  }
+
+  /** Returns a zero length duration. */
+  static zero(): Duration {
+    return new Duration(0, DAYS)
+  }
+
+  /** Returns a [[Duration]] representing positive infinite. */
+  static inf(): Duration {
+    return new Duration(Infinity, DAYS)
+  }
+
+  /** Returns a [[Duration]] representing negative infinite. */
+  static negInf(): Duration {
+    return new Duration(-Infinity, DAYS)
+  }
+
+  /**
+   * Constructs a `Duration` instance out of a value representing
+   * nanoseconds.
+   */
+  static nanos(d: number): Duration {
+    return new Duration(d, NANOSECONDS)
+  }
+
+  /**
+   * Constructs a `Duration` instance out of a value representing
+   * microseconds.
+   */
+  static micros(d: number): Duration {
+    return new Duration(d, MICROSECONDS)
+  }
+
+  /**
+   * Constructs a `Duration` instance out of a value representing
+   * milliseconds.
+   */
+  static millis(d: number): Duration {
+    return new Duration(d, MILLISECONDS)
+  }
+
+  /**
+   * Constructs a `Duration` instance out of a value representing
+   * seconds.
+   */
+  static seconds(d: number): Duration {
+    return new Duration(d, SECONDS)
+  }
+
+  /**
+   * Constructs a `Duration` instance out of a value representing
+   * minutes.
+   */
+  static minutes(d: number): Duration {
+    return new Duration(d, MINUTES)
+  }
+
+  /**
+   * Constructs a `Duration` instance out of a value representing
+   * hours.
+   */
+  static hours(d: number): Duration {
+    return new Duration(d, HOURS)
+  }
+
+  /**
+   * Constructs a `Duration` instance out of a value representing
+   * days.
+   */
+  static days(d: number): Duration {
+    return new Duration(d, DAYS)
+  }
+}

@@ -17,13 +17,15 @@
 
 import * as jv from "jsverify"
 import {
+  is,
   NANOSECONDS,
   MICROSECONDS,
   MILLISECONDS,
   SECONDS,
   MINUTES,
   HOURS,
-  DAYS
+  DAYS,
+  Duration
 } from "../../src/funfix"
 
 describe("NANOSECONDS", () => {
@@ -658,4 +660,80 @@ describe("DAYS", () => {
     jv.integer,
     d => DAYS.convert(d, HOURS) === HOURS.toDays(d)
   )
+})
+
+describe("Duration (finite)", () => {
+  test("it can convert from nanos()", () => {
+    const ref = Duration.nanos(86400000000000)
+    expect(ref.isFinite()).toBe(true)
+    expect(ref.toNanos()).toBe(86400000000000)
+    expect(ref.toMicros()).toBe(86400000000)
+    expect(ref.toMillis()).toBe(86400000)
+    expect(ref.toSeconds()).toBe(86400)
+    expect(ref.toMinutes()).toBe(1440)
+    expect(ref.toHours()).toBe(24)
+    expect(ref.toDays()).toBe(1)
+  })
+
+  test("it can convert from micros()", () => {
+    const ref = Duration.micros(86400000000)
+    expect(ref.toDays()).toBe(1)
+  })
+
+  test("it can convert from millis()", () => {
+    const ref = Duration.millis(86400000)
+    expect(ref.toDays()).toBe(1)
+  })
+
+  test("it can convert from seconds()", () => {
+    const ref = Duration.seconds(86400)
+    expect(ref.toDays()).toBe(1)
+  })
+
+  test("it can convert from minutes()", () => {
+    const ref = Duration.minutes(1440)
+    expect(ref.toDays()).toBe(1)
+  })
+
+  test("it can convert from hours()", () => {
+    const ref = Duration.hours(24)
+    expect(ref.toDays()).toBe(1)
+  })
+
+  test("it can convert from days()", () => {
+    const ref = Duration.days(1)
+    expect(ref.toNanos()).toBe(86400000000000)
+  })
+
+  test("#equals is structural", () => {
+    const ref = Duration.nanos(1000)
+    expect(is(ref, Duration.nanos(1000))).toBe(true)
+  })
+
+  test("#equals and #hashCode provide equivalence", () => {
+    const ref1 = Duration.nanos(86400000000000)
+    const ref2 = Duration.days(1)
+    expect(is(ref1, ref2)).toBe(true)
+    expect(is(ref2, ref1)).toBe(true)
+    expect(ref1.hashCode()).toBe(ref2.hashCode())
+  })
+
+  test("zero()", () => {
+    expect(is(Duration.zero(), Duration.seconds(0))).toBe(true)
+  })
+})
+
+describe("Duration (infinite)", () => {
+  test("#equals", () => {
+    expect(is(Duration.inf(), Duration.inf())).toBe(true)
+    expect(is(Duration.negInf(), Duration.negInf())).toBe(true)
+    expect(is(Duration.inf(), Duration.negInf())).toBe(false)
+    expect(is(Duration.inf(), Duration.seconds(1))).toBe(false)
+  })
+
+  test("#hashCode", () => {
+    expect(Duration.inf().hashCode()).toBe(Duration.inf().hashCode())
+    expect(Duration.negInf().hashCode()).toBe(Duration.negInf().hashCode())
+    expect(Duration.inf().hashCode() !== Duration.negInf().hashCode()).toBe(true)
+  })
 })
