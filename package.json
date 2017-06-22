@@ -99,7 +99,7 @@
     "cross-env": "^5.0.0",
     "cz-conventional-changelog": "^2.0.0",
     "flow-bin": "^0.48.0",
-    "husky": "^0.13.3",
+    "husky": "^0.14.0",
     "jest": "^20.0.4",
     "jsverify": "^0.8.2",
     "lodash": "^4.17.4",
