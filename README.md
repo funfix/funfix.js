@@ -22,6 +22,8 @@ npm install --save funfix
 
 ### Features
 
+High-level data types:
+
 - [Option](https://funfix.org/api/classes/_core_option_.option.html),
   which is like the "Maybe" monadic type from Haskell
 - [Either](https://funfix.org/api/classes/_core_either_.either.html),
@@ -31,12 +33,18 @@ npm install --save funfix
 - [Eval](https://funfix.org/api/classes/_effect_eval_.eval.html)
   for suspending synchronous side effects and controlling evaluation
   (e.g. memoization, error handling)
+
+Low-level data types and utilities:
+
 - [IEquals](https://funfix.org/api/interfaces/_core_std_.iequals.html) interface
   for structural equality in [is](https://funfix.org/api/modules/_core_std_.html#is)
 - [Cancelable](https://funfix.org/api/classes/_exec_cancelable_.cancelable.html) /
   [BoolCancelable](https://funfix.org/api/classes/_exec_cancelable_.boolcancelable.html),
   for describing composable cancellation actions
-- more is coming (e.g. `Task`, etc)
+- [TimeUnit and Duration](https://funfix.org/api/modules/_exec_time_.html) for
+  expressing timespans, along operations and conversions between time units
+
+More is coming (e.g. `Task`, etc)
 
 See **[API Docs](https://funfix.org/api)**.
 

@@ -20,7 +20,8 @@ import {
   CompositeError,
   IllegalInheritanceError,
   IllegalStateError,
-  NoSuchElementError
+  NoSuchElementError,
+  IllegalArgumentError
 } from "../../src/funfix"
 
 describe("DummyError", () => {
@@ -95,3 +96,11 @@ describe("NoSuchElementError", () => {
   })
 })
 
+describe("IllegalArgumentError", () => {
+  it("has custom message", () => {
+    const ex = new IllegalArgumentError("dummy")
+
+    expect(ex.name).toBe("IllegalArgumentError")
+    expect(ex.message).toBe("dummy")
+  })
+})

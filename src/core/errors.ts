@@ -92,3 +92,14 @@ export class IllegalStateError extends Error {
     this.name = "IllegalStateError"
   }
 }
+
+/**
+ * Signals that a function has been invoked with illegal
+ * arguments.
+ */
+export class IllegalArgumentError extends Error {
+  constructor(message?: string) {
+    super(message)
+    this.name = "IllegalArgumentError"
+  }
+}

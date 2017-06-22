@@ -37,3 +37,7 @@ declare export class IllegalInheritanceError extends Error {
 declare export class IllegalStateError extends Error {
   constructor(message?: string): IllegalStateError;
 }
+
+declare export class IllegalArgumentError extends Error {
+  constructor(message?: string): IllegalArgumentError;
+}

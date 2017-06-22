@@ -59,3 +59,31 @@ import { Try } from 'funfix'
 const email: ?string =
   Try.of(() => users[0].profile.email).orNull()
 ```
+
+## Features
+
+### Features
+
+High-level data types:
+
+- [Option](./classes/_core_option_.option.html),
+  which is like the "Maybe" monadic type from Haskell
+- [Either](./classes/_core_either_.either.html),
+  for working with values of two possible types
+- [Try](./classes/_core_try_.try.html),
+  for capturing exceptional results and manipulating them as values
+- [Eval](./classes/_effect_eval_.eval.html)
+  for suspending synchronous side effects and controlling evaluation
+  (e.g. memoization, error handling)
+
+Low-level data types and utilities:
+
+- [IEquals](./interfaces/_core_std_.iequals.html) interface
+  for structural equality in [is](./modules/_core_std_.html#is)
+- [Cancelable](./classes/_exec_cancelable_.cancelable.html) /
+  [BoolCancelable](./classes/_exec_cancelable_.boolcancelable.html),
+  for describing composable cancellation actions
+- [TimeUnit and Duration](./modules/_exec_time_.html) for
+  expressing timespans, along operations and conversions between time units
+
+More is coming (e.g. `Task`, etc)

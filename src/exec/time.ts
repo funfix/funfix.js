@@ -16,7 +16,41 @@
  */
 
 import { IEquals } from "../core/std"
+import { IllegalArgumentError } from "../core/errors"
 
+/**
+ * A `TimeUnit` represents time durations at a given unit of
+ * granularity and provides utility methods to convert across units,
+ * and to perform timing and delay operations in these units.
+ *
+ * A `TimeUnit` does not maintain time information, but only helps
+ * organize and use time representations that may be maintained
+ * separately across various contexts. A nanosecond is defined as one
+ * thousandth of a microsecond, a microsecond as one thousandth of a
+ * millisecond, a millisecond as one thousandth of a second, a minute
+ * as sixty seconds, an hour as sixty minutes, and a day as twenty
+ * four hours.
+ *
+ * `TimeUnit` is an enumeration and in usage the already defined
+ * constants should be used:
+ *
+ *  - [[NANOSECONDS]]
+ *  - [[MICROSECONDS]]
+ *  - [[MILLISECONDS]]
+ *  - [[SECONDS]]
+ *  - [[MINUTES]]
+ *  - [[HOURS]]
+ *  - [[DAYS]]
+ *
+ * Example:
+ *
+ * ```typescript
+ * // Converting 10 minutes to nanoseconds
+ * MINUTES.toNanos(10)
+ * // Equivalent with the above:
+ * NANOSECONDS.convert(10, MINUTES)
+ * ```
+ */
 export abstract class TimeUnit {
   /**
    * Converts the given time duration in the given unit to this unit.
@@ -167,245 +201,157 @@ function x(d: number, m: number, over: number): number {
   return d * m
 }
 
+/** @hidden */
+class Nanoseconds extends TimeUnit {
+  ord: number = 0
+  convert(duration: number, unit: TimeUnit): number { return unit.toNanos(duration) }
+  toNanos(d: number): number { return d }
+  toMicros(d: number): number { return trunc(d / (C1 / C0)) }
+  toMillis(d: number): number { return trunc(d / (C2 / C0)) }
+  toSeconds(d: number): number { return trunc(d / (C3 / C0)) }
+  toMinutes(d: number): number { return trunc(d / (C4 / C0)) }
+  toHours(d: number): number { return trunc(d / (C5 / C0)) }
+  toDays(d: number): number { return trunc(d / (C6 / C0)) }
+}
+
  /**
   * Time unit for representing nanoseconds, where 1 nanosecond is
   * one thousandth of a microsecond.
   */
 export const NANOSECONDS: TimeUnit =
-  new (class Nanoseconds extends TimeUnit {
-    ord: number = 0
+  new Nanoseconds()
 
-    convert(duration: number, unit: TimeUnit): number {
-      return unit.toNanos(duration)
-    }
-    toNanos(d: number): number {
-      return d
-    }
-    toMicros(d: number): number {
-      return trunc(d / (C1 / C0))
-    }
-    toMillis(d: number): number {
-      return trunc(d / (C2 / C0))
-    }
-    toSeconds(d: number): number {
-      return trunc(d / (C3 / C0))
-    }
-    toMinutes(d: number): number {
-      return trunc(d / (C4 / C0))
-    }
-    toHours(d: number): number {
-      return trunc(d / (C5 / C0))
-    }
-    toDays(d: number): number {
-      return trunc(d / (C6 / C0))
-    }
-  })()
+/** @hidden */
+class Microseconds extends TimeUnit {
+  ord: number = 1
+  convert(duration: number, unit: TimeUnit): number { return unit.toMicros(duration) }
+  toNanos(d: number): number { return x(d, C1 / C0, trunc(MAX / (C1 / C0))) }
+  toMicros(d: number): number { return d }
+  toMillis(d: number): number { return trunc(d / (C2 / C1)) }
+  toSeconds(d: number): number { return trunc(d / (C3 / C1)) }
+  toMinutes(d: number): number { return trunc(d / (C4 / C1)) }
+  toHours(d: number): number { return trunc(d / (C5 / C1)) }
+  toDays(d: number): number { return trunc(d / (C6 / C1)) }
+}
 
  /**
   * Time unit for representing microseconds, where 1 microsecond is
   * one thousandth of a millisecond.
   */
 export const MICROSECONDS: TimeUnit =
-  new (class Microseconds extends TimeUnit {
-    ord: number = 1
+  new Microseconds()
 
-    convert(duration: number, unit: TimeUnit): number {
-      return unit.toMicros(duration)
-    }
-    toNanos(d: number): number {
-      return x(d, C1 / C0, trunc(MAX / (C1 / C0)))
-    }
-    toMicros(d: number): number {
-      return d
-    }
-    toMillis(d: number): number {
-      return trunc(d / (C2 / C1))
-    }
-    toSeconds(d: number): number {
-      return trunc(d / (C3 / C1))
-    }
-    toMinutes(d: number): number {
-      return trunc(d / (C4 / C1))
-    }
-    toHours(d: number): number {
-      return trunc(d / (C5 / C1))
-    }
-    toDays(d: number): number {
-      return trunc(d / (C6 / C1))
-    }
-  })()
+/** @hidden */
+class Milliseconds extends TimeUnit {
+  ord: number = 2
+  convert(duration: number, unit: TimeUnit): number { return unit.toMillis(duration) }
+  toNanos(d: number): number { return x(d, C2 / C0, trunc(MAX / (C2 / C0))) }
+  toMicros(d: number): number { return x(d, C2 / C1, trunc(MAX / (C2 / C1))) }
+  toMillis(d: number): number { return d }
+  toSeconds(d: number): number { return trunc(d / (C3 / C2)) }
+  toMinutes(d: number): number { return trunc(d / (C4 / C2)) }
+  toHours(d: number): number { return trunc(d / (C5 / C2)) }
+  toDays(d: number): number { return trunc(d / (C6 / C2)) }
+}
 
  /**
   * Time unit for representing milliseconds, where 1 millisecond is
   * one thousandth of a second.
   */
 export const MILLISECONDS: TimeUnit =
-  new (class Milliseconds extends TimeUnit {
-    ord: number = 2
+  new Milliseconds()
 
-    convert(duration: number, unit: TimeUnit): number {
-      return unit.toMillis(duration)
-    }
-    toNanos(d: number): number {
-      return x(d, C2 / C0, trunc(MAX / (C2 / C0)))
-    }
-    toMicros(d: number): number {
-      return x(d, C2 / C1, trunc(MAX / (C2 / C1)))
-    }
-    toMillis(d: number): number {
-      return d
-    }
-    toSeconds(d: number): number {
-      return trunc(d / (C3 / C2))
-    }
-    toMinutes(d: number): number {
-      return trunc(d / (C4 / C2))
-    }
-    toHours(d: number): number {
-      return trunc(d / (C5 / C2))
-    }
-    toDays(d: number): number {
-      return trunc(d / (C6 / C2))
-    }
-  })()
+/** @hidden */
+class Seconds extends TimeUnit {
+  ord: number = 3
+  convert(duration: number, unit: TimeUnit): number { return unit.toSeconds(duration) }
+  toNanos(d: number): number { return x(d, C3 / C0, trunc(MAX / (C3 / C0))) }
+  toMicros(d: number): number { return x(d, C3 / C1, trunc(MAX / (C3 / C1))) }
+  toMillis(d: number): number { return x(d, C3 / C2, trunc(MAX / (C3 / C2))) }
+  toSeconds(d: number): number { return d }
+  toMinutes(d: number): number { return trunc(d / (C4 / C3)) }
+  toHours(d: number): number { return trunc(d / (C5 / C3)) }
+  toDays(d: number): number { return trunc(d / (C6 / C3)) }
+}
 
  /**
   * Time unit for representing seconds.
   */
 export const SECONDS: TimeUnit =
-  new (class Seconds extends TimeUnit {
-    ord: number = 3
+  new Seconds()
 
-    convert(duration: number, unit: TimeUnit): number {
-      return unit.toSeconds(duration)
-    }
-    toNanos(d: number): number {
-      return x(d, C3 / C0, trunc(MAX / (C3 / C0)))
-    }
-    toMicros(d: number): number {
-      return x(d, C3 / C1, trunc(MAX / (C3 / C1)))
-    }
-    toMillis(d: number): number {
-      return x(d, C3 / C2, trunc(MAX / (C3 / C2)))
-    }
-    toSeconds(d: number): number {
-      return d
-    }
-    toMinutes(d: number): number {
-      return trunc(d / (C4 / C3))
-    }
-    toHours(d: number): number {
-      return trunc(d / (C5 / C3))
-    }
-    toDays(d: number): number {
-      return trunc(d / (C6 / C3))
-    }
-  })()
+/** @hidden */
+class Minutes extends TimeUnit {
+  ord: number = 4
+  convert(duration: number, unit: TimeUnit): number { return unit.toMinutes(duration) }
+  toNanos(d: number): number { return x(d, C4 / C0, trunc(MAX / (C4 / C0))) }
+  toMicros(d: number): number { return x(d, C4 / C1, trunc(MAX / (C4 / C1))) }
+  toMillis(d: number): number { return x(d, C4 / C2, trunc(MAX / (C4 / C2))) }
+  toSeconds(d: number): number { return x(d, C4 / C3, trunc(MAX / (C4 / C3))) }
+  toMinutes(d: number): number { return d }
+  toHours(d: number): number { return trunc(d / (C5 / C4)) }
+  toDays(d: number): number { return trunc(d / (C6 / C4)) }
+}
 
  /**
   * Time unit for representing minutes.
   */
 export const MINUTES: TimeUnit =
-  new (class Minutes extends TimeUnit {
-    ord: number = 4
+  new Minutes()
 
-    convert(duration: number, unit: TimeUnit): number {
-      return unit.toMinutes(duration)
-    }
-    toNanos(d: number): number {
-      return x(d, C4 / C0, trunc(MAX / (C4 / C0)))
-    }
-    toMicros(d: number): number {
-      return x(d, C4 / C1, trunc(MAX / (C4 / C1)))
-    }
-    toMillis(d: number): number {
-      return x(d, C4 / C2, trunc(MAX / (C4 / C2)))
-    }
-    toSeconds(d: number): number {
-      return x(d, C4 / C3, trunc(MAX / (C4 / C3)))
-    }
-    toMinutes(d: number): number {
-      return d
-    }
-    toHours(d: number): number {
-      return trunc(d / (C5 / C4))
-    }
-    toDays(d: number): number {
-      return trunc(d / (C6 / C4))
-    }
-  })()
+/** @hidden */
+class Hours extends TimeUnit {
+  ord: number = 5
+  convert(duration: number, unit: TimeUnit): number { return unit.toHours(duration) }
+  toNanos(d: number): number { return x(d, C5 / C0, trunc(MAX / (C5 / C0))) }
+  toMicros(d: number): number { return x(d, C5 / C1, trunc(MAX / (C5 / C1))) }
+  toMillis(d: number): number { return x(d, C5 / C2, trunc(MAX / (C5 / C2))) }
+  toSeconds(d: number): number { return x(d, C5 / C3, trunc(MAX / (C5 / C3))) }
+  toMinutes(d: number): number { return x(d, C5 / C4, trunc(MAX / (C5 / C4))) }
+  toHours(d: number): number { return d }
+  toDays(d: number): number { return trunc(d / (C6 / C5)) }
+}
 
  /**
   * Time unit for representing hours.
   */
 export const HOURS: TimeUnit =
-  new (class Hours extends TimeUnit {
-    ord: number = 5
+  new Hours()
 
-    convert(duration: number, unit: TimeUnit): number {
-      return unit.toHours(duration)
-    }
-    toNanos(d: number): number {
-      return x(d, C5 / C0, trunc(MAX / (C5 / C0)))
-    }
-    toMicros(d: number): number {
-      return x(d, C5 / C1, trunc(MAX / (C5 / C1)))
-    }
-    toMillis(d: number): number {
-      return x(d, C5 / C2, trunc(MAX / (C5 / C2)))
-    }
-    toSeconds(d: number): number {
-      return x(d, C5 / C3, trunc(MAX / (C5 / C3)))
-    }
-    toMinutes(d: number): number {
-      return x(d, C5 / C4, trunc(MAX / (C5 / C4)))
-    }
-    toHours(d: number): number {
-      return d
-    }
-    toDays(d: number): number {
-      return trunc(d / (C6 / C5))
-    }
-  })()
+/** @hidden */
+class Days extends TimeUnit {
+  ord: number = 6
+  convert(duration: number, unit: TimeUnit): number { return unit.toDays(duration) }
+  toNanos(d: number): number { return x(d, C6 / C0, trunc(MAX / (C6 / C0))) }
+  toMicros(d: number): number { return x(d, C6 / C1, trunc(MAX / (C6 / C1))) }
+  toMillis(d: number): number { return x(d, C6 / C2, trunc(MAX / (C6 / C2))) }
+  toSeconds(d: number): number { return x(d, C6 / C3, trunc(MAX / (C6 / C3))) }
+  toMinutes(d: number): number { return x(d, C6 / C4, trunc(MAX / (C6 / C4))) }
+  toHours(d: number): number { return x(d, C6 / C5, trunc(MAX / (C6 / C5))) }
+  toDays(d: number): number { return d }
+}
 
  /**
   * Time unit for representing days.
   */
 export const DAYS: TimeUnit =
-  new (class Days extends TimeUnit {
-    ord: number = 6
-
-    convert(duration: number, unit: TimeUnit): number {
-      return unit.toDays(duration)
-    }
-    toNanos(d: number): number {
-      return x(d, C6 / C0, trunc(MAX / (C6 / C0)))
-    }
-    toMicros(d: number): number {
-      return x(d, C6 / C1, trunc(MAX / (C6 / C1)))
-    }
-    toMillis(d: number): number {
-      return x(d, C6 / C2, trunc(MAX / (C6 / C2)))
-    }
-    toSeconds(d: number): number {
-      return x(d, C6 / C3, trunc(MAX / (C6 / C3)))
-    }
-    toMinutes(d: number): number {
-      return x(d, C6 / C4, trunc(MAX / (C6 / C4)))
-    }
-    toHours(d: number): number {
-      return x(d, C6 / C5, trunc(MAX / (C6 / C5)))
-    }
-    toDays(d: number): number {
-      return d
-    }
-  })()
+  new Days()
 
 /**
  * A simple representation for time durations, based on [[TimeUnit]].
  */
 export class Duration implements IEquals<Duration> {
-  constructor(public duration: number, public unit: TimeUnit) {}
+  public duration: number
+  public unit: TimeUnit
+
+  constructor(duration: number, unit: TimeUnit) {
+    if (isNaN(duration)) {
+      throw new IllegalArgumentError("NaN is not supported for a Duration")
+    }
+    // Only integers allowed
+    this.duration = trunc(duration)
+    this.unit = unit
+  }
 
   /**
    * This method returns `true` if this duration is finite,
@@ -460,6 +406,79 @@ export class Duration implements IEquals<Duration> {
    */
   toDays(): number {
     return DAYS.convert(this.duration, this.unit)
+  }
+
+  /**
+   * Returns a new `Duration` value that represents `this` converted
+   * to use the given `unit`.
+   *
+   * Note that this may be a lossy conversion, e.g. when converting
+   * 27 hours to 1 day, there's a loss of fidelity.
+   */
+  convertTo(unit: TimeUnit): Duration {
+    return new Duration(unit.convert(this.duration, this.unit), unit)
+  }
+
+  /**
+   * Negates `this` duration, by changing the sign.
+   */
+  negate(): Duration {
+    switch (this.duration) {
+      case Infinity: return Duration.negInf()
+      case -Infinity: return Duration.inf()
+      default:
+        return new Duration(-this.duration, this.unit)
+    }
+  }
+
+  /**
+   * Return the sum of `this` duration and `other`.
+   *
+   * Note that the `unit` used for the result will be the
+   * more finer grained one out of the two.
+   *
+   * ```typescript
+   * // Result will be 27 hours
+   * Duration.days(1).plus(Duration.hours(3))
+   * ```
+   */
+  plus(other: Duration): Duration {
+    if (!isFinite(this.duration)) {
+      if (!isFinite(other.duration) && this.duration !== other.duration) {
+        throw new IllegalArgumentError(
+          "cannot deal with two infinities with different signs, " +
+          "as that would be a NaN")
+      }
+      return this
+    } else if (other.duration === 0) {
+      return this
+    } else if (this.duration === 0) {
+      return other
+    }
+
+    if (!isFinite(other.duration)) return other
+
+    let d1: Duration = this
+    let d2: Duration = other
+    if (d2.unit.ord < d1.unit.ord) { d1 = other; d2 = this }
+
+    d2 = d2.convertTo(d1.unit)
+    return new Duration(d1.duration + d2.duration, d1.unit)
+  }
+
+  /**
+   * Subtracts the `other` duration from `this`.
+   *
+   * Note that the `unit` used for the result will be the
+   * more finer grained one out of the two:
+   *
+   * ```typescript
+   * // Result will be 21 hours
+   * Duration.days(1).minus(Duration.hours(3))
+   * ```
+   */
+  minus(other: Duration): Duration {
+    return this.plus(other.negate())
   }
 
   /** @inheritdoc */

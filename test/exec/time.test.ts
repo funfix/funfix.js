@@ -16,6 +16,7 @@
  */
 
 import * as jv from "jsverify"
+import * as inst from "../instances"
 import {
   is,
   NANOSECONDS,
@@ -736,4 +737,170 @@ describe("Duration (infinite)", () => {
     expect(Duration.negInf().hashCode()).toBe(Duration.negInf().hashCode())
     expect(Duration.inf().hashCode() !== Duration.negInf().hashCode()).toBe(true)
   })
+
+  test("NaN", () => {
+    expect(() => new Duration(NaN, DAYS)).toThrowError()
+  })
+})
+
+describe("Duration#plus", () => {
+  jv.property("should work for same unit",
+    jv.int32, jv.int32, inst.arbTimeUnit,
+    (a, b, unit) => {
+      const d1 = new Duration(a, unit)
+      const d2 = new Duration(b, unit)
+      const sum = d1.plus(d2)
+      return sum.duration === a + b && sum.unit === unit
+    })
+
+  jv.property("should work for different units",
+    jv.int32, jv.int32, inst.arbTimeUnit, inst.arbTimeUnit,
+    (a, b, unit1, unit2) => {
+      const d1 = new Duration(a, unit1)
+      const d2 = new Duration(b, unit2)
+      const sum = d1.plus(d2)
+
+      if (unit1.ord <= unit2.ord) {
+        return sum.duration === a + unit1.convert(b, unit2) && sum.unit === unit1
+      } else {
+        return sum.duration === unit2.convert(a, unit1) + b && sum.unit === unit2
+      }
+    })
+
+  jv.property("inf() + n == inf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = Duration.inf().plus(d)
+      return !sum.isFinite() && is(sum, Duration.inf())
+    })
+
+  jv.property("negInf() + n == negInf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = Duration.negInf().plus(d)
+      return !sum.isFinite() && is(sum, Duration.negInf())
+    })
+
+  jv.property("n + inf() == inf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = d.plus(Duration.inf())
+      return !sum.isFinite() && is(sum, Duration.inf())
+    })
+
+  jv.property("negInf() + n == negInf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = d.plus(Duration.negInf())
+      return !sum.isFinite() && is(sum, Duration.negInf())
+    })
+
+  test("inf() + negInf() throws error", () => {
+    expect(() => Duration.inf().plus(Duration.negInf()))
+      .toThrowError()
+    expect(() => Duration.negInf().plus(Duration.inf()))
+      .toThrowError()
+  })
+
+  jv.property("(a + b) + c == a + (b + c) (associativity)",
+    inst.arbDuration, inst.arbDuration, inst.arbDuration,
+    (a, b, c) => is(a.plus(b).plus(c), a.plus(b.plus(c))))
+
+  jv.property("a + b == b + a (transitivity)",
+    inst.arbDuration, inst.arbDuration,
+    (a, b) => is(a.plus(b), b.plus(a)))
+
+  jv.property("a + zero == a (identity)",
+    inst.arbDuration,
+    a => a.plus(Duration.zero()) === a && is(Duration.zero().plus(a), a)
+  )
+})
+
+describe("Duration#minus", () => {
+  jv.property("should work for same unit",
+    jv.int32, jv.int32, inst.arbTimeUnit,
+    (a, b, unit) => {
+      const d1 = new Duration(a, unit)
+      const d2 = new Duration(b, unit)
+      const sum = d1.minus(d2)
+      return sum.duration === a - b && sum.unit === unit
+    })
+
+  jv.property("should work for different units",
+    jv.int32, jv.int32, inst.arbTimeUnit, inst.arbTimeUnit,
+    (a, b, unit1, unit2) => {
+      const d1 = new Duration(a, unit1)
+      const d2 = new Duration(b, unit2)
+      const sum = d1.minus(d2)
+
+      if (unit1.ord <= unit2.ord) {
+        return sum.duration === a - unit1.convert(b, unit2) && sum.unit === unit1
+      } else {
+        return sum.duration === unit2.convert(a, unit1) - b && sum.unit === unit2
+      }
+    })
+
+  jv.property("inf() - n == inf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = Duration.inf().minus(d)
+      return !sum.isFinite() && is(sum, Duration.inf())
+    })
+
+  jv.property("negInf() - n == negInf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = Duration.negInf().minus(d)
+      return !sum.isFinite() && is(sum, Duration.negInf())
+    })
+
+  jv.property("n - inf() == negInf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = d.minus(Duration.inf())
+      return !sum.isFinite() && is(sum, Duration.negInf())
+    })
+
+  jv.property("n - negInf() == inf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = d.minus(Duration.negInf())
+      return !sum.isFinite() && is(sum, Duration.inf())
+    })
+
+  jv.property("negInf() - n == negInf()",
+    jv.int32, inst.arbTimeUnit,
+    (n, unit) => {
+      const d = new Duration(n, unit)
+      const sum = Duration.negInf().minus(d)
+      return !sum.isFinite() && is(sum, Duration.negInf())
+    })
+
+  test("inf() - inf() throws error", () => {
+    expect(() => Duration.inf().minus(Duration.inf()))
+      .toThrowError()
+    expect(() => Duration.negInf().minus(Duration.negInf()))
+      .toThrowError()
+  })
+
+  jv.property("(a - b) - c == a - (b + c)",
+    inst.arbDuration, inst.arbDuration, inst.arbDuration,
+    (a, b, c) => is(a.minus(b).minus(c), a.minus(b.plus(c))))
+
+  jv.property("a - zero == a && zero - a == -a",
+    inst.arbDuration,
+    a => a.minus(Duration.zero()) === a && is(Duration.zero().minus(a), a.negate())
+  )
+
+  jv.property("a - b == -b + a",
+    inst.arbDuration, inst.arbDuration,
+    (a, b) => is(a.minus(b), b.negate().plus(a)))
 })

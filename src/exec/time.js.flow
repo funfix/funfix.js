@@ -18,6 +18,7 @@
  */
 
 declare export class TimeUnit {
+  ord: number;
   convert(duration: number, unit: TimeUnit): number;
   toNanos(d: number): number;
   toMicros(d: number): number;
@@ -37,6 +38,11 @@ declare export var HOURS: TimeUnit;
 declare export var DAYS: TimeUnit;
 
 declare export class Duration {
+  constructor(duration: number, unit: TimeUnit): Duration;
+
+  duration: number;
+  unit: TimeUnit;
+
   isFinite(): boolean;
   toNanos(): number;
   toMicros(): number;
@@ -45,6 +51,12 @@ declare export class Duration {
   toMinutes(): number;
   toHours(): number;
   toDays(): number;
+
+  convertTo(unit: TimeUnit): Duration;
+  negate(): Duration;
+  minus(other: Duration): Duration;
+  plus(other: Duration): Duration;
+
   equals(other: Duration): boolean;
   hashCode(): number;
 

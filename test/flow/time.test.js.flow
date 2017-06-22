@@ -25,9 +25,11 @@ import {
   SECONDS,
   MINUTES,
   HOURS,
-  DAYS
+  DAYS,
+  Duration
 } from "../../src/funfix"
 
+const d0: number = NANOSECONDS.ord
 const d1: number = NANOSECONDS.convert(1000, MICROSECONDS)
 const d2: number = MICROSECONDS.toNanos(1000)
 const d3: number = MILLISECONDS.toMicros(1000)
@@ -35,3 +37,26 @@ const d4: number = SECONDS.toMillis(1000)
 const d5: number = MINUTES.toSeconds(1000)
 const d6: number = HOURS.toMinutes(1000)
 const d7: number = DAYS.toHours(1000)
+
+const d8 = Duration.nanos(1000).toMicros()
+const d9 = Duration.micros(1000).toMillis()
+const d10 = Duration.millis(1000).toSeconds()
+const d11 = Duration.seconds(1000).toMinutes()
+const d12 = Duration.minutes(1000).toHours()
+const d13 = Duration.hours(1000).toDays()
+
+const d14: boolean = new Duration(10, SECONDS).isFinite()
+const d15: Duration = Duration.millis(1000).convertTo(SECONDS)
+const d16: Duration = Duration.millis(1000).negate()
+const d17: Duration = Duration.millis(1000).minus(Duration.seconds(1))
+const d18: Duration = Duration.millis(1000).plus(Duration.seconds(1))
+
+const d19: boolean = Duration.seconds(1).equals(Duration.millis(1000))
+const d20: number = Duration.seconds(1).hashCode()
+
+const d21: Duration = Duration.inf()
+const d22: Duration = Duration.negInf()
+const d23: Duration = Duration.zero()
+
+const d24: number = new Duration(10, MINUTES).duration
+const d25: TimeUnit = new Duration(10, MINUTES).unit
