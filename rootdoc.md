@@ -62,8 +62,6 @@ const email: ?string =
 
 ## Features
 
-### Features
-
 High-level data types:
 
 - [Option](./classes/_core_option_.option.html),
