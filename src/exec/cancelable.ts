@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { CompositeError } from "../core/errors"
+import { CompositeError, IllegalStateError } from "../core/errors"
 
 /**
  * `Cancelable` represents a one-time idempotent action that can be
@@ -299,3 +299,179 @@ const AlreadyCanceled: BoolCancelable =
     isCanceled() { return true }
     cancel() {}
   })()
+
+/**
+ * Represents a type of [[Cancelable]] that can hold
+ * an internal reference to another cancelable (and thus
+ * has to support the `update` operation).
+ *
+ * On assignment, if this cancelable is already
+ * canceled, then no assignment should happen and the update
+ * reference should be canceled as well.
+ */
+export abstract class AssignableCancelable extends BoolCancelable {
+  /**
+   * Updates the internal reference of this assignable cancelable
+   * to the given value.
+   *
+   * If this cancelable is already canceled, then `value` is
+   * going to be canceled on assignment as well.
+   */
+  public abstract update(value: Cancelable): this
+}
+
+/**
+ * The `MultiAssignmentCancelable` is a [[Cancelable]] whose
+ * underlying cancelable reference can be swapped for another.
+ *
+ * Example:
+ *
+ * ```typescript
+ * const ref = MultiAssignmentCancelable()
+ * ref.update(c1) // sets the underlying cancelable to c1
+ * ref.update(c2) // swaps the underlying cancelable to c2
+ *
+ * ref.cancel() // also cancels c2
+ * ref := c3 // also cancels c3, because s is already canceled
+ * ```
+ *
+ * Also see [[SerialCancelable]], which is similar, except that it
+ * cancels the old cancelable upon assigning a new cancelable.
+ */
+export class MultiAssignmentCancelable extends AssignableCancelable {
+  private _underlying?: Cancelable
+  private _canceled: boolean
+
+  constructor(initial?: Cancelable) {
+    super()
+    this._underlying = initial
+    this._canceled = false
+  }
+
+  /** @inheritdoc */
+  public update(value: Cancelable): this {
+    if (this._canceled) value.cancel()
+    else this._underlying = value
+    return this
+  }
+
+  /** @inheritdoc */
+  public isCanceled(): boolean { return this._canceled }
+
+  /** @inheritdoc */
+  public cancel(): void {
+    if (!this._canceled) {
+      this._canceled = true
+      if (this._underlying) {
+        this._underlying.cancel()
+        delete this._underlying
+      }
+    }
+  }
+}
+
+/**
+ * The `SerialCancelable` is a [[Cancelable]] whose underlying
+ * cancelable reference can be swapped for another and on each
+ * swap the previous reference gets canceled.
+ *
+ * Example:
+ *
+ * ```typescript
+ * const ref = SerialAssignmentCancelable()
+ * ref.update(c1) // sets the underlying cancelable to c1
+ * ref.update(c2) // cancels c1, swaps the underlying cancelable to c2
+ *
+ * ref.cancel() // also cancels c2
+ * ref := c3 // also cancels c3, because s is already canceled
+ * ```
+ *
+ * Also see [[SerialCancelable]], which is similar, except that it
+ * cancels the old cancelable upon assigning a new cancelable.
+ */
+export class SerialAssignmentCancelable extends AssignableCancelable {
+  private _underlying?: Cancelable
+  private _canceled: boolean
+
+  constructor(initial?: Cancelable) {
+    super()
+    this._underlying = initial
+    this._canceled = false
+  }
+
+  /** @inheritdoc */
+  public update(value: Cancelable): this {
+    if (this._canceled) value.cancel(); else {
+      if (this._underlying) this._underlying.cancel()
+      this._underlying = value
+    }
+    return this
+  }
+
+  /** @inheritdoc */
+  public isCanceled(): boolean { return this._canceled }
+
+  /** @inheritdoc */
+  public cancel(): void {
+    if (!this._canceled) {
+      this._canceled = true
+      if (this._underlying) {
+        this._underlying.cancel()
+        delete this._underlying
+      }
+    }
+  }
+}
+
+/**
+ * The `SingleAssignmentCancelable` is a [[Cancelable]] that can be
+ * assigned only once to another cancelable reference.
+ *
+ * Example:
+ *
+ * ```typescript
+ * const ref = SingleAssignmentCancelable()
+ * ref.update(c1) // sets the underlying cancelable to c1
+ *
+ * ref.update(c2) // throws IllegalStateError
+ * ```
+ *
+ * See [[MultiAssignmentCancelable]] for a similar type that can be
+ * assigned multiple types.
+ */
+export class SingleAssignmentCancelable extends AssignableCancelable {
+  private _wasAssigned: boolean
+  private _canceled: boolean
+  private _underlying?: Cancelable
+
+  constructor() {
+    super()
+    this._canceled = false
+    this._wasAssigned = false
+  }
+
+  /** @inheritdoc */
+  public update(value: Cancelable): this {
+    if (this._wasAssigned)
+      throw new IllegalStateError("SingleAssignmentCancelable#update multiple times")
+
+    this._wasAssigned = true
+    if (this._canceled) value.cancel()
+    else this._underlying = value
+    return this
+  }
+
+  /** @inheritdoc */
+  public isCanceled(): boolean { return this._canceled }
+
+  /** @inheritdoc */
+  public cancel(): void {
+    if (!this._canceled) {
+      this._canceled = true
+      if (this._underlying) {
+        this._underlying.cancel()
+        delete this._underlying
+      }
+    }
+  }
+}
