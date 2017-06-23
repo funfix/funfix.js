@@ -87,12 +87,13 @@ describe("Cancelable.empty", () => {
 
 describe("Cancelable.collection", () => {
   it("cancels multiple references", () => {
-    const refs = [BoolCancelable.empty(), BoolCancelable.empty(), BoolCancelable.empty()]
+    const refs = [new TestCancelable(), new TestCancelable(), new TestCancelable()]
     const main = Cancelable.collection(...refs)
 
     for (const c of refs) expect(c.isCanceled()).toBeFalsy()
     main.cancel()
     for (const c of refs) expect(c.isCanceled()).toBeTruthy()
+    main.cancel() // no-op
   })
 
   it("throws single error", () => {
@@ -147,6 +148,19 @@ describe("Cancelable.collection", () => {
       expect(errs.length).toBe(3)
       for (e of errs) expect(e).toBe(dummy)
     }
+  })
+
+  it("can be a BoolCancelable", () => {
+    const ref = BoolCancelable.collection(
+      new TestCancelable(),
+      new TestCancelable(),
+      new TestCancelable()
+    )
+
+    expect(ref.isCanceled()).toBe(false)
+    ref.cancel()
+    expect(ref.isCanceled()).toBe(true)
+    ref.cancel() // no-op
   })
 })
 

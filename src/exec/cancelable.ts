@@ -149,34 +149,6 @@ const Empty: Cancelable =
   })()
 
 /**
- * [[Cancelable]] implementation that represents an immutable list of
- * [[Cancelable]] references which can be canceled as a group.
- *
- * Implementation is package private, to access it use
- * [[Cancelable.collection]].
- *
- * @Hidden
- */
-class CollectionCancelable extends Cancelable {
-  private refs: Cancelable[]
-
-  constructor(refs: Cancelable[]) {
-    super()
-    this.refs = refs
-  }
-
-  public cancel(): void {
-    const errors = []
-    for (const c of this.refs) {
-      try { c.cancel() } catch (e) { errors.push(e) }
-    }
-
-    if (errors.length === 1) throw errors[0]
-    else if (errors.length > 1) throw new CompositeError(errors)
-  }
-}
-
-/**
  * `BoolCancelable` represents a [[Cancelable]] that can be queried
  * for the canceled status.
  */
@@ -254,6 +226,69 @@ export abstract class BoolCancelable extends Cancelable {
    */
   public static alreadyCanceled(): BoolCancelable {
     return AlreadyCanceled
+  }
+
+  /**
+   * Returns a [[BoolCancelable]] implementation that represents an
+   * immutable list of [[Cancelable]] references which can be
+   * canceled as a group.
+   *
+   * ```typescript
+   * val list = BoolCancelable.collection(
+   *   Cancelable.from(() => console.log("Cancelled #1")),
+   *   Cancelable.from(() => console.log("Cancelled #2")),
+   *   Cancelable.from(() => console.log("Cancelled #3"))
+   * )
+   *
+   * list.cancel()
+   * //=> Cancelled #1
+   * //=> Cancelled #2
+   * //=> Cancelled #3
+   * ```
+   *
+   * @param refs is the array of references to cancel when
+   *        cancellation is triggered
+   */
+  public static collection(...refs: Array<Cancelable>): BoolCancelable {
+    return new CollectionCancelable(refs)
+  }
+}
+
+/**
+ * [[Cancelable]] implementation that represents an immutable list of
+ * [[Cancelable]] references which can be canceled as a group.
+ *
+ * Implementation is package private, to access it use
+ * [[Cancelable.collection]].
+ *
+ * @Hidden
+ */
+class CollectionCancelable extends BoolCancelable {
+  private _refs: Cancelable[]
+  private _isCanceled: boolean
+
+  constructor(refs: Cancelable[]) {
+    super()
+    this._refs = refs
+    this._isCanceled = false
+  }
+
+  public isCanceled(): boolean {
+    return this._isCanceled
+  }
+
+  public cancel(): void {
+    if (!this._isCanceled) {
+      this._isCanceled = true
+      const errors = []
+      for (const c of this._refs) {
+        try { c.cancel() } catch (e) { errors.push(e) }
+      }
+
+      this._refs = [] // GC purposes
+      if (errors.length === 1) throw errors[0]
+      else if (errors.length > 1) throw new CompositeError(errors)
+    }
   }
 }
 
