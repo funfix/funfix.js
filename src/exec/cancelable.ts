@@ -346,7 +346,7 @@ export abstract class AssignableCancelable extends BoolCancelable {
    * detail that may change in the future.
    */
   public static empty(): AssignableCancelable {
-    return new MultiAssignmentCancelable()
+    return MultiAssignmentCancelable.empty()
   }
 
   /**
@@ -367,9 +367,7 @@ export abstract class AssignableCancelable extends BoolCancelable {
    * ```
    */
   public static from(cb: () => void): AssignableCancelable {
-    const ref = new MultiAssignmentCancelable()
-    ref.update(Cancelable.from(cb))
-    return ref
+    return MultiAssignmentCancelable.from(cb)
   }
 }
 
@@ -432,6 +430,34 @@ export class MultiAssignmentCancelable extends AssignableCancelable {
       }
     }
   }
+
+  /**
+   * Returns a new [[MultiAssignmentCancelable]] that's empty.
+   */
+  public static empty(): MultiAssignmentCancelable {
+    return new MultiAssignmentCancelable()
+  }
+
+  /**
+   * Initiates an [[MultiAssignmentCancelable]] reference and assigns it
+   * a reference that wraps the given `cb` callback.
+   *
+   * So this code:
+   *
+   * ```typescript
+   * MultiAssignmentCancelable.from(() => console.log("cancelled"))
+   * ```
+   *
+   * Is equivalent to this:
+   *
+   * ```typescript
+   * const ref = MultiAssignmentCancelable.empty()
+   * ref.update(Cancelable.from(() => console.log("cancelled")))
+   * ```
+   */
+  public static from(cb: () => void): MultiAssignmentCancelable {
+    return new MultiAssignmentCancelable(Cancelable.from(cb))
+  }
 }
 
 /**
@@ -485,6 +511,34 @@ export class SerialAssignmentCancelable extends AssignableCancelable {
       }
     }
   }
+
+  /**
+   * Returns a new [[SerialAssignmentCancelable]] that's empty.
+   */
+  public static empty(): SerialAssignmentCancelable {
+    return new SerialAssignmentCancelable()
+  }
+
+  /**
+   * Initiates an [[SerialAssignmentCancelable]] reference and assigns it
+   * a reference that wraps the given `cb` callback.
+   *
+   * So this code:
+   *
+   * ```typescript
+   * SerialAssignmentCancelable.from(() => console.log("cancelled"))
+   * ```
+   *
+   * Is equivalent to this:
+   *
+   * ```typescript
+   * const ref = SerialAssignmentCancelable.empty()
+   * ref.update(Cancelable.from(() => console.log("cancelled")))
+   * ```
+   */
+  public static from(cb: () => void): SerialAssignmentCancelable {
+    return new SerialAssignmentCancelable(Cancelable.from(cb))
+  }
 }
 
 /**
@@ -537,5 +591,35 @@ export class SingleAssignmentCancelable extends AssignableCancelable {
         delete this._underlying
       }
     }
+  }
+
+  /**
+   * Returns a new [[SingleAssignmentCancelable]] that's empty.
+   */
+  public static empty(): SingleAssignmentCancelable {
+    return new SingleAssignmentCancelable()
+  }
+
+  /**
+   * Initiates an [[SingleAssignmentCancelable]] reference and assigns it
+   * a reference that wraps the given `cb` callback.
+   *
+   * So this code:
+   *
+   * ```typescript
+   * SingleAssignmentCancelable.from(() => console.log("cancelled"))
+   * ```
+   *
+   * Is equivalent to this:
+   *
+   * ```typescript
+   * const ref = SingleAssignmentCancelable.empty()
+   * ref.update(Cancelable.from(() => console.log("cancelled")))
+   * ```
+   */
+  public static from(cb: () => void): SingleAssignmentCancelable {
+    const ref = new SingleAssignmentCancelable()
+    ref.update(Cancelable.from(cb))
+    return ref
   }
 }

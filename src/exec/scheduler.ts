@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { TimeUnit, Duration } from "./time"
+import { Duration } from "./time"
 import { Cancelable } from "./cancelable"
 
 export abstract class Scheduler {
