@@ -35,14 +35,14 @@ import { CompositeError, IllegalStateError } from "../core/errors"
  * ```
  *
  * In case some API requires the return of a `Cancelable` reference,
- * but there isn"t anything that can be canceled, then
+ * but there isn't anything that can be canceled, then
  * [[Cancelable.empty]] can be used to return a reusable reference
- * that doesn"t do anything when canceled.
+ * that doesn't do anything when canceled.
  *
  * ```typescript
  * const task = Cancelable.empty()
  *
- * // It"s a no-op, doesn"t do anything
+ * // It's a no-op, doesn't do anything
  * task.cancel()
  * ```
  */
@@ -76,7 +76,7 @@ export abstract class Cancelable {
   }
 
   /**
-   * Returns a reusable `Cancelable` reference that doesn"t
+   * Returns a reusable `Cancelable` reference that doesn't
    * do anything on `cancel`.
    */
   public static empty(): Cancelable {
@@ -135,7 +135,7 @@ class WrapFn extends Cancelable {
 }
 
 /**
- * Reusable [[Cancelable]] reference that doesn"t do anything on
+ * Reusable [[Cancelable]] reference that doesn't do anything on
  * cancel.
  *
  * Implementation is package private, to access it use
@@ -182,7 +182,7 @@ class CollectionCancelable extends Cancelable {
  */
 export abstract class BoolCancelable extends Cancelable {
   /**
-   * Return `true` in case this cancelable hasn"t been canceled,
+   * Return `true` in case this cancelable hasn't been canceled,
    * or `false` otherwise.
    *
    * ```typescript
@@ -218,7 +218,7 @@ export abstract class BoolCancelable extends Cancelable {
   }
 
   /**
-   * Returns a [[BoolCancelable]] implementation that doesn"t do
+   * Returns a [[BoolCancelable]] implementation that doesn't do
    * anything on `cancel` except for changing the status of `isCanceled`
    * from `false` to `true`.
    *
@@ -246,7 +246,7 @@ export abstract class BoolCancelable extends Cancelable {
    * ref.isCanceled()
    * //=> true
    *
-   * // Doesn"t do anything, it"s a no-op
+   * // Doesn't do anything, it's a no-op
    * ref.cancel()
    * ```
    *
@@ -270,7 +270,7 @@ class BoolWrapFn extends WrapFn implements BoolCancelable {
 }
 
 /**
- * Concrete [[BoolCancelable]] implementation that doesn"t do
+ * Concrete [[BoolCancelable]] implementation that doesn't do
  * anything on `cancel` except for changing the status of `isCanceled`
  * from `false` to `true`.
  *
@@ -287,7 +287,7 @@ class BoolEmpty extends BoolCancelable {
 }
 
 /**
- * Reusable [[BoolCancelable]] reference that"s already canceled.
+ * Reusable [[BoolCancelable]] reference that's already canceled.
  *
  * Implementation is package private, to access it use
  * [[BoolCancelable.alreadyCanceled]].
@@ -318,7 +318,71 @@ export abstract class AssignableCancelable extends BoolCancelable {
    * going to be canceled on assignment as well.
    */
   public abstract update(value: Cancelable): this
+
+  /**
+   * Returns an [[AssignableCancelable]] reference that is already
+   * canceled.
+   *
+   * ```typescript
+   * const ref = AssignableCancelable.alreadyCanceled()
+   * ref.isCanceled() //=> true
+   *
+   * const c = BooleanCancelable.empty()
+   * ref.update(c) // cancels c
+   * c.isCanceled() // true
+   * ```
+   *
+   * The implementation returns the same reusable reference.
+   */
+  public static alreadyCanceled(): AssignableCancelable {
+    return AlreadyCanceledAssignable
+  }
+
+  /**
+   * Returns a new [[AssignableCancelable]] that's empty.
+   *
+   * The returned reference is an instance of
+   * [[MultiAssignmentCancelable]], but this is an implementation
+   * detail that may change in the future.
+   */
+  public static empty(): AssignableCancelable {
+    return new MultiAssignmentCancelable()
+  }
+
+  /**
+   * Initiates an [[AssignableCancelable]] reference and assigns it
+   * a reference that wraps the given `cb` callback.
+   *
+   * So this code:
+   *
+   * ```typescript
+   * AssignableCancelable.from(() => console.log("cancelled"))
+   * ```
+   *
+   * Is equivalent to this:
+   *
+   * ```typescript
+   * const ref = AssignableCancelable.empty()
+   * ref.update(Cancelable.from(() => console.log("cancelled")))
+   * ```
+   */
+  public static from(cb: () => void): AssignableCancelable {
+    const ref = new MultiAssignmentCancelable()
+    ref.update(Cancelable.from(cb))
+    return ref
+  }
 }
+
+/**
+ * Internal reusable reference for [[AssignableCancelable]].
+ * @Hidden
+ */
+const AlreadyCanceledAssignable: AssignableCancelable =
+  new (class AlreadyCanceledAssignable extends AssignableCancelable {
+    isCanceled() { return true }
+    cancel() {}
+    update(value: Cancelable) { value.cancel(); return this }
+  })()
 
 /**
  * The `MultiAssignmentCancelable` is a [[Cancelable]] whose
