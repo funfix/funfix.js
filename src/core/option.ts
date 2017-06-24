@@ -15,6 +15,28 @@
  * limitations under the License.
  */
 
+/**
+ * Exposes the {@link Option} monadic data type for expressing optional values
+ * (i.e. a smart nullable type).
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { Option } from "funfix/dist/core/option"
+ * // ... or ...
+ * import { Option } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module core/option
+ */
+
+/***/
+
 import * as std from "./std"
 import { NoSuchElementError } from "./errors"
 

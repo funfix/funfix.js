@@ -24,24 +24,26 @@ npm install --save funfix
 
 High-level data types:
 
-- [Option](https://funfix.org/api/classes/_core_option_.option.html),
+- [Option](https://funfix.org/api/classes/core_option.option.html),
   which is like the "Maybe" monadic type from Haskell
-- [Either](https://funfix.org/api/classes/_core_either_.either.html),
+- [Either](https://funfix.org/api/classes/core_either.either.html),
   for working with values of two possible types
-- [Try](https://funfix.org/api/classes/_core_try_.try.html),
+- [Try](https://funfix.org/api/classes/core_try.try.html),
   for capturing exceptional results and manipulating them as values
-- [Eval](https://funfix.org/api/classes/_effect_eval_.eval.html)
+- [Eval](https://funfix.org/api/classes/effect_eval.eval.html)
   for suspending synchronous side effects and controlling evaluation
   (e.g. memoization, error handling)
 
 Low-level data types and utilities:
 
-- [IEquals](https://funfix.org/api/interfaces/_core_std_.iequals.html) interface
-  for structural equality in [is](https://funfix.org/api/modules/_core_std_.html#is)
-- [Cancelable](https://funfix.org/api/classes/_exec_cancelable_.cancelable.html) /
-  [BoolCancelable](https://funfix.org/api/classes/_exec_cancelable_.boolcancelable.html),
+- [IEquals](https://funfix.org/api/interfaces/core_std.iequals.html) interface
+  for structural equality in [is](https://funfix.org/api/modules/core_std.html#is)
+- [Cancelable](https://funfix.org/api/classes/exec_cancelable.cancelable.html) /
+  [BoolCancelable](https://funfix.org/api/classes/exec_cancelable.boolcancelable.html),
   for describing composable cancellation actions
-- [TimeUnit and Duration](https://funfix.org/api/modules/_exec_time_.html) for
+- [TimeUnit and Duration](https://funfix.org/api/modules/exec_time.html) for
+  expressing timespans, along operations and conversions between time units
+- [Scheduler](https://funfix.org/api/classes/exec_scheduler.scheduler.html) for
   expressing timespans, along operations and conversions between time units
 
 More is coming (e.g. `Task`, etc)

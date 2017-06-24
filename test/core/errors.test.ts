@@ -21,7 +21,8 @@ import {
   IllegalInheritanceError,
   IllegalStateError,
   NoSuchElementError,
-  IllegalArgumentError
+  IllegalArgumentError,
+  NotImplementedError
 } from "../../src/funfix"
 
 describe("DummyError", () => {
@@ -101,6 +102,15 @@ describe("IllegalArgumentError", () => {
     const ex = new IllegalArgumentError("dummy")
 
     expect(ex.name).toBe("IllegalArgumentError")
+    expect(ex.message).toBe("dummy")
+  })
+})
+
+describe("NotImplementedError", () => {
+  it("has custom message", () => {
+    const ex = new NotImplementedError("dummy")
+
+    expect(ex.name).toBe("NotImplementedError")
     expect(ex.message).toBe("dummy")
   })
 })

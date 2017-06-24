@@ -13,13 +13,58 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * @flow
  */
 
-// Testing a la carte import
-import { Cancelable, BoolCancelable } from "../../src/funfix"
+/* @flow */
 
-Cancelable.empty()
-BoolCancelable.empty()
-BoolCancelable.alreadyCanceled()
+// Testing a la carte import
+import {
+  Cancelable,
+  BoolCancelable,
+  AssignCancelable,
+  MultiAssignCancelable,
+  SerialCancelable,
+  SingleAssignCancelable } from "../../src/funfix"
+
+const simple1: Cancelable = Cancelable.empty()
+const simple2: Cancelable = Cancelable.from(() => { console.log("hello") })
+const simple3: Cancelable = Cancelable.collection(simple1, simple2)
+simple3.cancel()
+
+const bool1: BoolCancelable = BoolCancelable.alreadyCanceled()
+const bool2: BoolCancelable = BoolCancelable.empty()
+const bool3: BoolCancelable = BoolCancelable.from(() => { console.log("hello") })
+const bool4: BoolCancelable = BoolCancelable.collection(simple1, simple2)
+
+bool3.cancel()
+const q1: boolean = bool3.isCanceled()
+
+const assign1: AssignCancelable = AssignCancelable.empty()
+const thisRef1: AssignCancelable = assign1.update(Cancelable.empty())
+const assign2: AssignCancelable = AssignCancelable.from(() => {})
+assign2.cancel()
+const assign3: AssignCancelable = AssignCancelable.alreadyCanceled()
+const q2: boolean = assign3.isCanceled()
+
+const mAssign1: MultiAssignCancelable = MultiAssignCancelable.empty()
+const thisRef2: MultiAssignCancelable = mAssign1.update(Cancelable.empty())
+const mAssign2: MultiAssignCancelable = MultiAssignCancelable.from(() => {})
+mAssign2.cancel()
+const q3: boolean = mAssign2.isCanceled()
+const mAssign3: MultiAssignCancelable = new MultiAssignCancelable()
+const mAssign4: MultiAssignCancelable = new MultiAssignCancelable(Cancelable.empty())
+
+const srAssign1: SerialCancelable = SerialCancelable.empty()
+const thisRef3: SerialCancelable = srAssign1.update(Cancelable.empty())
+const srAssign2: SerialCancelable = SerialCancelable.from(() => {})
+srAssign2.cancel()
+const q4: boolean = srAssign2.isCanceled()
+const srAssign3: SerialCancelable = new SerialCancelable()
+const srAssign4: SerialCancelable = new SerialCancelable(Cancelable.empty())
+
+const sAssign1: SingleAssignCancelable = SingleAssignCancelable.empty()
+const thisRef4: SingleAssignCancelable = sAssign1.update(Cancelable.empty())
+const sAssign2: SingleAssignCancelable = SingleAssignCancelable.from(() => {})
+sAssign2.cancel()
+const q5: boolean = sAssign2.isCanceled()
+const sAssign3: SingleAssignCancelable = new SingleAssignCancelable()

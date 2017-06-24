@@ -15,5 +15,35 @@
  * limitations under the License.
  */
 
+/**
+ * The `exec` package contains low level utilities and data types, providing a
+ * standard library that is needed for building higher level concurrency tools.
+ *
+ * Exports sub-modules:
+ *
+ * - [exec/cancelable](./exec_cancelable.html) for the {@link Cancelable} data type
+ * - [exec/scheduler](./exec_scheduler.html) for the {@link Scheduler} type
+ * - [exec/time](./exec_time.html) for expressing time durations with
+ *   {@link TimeUnit} and {@link Duration}
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { Cancelable } from "funfix/dist/exec"
+ * // ... or ...
+ * import { Cancelable } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module exec
+ */
+
+/***/
+
 export * from "./cancelable"
 export * from "./time"
+export * from "./scheduler"

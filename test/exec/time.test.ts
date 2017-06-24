@@ -684,6 +684,12 @@ describe("Duration (finite)", () => {
   test("it can convert from millis()", () => {
     const ref = Duration.millis(86400000)
     expect(ref.toDays()).toBe(1)
+
+    const ref2 = Duration.of(86400000)
+    expect(is(ref, ref2)).toBe(true)
+
+    const ref3 = Duration.of(ref)
+    expect(is(ref, ref3)).toBe(true)
   })
 
   test("it can convert from seconds()", () => {

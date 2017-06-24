@@ -15,6 +15,27 @@
  * limitations under the License.
  */
 
+/**
+ * Exposes the {@link Eval} data type, a monad which controls evaluation.
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { Eval } from "funfix/dist/effect/eval"
+ * // ... or ...
+ * import { Eval } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module effect/eval
+ */
+
+/***/
+
 import { Try } from "../core/try"
 import { IllegalStateError } from "../core/errors"
 

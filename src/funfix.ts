@@ -15,6 +15,37 @@
  * limitations under the License.
  */
 
+/**
+ * The `funfix` root module.
+ *
+ * Exports sub-modules:
+ *
+ * - [core](./core.html) for basic types and utilities that belong in a standard library
+ * - [exec](./exec.html) for low-level utilities, in support of everything else
+ * - [effect](./effect.html) for dealing with side effects
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { Try } from "funfix/dist/core/try"
+ * // ... or ...
+ * import { Try } from "funfix/dist/core"
+ * // ... or ...
+ * import { Try } from "funfix/dist"
+ * // ... or ...
+ * import { Try } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module funfix
+ */
+
+/***/
+
 // Exporting everything
 export * from "./core"
 export * from "./exec"

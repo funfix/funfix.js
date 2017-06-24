@@ -13,9 +13,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * @flow
  */
+
+/* @flow */
 
 declare export class Cancelable {
   cancel(): void;
@@ -25,10 +25,40 @@ declare export class Cancelable {
   static collection(...refs: Array<Cancelable>): Cancelable;
 }
 
-declare export class BoolCancelable {
+declare export class BoolCancelable extends Cancelable {
   isCanceled(): boolean;
 
   static from(cb: () => void): BoolCancelable;
   static empty(): BoolCancelable;
   static alreadyCanceled(): BoolCancelable;
+  static collection(...refs: Array<Cancelable>): BoolCancelable;
+}
+
+declare export class AssignCancelable extends BoolCancelable {
+  update(value: Cancelable): this;
+
+  static from(cb: () => void): AssignCancelable;
+  static empty(): AssignCancelable;
+  static alreadyCanceled(): AssignCancelable;
+}
+
+declare export class MultiAssignCancelable extends AssignCancelable {
+  constructor(initial?: Cancelable): MultiAssignCancelable;
+  update(value: Cancelable): this;
+  static from(cb: () => void): MultiAssignCancelable;
+  static empty(): MultiAssignCancelable;
+}
+
+declare export class SerialCancelable extends AssignCancelable {
+  constructor(initial?: Cancelable): SerialCancelable;
+  update(value: Cancelable): this;
+  static from(cb: () => void): SerialCancelable;
+  static empty(): SerialCancelable;
+}
+
+declare export class SingleAssignCancelable extends AssignCancelable {
+  constructor(): SingleAssignCancelable;
+  update(value: Cancelable): this;
+  static from(cb: () => void): SingleAssignCancelable;
+  static empty(): SingleAssignCancelable;
 }

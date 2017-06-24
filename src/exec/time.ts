@@ -15,6 +15,32 @@
  * limitations under the License.
  */
 
+/**
+ * Module exporting data types for expressing timespans.
+ *
+ * See:
+ *
+ * - {@link TimeUnit}
+ * - {@link Duration}
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { Duration } from "funfix/dist/exec/time"
+ * // ... or ...
+ * import { Duration } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module exec/time
+ */
+
+/***/
+
 import { IEquals } from "../core/std"
 import { IllegalArgumentError } from "../core/errors"
 
@@ -505,6 +531,34 @@ export class Duration implements IEquals<Duration> {
     } else {
       return 422082410550358
     }
+  }
+
+  /**
+   * Wraps the argument in a `Duration.millis` reference, in case it's
+   * a number, otherwise returns the argument as is.
+   *
+   * In Javascript code it is customary to express durations with
+   * numbers representing milliseconds and in functions it's good
+   * to still allow developers to do that because it's the standard
+   * convention.
+   *
+   * Thus one can work with a union type like `number | Duration`.
+   * And in case a `number` is given, then it is interpreted as
+   * milliseconds.
+   *
+   * Usage:
+   *
+   * ```typescript
+   * function delay(d: number | Duration, r: () => {}) {
+   *   const millis = Duration.of(d).toMillis()
+   *   return setTimeout(r, millis)
+   * }
+   * ```
+   */
+  static of(value: number | Duration): Duration {
+    return typeof value === "number"
+      ? Duration.millis(value)
+      : value
   }
 
   /** Returns a zero length duration. */
