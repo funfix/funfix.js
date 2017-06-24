@@ -43,6 +43,8 @@ Low-level data types and utilities:
   for describing composable cancellation actions
 - [TimeUnit and Duration](https://funfix.org/api/modules/exec_time.html) for
   expressing timespans, along operations and conversions between time units
+- [Scheduler](https://funfix.org/api/classes/exec_scheduler.scheduler.html) for
+  expressing timespans, along operations and conversions between time units
 
 More is coming (e.g. `Task`, etc)
 
