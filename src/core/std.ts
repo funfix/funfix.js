@@ -16,6 +16,27 @@
  */
 
 /**
+ * Utilities for dealing with universal equality and `hashCode`.
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { is, hashCode } from "funfix/dist/core/std"
+ * // ... or ...
+ * import { is, hashCode } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module core/std
+ */
+
+/***/
+
+/**
  * Interface for testing the equality of value objects.
  */
 export interface IEquals<A> {

@@ -15,6 +15,28 @@
  * limitations under the License.
  */
 
+/**
+ * Exposes the {@link Try} data type that can express the successful or failed
+ * result of a computation.
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { Try, Success, Failure } from "funfix/dist/core/try"
+ * // ... or ...
+ * import { Try, Success, Failure } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module core/try
+ */
+
+/***/
+
 import * as std from "./std"
 import {NoSuchElementError} from "./errors"
 import {None, Option, Some} from "./option"

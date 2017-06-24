@@ -33,7 +33,8 @@
     "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "prebuild": "rimraf dist",
     "copy-flow": "ts-node tools/copy-flow.ts",
-    "build": "tsc && rollup -c && typedoc --theme minimal --excludePrivate --out dist/docs --target es6 --readme rootdoc.md src && yarn run copy-flow",
+    "doc": "typedoc --theme minimal --excludeNotExported --out dist/docs --target es6 --name Funfix --readme rootdoc.md src",
+    "build": "tsc && rollup -c && npm run doc && yarn run copy-flow",
     "start": "tsc-watch --onSuccess 'rollup -c'",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -119,7 +120,8 @@
     "tslint-config-standard": "^6.0.1",
     "tslint-eslint-rules": "^4.1.1",
     "typedoc": "^0.7.1",
-    "typescript": "^2.3.3",
+    "typedoc-plugin-external-module-name": "^1.0.9",
+    "typescript": "^2.3.4",
     "validate-commit-msg": "^2.12.1"
   }
 }

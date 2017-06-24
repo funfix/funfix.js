@@ -13,9 +13,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * @flow
  */
+
+/* @flow */
 
 import {
   TimeUnit,
@@ -60,3 +60,6 @@ const d23: Duration = Duration.zero()
 
 const d24: number = new Duration(10, MINUTES).duration
 const d25: TimeUnit = new Duration(10, MINUTES).unit
+
+const d26: Duration = Duration.of(1000)
+const d27: Duration = Duration.of(Duration.millis(1000))

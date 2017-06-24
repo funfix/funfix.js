@@ -16,6 +16,28 @@
  */
 
 /**
+ * Exposes standard, reusable error types, that help with some common scenarios,
+ * working with error types being preferable to working with strings.
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { IllegalStateError } from "funfix/dist/core/errors"
+ * // ... or ...
+ * import { IllegalStateError } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module core/errors
+ */
+
+/***/
+
+/**
  * A composite error represents a list of errors that were caught
  * while executing logic which delays re-throwing of errors.
  */
@@ -101,5 +123,16 @@ export class IllegalArgumentError extends Error {
   constructor(message?: string) {
     super(message)
     this.name = "IllegalArgumentError"
+  }
+}
+
+/**
+ * Signals that a function or a method is missing an implementation,
+ * which should be provided in the future.
+ */
+export class NotImplementedError extends Error {
+  constructor(message?: string) {
+    super(message)
+    this.name = "NotImplementedError"
   }
 }

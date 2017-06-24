@@ -13,9 +13,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * @flow
  */
+
+/* @flow */
 
 declare export class Cancelable {
   cancel(): void;
@@ -34,31 +34,31 @@ declare export class BoolCancelable extends Cancelable {
   static collection(...refs: Array<Cancelable>): BoolCancelable;
 }
 
-declare export class AssignableCancelable extends BoolCancelable {
+declare export class AssignCancelable extends BoolCancelable {
   update(value: Cancelable): this;
 
-  static from(cb: () => void): AssignableCancelable;
-  static empty(): AssignableCancelable;
-  static alreadyCanceled(): AssignableCancelable;
+  static from(cb: () => void): AssignCancelable;
+  static empty(): AssignCancelable;
+  static alreadyCanceled(): AssignCancelable;
 }
 
-declare export class MultiAssignmentCancelable extends AssignableCancelable {
-  constructor(initial?: Cancelable): MultiAssignmentCancelable;
+declare export class MultiAssignCancelable extends AssignCancelable {
+  constructor(initial?: Cancelable): MultiAssignCancelable;
   update(value: Cancelable): this;
-  static from(cb: () => void): MultiAssignmentCancelable;
-  static empty(): MultiAssignmentCancelable;
+  static from(cb: () => void): MultiAssignCancelable;
+  static empty(): MultiAssignCancelable;
 }
 
-declare export class SerialAssignmentCancelable extends AssignableCancelable {
-  constructor(initial?: Cancelable): SerialAssignmentCancelable;
+declare export class SerialCancelable extends AssignCancelable {
+  constructor(initial?: Cancelable): SerialCancelable;
   update(value: Cancelable): this;
-  static from(cb: () => void): SerialAssignmentCancelable;
-  static empty(): SerialAssignmentCancelable;
+  static from(cb: () => void): SerialCancelable;
+  static empty(): SerialCancelable;
 }
 
-declare export class SingleAssignmentCancelable extends AssignableCancelable {
-  constructor(): SingleAssignmentCancelable;
+declare export class SingleAssignCancelable extends AssignCancelable {
+  constructor(): SingleAssignCancelable;
   update(value: Cancelable): this;
-  static from(cb: () => void): SingleAssignmentCancelable;
-  static empty(): SingleAssignmentCancelable;
+  static from(cb: () => void): SingleAssignCancelable;
+  static empty(): SingleAssignCancelable;
 }

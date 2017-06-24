@@ -13,6 +13,7 @@
     "no-var-keyword": true,
     "member-ordering": ["error", "fields-first"],
     "quotemark": [true, "double", "avoid-escape"],
-    "curly": false
+    "curly": false,
+    "ter-indent": false
   }
 }

@@ -18,10 +18,10 @@
 import {
   Cancelable, BoolCancelable,
   DummyError, CompositeError,
-  AssignableCancelable,
-  MultiAssignmentCancelable,
-  SerialAssignmentCancelable,
-  SingleAssignmentCancelable,
+  AssignCancelable,
+  MultiAssignCancelable,
+  SingleAssignCancelable,
+  SerialCancelable,
   IllegalStateError
 } from "../../src/funfix"
 
@@ -232,9 +232,9 @@ describe("BoolCancelable.alreadyCanceled", () => {
   })
 })
 
-describe("AssignableCancelable", () => {
+describe("AssignCancelable", () => {
   test("alreadyCanceled", () => {
-    const ref = AssignableCancelable.alreadyCanceled()
+    const ref = AssignCancelable.alreadyCanceled()
     expect(ref.isCanceled()).toBe(true)
 
     const c = BoolCancelable.empty()
@@ -248,15 +248,15 @@ describe("AssignableCancelable", () => {
   })
 
   test("empty", () => {
-    const ref = AssignableCancelable.empty()
-    expect(ref instanceof MultiAssignmentCancelable).toBe(true)
+    const ref = AssignCancelable.empty()
+    expect(ref instanceof MultiAssignCancelable).toBe(true)
   })
 
   test("from", () => {
     let effect = 0
-    const ref = AssignableCancelable.from(() => { effect += 1 })
+    const ref = AssignCancelable.from(() => { effect += 1 })
 
-    expect(ref instanceof MultiAssignmentCancelable).toBe(true)
+    expect(ref instanceof MultiAssignCancelable).toBe(true)
     ref.cancel()
 
     expect(ref.isCanceled()).toBe(true)
@@ -267,7 +267,7 @@ describe("AssignableCancelable", () => {
 describe("MultiAssignmentCancelable", () => {
   test("initialized to given instance", () => {
     const c = new TestCancelable()
-    const ref = new MultiAssignmentCancelable(c)
+    const ref = new MultiAssignCancelable(c)
     ref.cancel()
 
     expect(ref.isCanceled()).toBe(true)
@@ -276,8 +276,8 @@ describe("MultiAssignmentCancelable", () => {
   })
 
   test("update multiple times", () => {
-    const ref: MultiAssignmentCancelable =
-      MultiAssignmentCancelable.empty()
+    const ref: MultiAssignCancelable =
+      MultiAssignCancelable.empty()
 
     const c1 = new TestCancelable()
     ref.update(c1)
@@ -296,8 +296,8 @@ describe("MultiAssignmentCancelable", () => {
   })
 
   test("cancel while empty", () => {
-    const ref: MultiAssignmentCancelable =
-      MultiAssignmentCancelable.empty()
+    const ref: MultiAssignCancelable =
+      MultiAssignCancelable.empty()
 
     ref.cancel()
     expect(ref.isCanceled()).toBe(true)
@@ -308,8 +308,8 @@ describe("MultiAssignmentCancelable", () => {
   })
 
   test("from callback", () => {
-    const ref: MultiAssignmentCancelable =
-      MultiAssignmentCancelable.from(() => { effect += 1 })
+    const ref: MultiAssignCancelable =
+      MultiAssignCancelable.from(() => { effect += 1 })
 
     let effect = 0
     ref.cancel()
@@ -320,8 +320,8 @@ describe("MultiAssignmentCancelable", () => {
 
   test("from callback, update", () => {
     let effect = 0
-    const ref: MultiAssignmentCancelable =
-      MultiAssignmentCancelable.from(() => { effect += 1 })
+    const ref: MultiAssignCancelable =
+      MultiAssignCancelable.from(() => { effect += 1 })
 
     const c = new TestCancelable()
     ref.update(c)
@@ -336,7 +336,7 @@ describe("MultiAssignmentCancelable", () => {
 describe("SerialAssignmentCancelable", () => {
   test("initialized to given instance", () => {
     const c = new TestCancelable()
-    const ref = new SerialAssignmentCancelable(c)
+    const ref = new SerialCancelable(c)
     ref.cancel()
 
     expect(ref.isCanceled()).toBe(true)
@@ -345,8 +345,8 @@ describe("SerialAssignmentCancelable", () => {
   })
 
   test("update multiple times", () => {
-    const ref: SerialAssignmentCancelable =
-      SerialAssignmentCancelable.empty()
+    const ref: SerialCancelable =
+      SerialCancelable.empty()
 
     const c1 = new TestCancelable()
     ref.update(c1)
@@ -368,8 +368,8 @@ describe("SerialAssignmentCancelable", () => {
   })
 
   test("cancel while empty", () => {
-    const ref: SerialAssignmentCancelable =
-      SerialAssignmentCancelable.empty()
+    const ref: SerialCancelable =
+      SerialCancelable.empty()
 
     ref.cancel()
     expect(ref.isCanceled()).toBe(true)
@@ -381,8 +381,8 @@ describe("SerialAssignmentCancelable", () => {
 
   test("from callback", () => {
     let effect = 0
-    const ref: SerialAssignmentCancelable =
-      SerialAssignmentCancelable.from(() => { effect += 1 })
+    const ref: SerialCancelable =
+      SerialCancelable.from(() => { effect += 1 })
 
     ref.cancel()
     expect(effect).toBe(1)
@@ -391,7 +391,7 @@ describe("SerialAssignmentCancelable", () => {
 
   test("from callback, update", () => {
     let effect = 0
-    const ref = SerialAssignmentCancelable.from(() => { effect += 1 })
+    const ref = SerialCancelable.from(() => { effect += 1 })
 
     const c = new TestCancelable()
     ref.update(c)
@@ -405,8 +405,8 @@ describe("SerialAssignmentCancelable", () => {
 
 describe("SingleAssignmentCancelable", () => {
   test("update once before cancel", () => {
-    const ref: SingleAssignmentCancelable =
-      SingleAssignmentCancelable.empty()
+    const ref: SingleAssignCancelable =
+      SingleAssignCancelable.empty()
 
     const c = new TestCancelable()
     ref.update(c)
@@ -421,8 +421,8 @@ describe("SingleAssignmentCancelable", () => {
   })
 
   test("update after cancel", () => {
-    const ref: SingleAssignmentCancelable =
-      SingleAssignmentCancelable.empty()
+    const ref: SingleAssignCancelable =
+      SingleAssignCancelable.empty()
 
     ref.cancel()
     expect(ref.isCanceled()).toBe(true)
@@ -436,8 +436,8 @@ describe("SingleAssignmentCancelable", () => {
   })
 
   test("update multiple times", () => {
-    const ref: SingleAssignmentCancelable =
-      SingleAssignmentCancelable.empty()
+    const ref: SingleAssignCancelable =
+      SingleAssignCancelable.empty()
 
     const c1 = new TestCancelable()
     ref.update(c1)
@@ -456,8 +456,8 @@ describe("SingleAssignmentCancelable", () => {
   })
 
   test("from callback", () => {
-    const ref: SingleAssignmentCancelable =
-      SingleAssignmentCancelable.from(() => { effect += 1 })
+    const ref: SingleAssignCancelable =
+      SingleAssignCancelable.from(() => { effect += 1 })
 
     let effect = 0
     ref.cancel()
@@ -468,8 +468,8 @@ describe("SingleAssignmentCancelable", () => {
 
   test("from callback, update", () => {
     let effect = 0
-    const ref: SingleAssignmentCancelable =
-      SingleAssignmentCancelable.from(() => { effect += 1 })
+    const ref: SingleAssignCancelable =
+      SingleAssignCancelable.from(() => { effect += 1 })
 
     const c = BoolCancelable.empty()
     expect(() => ref.update(c)).toThrowError()

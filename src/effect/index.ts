@@ -15,4 +15,30 @@
  * limitations under the License.
  */
 
+/**
+ * The `effect` sub-module of Funfix is about exposing data types that allow
+ * for suspending and dealing with side effects.
+ *
+ * Exports sub-modules:
+ *
+ * - [effect/eval](./effect_eval.html) for the {@link Eval} data type
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { Eval } from "funfix/dist/effect"
+ * // ... or ...
+ * import { Eval } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module effect
+ */
+
+/***/
+
 export * from "./eval"

@@ -15,6 +15,29 @@
  * limitations under the License.
  */
 
+/**
+ * Exposes the {@link Cancelable} interface for dealing with the disposal
+ * of resources, along with `Cancelable` implementations for composing
+ * cancelable actions.
+ *
+ * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
+ * including ES2015 modules and `import` syntax:
+ *
+ * ```typescript
+ * import { Cancelable } from "funfix/dist/exec/cancelable"
+ * // ... or ...
+ * import { Cancelable } from "funfix"
+ * ```
+ *
+ * In absence of ES2015 compatibility, you can still rely on working with the
+ * packaged (`pkg.main`) universal distribution that works within all browsers
+ * and environments.
+ *
+ * @module exec/cancelable
+ */
+
+/***/
+
 import { CompositeError, IllegalStateError } from "../core/errors"
 
 /**
@@ -116,6 +139,7 @@ export abstract class Cancelable {
  * to instantiate it.
  *
  * @Private
+ * @Hidden
  */
 class WrapFn extends Cancelable {
   protected thunk: null | (() => void)
@@ -144,9 +168,10 @@ class WrapFn extends Cancelable {
  * @Hidden
  */
 const Empty: Cancelable =
-  new (class Empty extends Cancelable {
-    cancel() {}
-  })()
+  new (//noinspection JSUnusedLocalSymbols
+    class Empty extends Cancelable {
+      cancel() {}
+    })()
 
 /**
  * `BoolCancelable` represents a [[Cancelable]] that can be queried
@@ -330,10 +355,11 @@ class BoolEmpty extends BoolCancelable {
  * @Hidden
  */
 const AlreadyCanceled: BoolCancelable =
-  new (class AlreadyCanceled extends BoolCancelable {
-    isCanceled() { return true }
-    cancel() {}
-  })()
+  new (//noinspection JSUnusedLocalSymbols
+    class AlreadyCanceled extends BoolCancelable {
+      isCanceled() { return true }
+      cancel() {}
+    })()
 
 /**
  * Represents a type of [[Cancelable]] that can hold
@@ -344,7 +370,7 @@ const AlreadyCanceled: BoolCancelable =
  * canceled, then no assignment should happen and the update
  * reference should be canceled as well.
  */
-export abstract class AssignableCancelable extends BoolCancelable {
+export abstract class AssignCancelable extends BoolCancelable {
   /**
    * Updates the internal reference of this assignable cancelable
    * to the given value.
@@ -369,7 +395,7 @@ export abstract class AssignableCancelable extends BoolCancelable {
    *
    * The implementation returns the same reusable reference.
    */
-  public static alreadyCanceled(): AssignableCancelable {
+  public static alreadyCanceled(): AssignCancelable {
     return AlreadyCanceledAssignable
   }
 
@@ -377,11 +403,11 @@ export abstract class AssignableCancelable extends BoolCancelable {
    * Returns a new [[AssignableCancelable]] that's empty.
    *
    * The returned reference is an instance of
-   * [[MultiAssignmentCancelable]], but this is an implementation
+   * [[MultiAssignCancelable]], but this is an implementation
    * detail that may change in the future.
    */
-  public static empty(): AssignableCancelable {
-    return MultiAssignmentCancelable.empty()
+  public static empty(): AssignCancelable {
+    return MultiAssignCancelable.empty()
   }
 
   /**
@@ -401,8 +427,8 @@ export abstract class AssignableCancelable extends BoolCancelable {
    * ref.update(Cancelable.from(() => console.log("cancelled")))
    * ```
    */
-  public static from(cb: () => void): AssignableCancelable {
-    return MultiAssignmentCancelable.from(cb)
+  public static from(cb: () => void): AssignCancelable {
+    return MultiAssignCancelable.from(cb)
   }
 }
 
@@ -410,21 +436,22 @@ export abstract class AssignableCancelable extends BoolCancelable {
  * Internal reusable reference for [[AssignableCancelable]].
  * @Hidden
  */
-const AlreadyCanceledAssignable: AssignableCancelable =
-  new (class AlreadyCanceledAssignable extends AssignableCancelable {
-    isCanceled() { return true }
-    cancel() {}
-    update(value: Cancelable) { value.cancel(); return this }
-  })()
+const AlreadyCanceledAssignable: AssignCancelable =
+  new (//noinspection JSUnusedLocalSymbols
+    class AlreadyCanceledAssignable extends AssignCancelable {
+      isCanceled() { return true }
+      cancel() {}
+      update(value: Cancelable) { value.cancel(); return this }
+    })()
 
 /**
- * The `MultiAssignmentCancelable` is a [[Cancelable]] whose
+ * The `MultiAssignCancelable` is a [[Cancelable]] whose
  * underlying cancelable reference can be swapped for another.
  *
  * Example:
  *
  * ```typescript
- * const ref = MultiAssignmentCancelable()
+ * const ref = MultiAssignCancelable()
  * ref.update(c1) // sets the underlying cancelable to c1
  * ref.update(c2) // swaps the underlying cancelable to c2
  *
@@ -435,7 +462,7 @@ const AlreadyCanceledAssignable: AssignableCancelable =
  * Also see [[SerialCancelable]], which is similar, except that it
  * cancels the old cancelable upon assigning a new cancelable.
  */
-export class MultiAssignmentCancelable extends AssignableCancelable {
+export class MultiAssignCancelable extends AssignCancelable {
   private _underlying?: Cancelable
   private _canceled: boolean
 
@@ -467,31 +494,31 @@ export class MultiAssignmentCancelable extends AssignableCancelable {
   }
 
   /**
-   * Returns a new [[MultiAssignmentCancelable]] that's empty.
+   * Returns a new [[MultiAssignCancelable]] that's empty.
    */
-  public static empty(): MultiAssignmentCancelable {
-    return new MultiAssignmentCancelable()
+  public static empty(): MultiAssignCancelable {
+    return new MultiAssignCancelable()
   }
 
   /**
-   * Initiates an [[MultiAssignmentCancelable]] reference and assigns it
+   * Initiates an [[MultiAssignCancelable]] reference and assigns it
    * a reference that wraps the given `cb` callback.
    *
    * So this code:
    *
    * ```typescript
-   * MultiAssignmentCancelable.from(() => console.log("cancelled"))
+   * MultiAssignCancelable.from(() => console.log("cancelled"))
    * ```
    *
    * Is equivalent to this:
    *
    * ```typescript
-   * const ref = MultiAssignmentCancelable.empty()
+   * const ref = MultiAssignCancelable.empty()
    * ref.update(Cancelable.from(() => console.log("cancelled")))
    * ```
    */
-  public static from(cb: () => void): MultiAssignmentCancelable {
-    return new MultiAssignmentCancelable(Cancelable.from(cb))
+  public static from(cb: () => void): MultiAssignCancelable {
+    return new MultiAssignCancelable(Cancelable.from(cb))
   }
 }
 
@@ -503,7 +530,7 @@ export class MultiAssignmentCancelable extends AssignableCancelable {
  * Example:
  *
  * ```typescript
- * const ref = SerialAssignmentCancelable()
+ * const ref = SerialCancelable()
  * ref.update(c1) // sets the underlying cancelable to c1
  * ref.update(c2) // cancels c1, swaps the underlying cancelable to c2
  *
@@ -514,7 +541,7 @@ export class MultiAssignmentCancelable extends AssignableCancelable {
  * Also see [[SerialCancelable]], which is similar, except that it
  * cancels the old cancelable upon assigning a new cancelable.
  */
-export class SerialAssignmentCancelable extends AssignableCancelable {
+export class SerialCancelable extends AssignCancelable {
   private _underlying?: Cancelable
   private _canceled: boolean
 
@@ -548,51 +575,51 @@ export class SerialAssignmentCancelable extends AssignableCancelable {
   }
 
   /**
-   * Returns a new [[SerialAssignmentCancelable]] that's empty.
+   * Returns a new [[SerialCancelable]] that's empty.
    */
-  public static empty(): SerialAssignmentCancelable {
-    return new SerialAssignmentCancelable()
+  public static empty(): SerialCancelable {
+    return new SerialCancelable()
   }
 
   /**
-   * Initiates an [[SerialAssignmentCancelable]] reference and assigns it
+   * Initiates an [[SerialCancelable]] reference and assigns it
    * a reference that wraps the given `cb` callback.
    *
    * So this code:
    *
    * ```typescript
-   * SerialAssignmentCancelable.from(() => console.log("cancelled"))
+   * SerialCancelable.from(() => console.log("cancelled"))
    * ```
    *
    * Is equivalent to this:
    *
    * ```typescript
-   * const ref = SerialAssignmentCancelable.empty()
+   * const ref = SerialCancelable.empty()
    * ref.update(Cancelable.from(() => console.log("cancelled")))
    * ```
    */
-  public static from(cb: () => void): SerialAssignmentCancelable {
-    return new SerialAssignmentCancelable(Cancelable.from(cb))
+  public static from(cb: () => void): SerialCancelable {
+    return new SerialCancelable(Cancelable.from(cb))
   }
 }
 
 /**
- * The `SingleAssignmentCancelable` is a [[Cancelable]] that can be
+ * The `SingleAssignCancelable` is a [[Cancelable]] that can be
  * assigned only once to another cancelable reference.
  *
  * Example:
  *
  * ```typescript
- * const ref = SingleAssignmentCancelable()
+ * const ref = SingleAssignCancelable()
  * ref.update(c1) // sets the underlying cancelable to c1
  *
  * ref.update(c2) // throws IllegalStateError
  * ```
  *
- * See [[MultiAssignmentCancelable]] for a similar type that can be
+ * See [[MultiAssignCancelable]] for a similar type that can be
  * assigned multiple types.
  */
-export class SingleAssignmentCancelable extends AssignableCancelable {
+export class SingleAssignCancelable extends AssignCancelable {
   private _wasAssigned: boolean
   private _canceled: boolean
   private _underlying?: Cancelable
@@ -606,7 +633,7 @@ export class SingleAssignmentCancelable extends AssignableCancelable {
   /** @inheritdoc */
   public update(value: Cancelable): this {
     if (this._wasAssigned)
-      throw new IllegalStateError("SingleAssignmentCancelable#update multiple times")
+      throw new IllegalStateError("SingleAssignCancelable#update multiple times")
 
     this._wasAssigned = true
     if (this._canceled) value.cancel()
@@ -629,31 +656,31 @@ export class SingleAssignmentCancelable extends AssignableCancelable {
   }
 
   /**
-   * Returns a new [[SingleAssignmentCancelable]] that's empty.
+   * Returns a new [[SingleAssignCancelable]] that's empty.
    */
-  public static empty(): SingleAssignmentCancelable {
-    return new SingleAssignmentCancelable()
+  public static empty(): SingleAssignCancelable {
+    return new SingleAssignCancelable()
   }
 
   /**
-   * Initiates an [[SingleAssignmentCancelable]] reference and assigns it
+   * Initiates an [[SingleAssignCancelable]] reference and assigns it
    * a reference that wraps the given `cb` callback.
    *
    * So this code:
    *
    * ```typescript
-   * SingleAssignmentCancelable.from(() => console.log("cancelled"))
+   * SingleAssignCancelable.from(() => console.log("cancelled"))
    * ```
    *
    * Is equivalent to this:
    *
    * ```typescript
-   * const ref = SingleAssignmentCancelable.empty()
+   * const ref = SingleAssignCancelable.empty()
    * ref.update(Cancelable.from(() => console.log("cancelled")))
    * ```
    */
-  public static from(cb: () => void): SingleAssignmentCancelable {
-    const ref = new SingleAssignmentCancelable()
+  public static from(cb: () => void): SingleAssignCancelable {
+    const ref = new SingleAssignCancelable()
     ref.update(Cancelable.from(cb))
     return ref
   }

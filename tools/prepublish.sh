@@ -19,7 +19,7 @@ if [ "$CI" != true ]; then
 fi;
 
 cat > ./index.js.flow <<EOF
-/**
+/*
  * @flow
  *
  * File auto-generated. Needed because Flow needs an "index.js.flow"
