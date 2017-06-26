@@ -19,9 +19,11 @@ import * as Promise from "bluebird"
 import {
   Scheduler,
   GlobalScheduler,
+  TestScheduler,
   DummyError,
   Duration,
-  ExecutionModel
+  ExecutionModel,
+  is
 } from "../../src/funfix"
 
 describe("GlobalScheduler", () => {
@@ -229,5 +231,317 @@ describe("GlobalScheduler", () => {
       expect(r).toBe(1)
       expect(times).toBeGreaterThanOrEqual(2)
     })
+  })
+})
+
+describe("ExecutionModel", () => {
+  test("alwaysAsync", () => {
+    const ref1 = ExecutionModel.alwaysAsync()
+
+    expect(ref1.type).toBe("alwaysAsync")
+    expect(ref1.recommendedBatchSize).toBe(1)
+
+    const ref2 = ExecutionModel.alwaysAsync()
+    expect(ref1 === ref2).toBe(false)
+    expect(is(ref1, ref2)).toBe(true)
+
+    expect(ref1.hashCode()).toBe(ref2.hashCode())
+    expect(ref1.hashCode() !== ExecutionModel.synchronous().hashCode()).toBe(true)
+  })
+
+  test("synchronous", () => {
+    const ref1 = ExecutionModel.synchronous()
+    expect(ref1.type).toBe("synchronous")
+    expect(ref1.recommendedBatchSize).toBe(1 << 30)
+
+    const ref2 = ExecutionModel.synchronous()
+    expect(ref1 === ref2).toBe(false)
+    expect(is(ref1, ref2)).toBe(true)
+
+    expect(ref1.hashCode()).toBe(ref2.hashCode())
+    expect(ref1.hashCode() !== ExecutionModel.batched().hashCode()).toBe(true)
+  })
+
+  test("batched()", () => {
+    const ref1 = ExecutionModel.batched()
+    expect(ref1.type).toBe("batched")
+    expect(ref1.recommendedBatchSize).toBe(ExecutionModel.default.recommendedBatchSize)
+
+    const ref2 = ExecutionModel.default
+    expect(ref1 === ref2).toBe(false)
+    expect(is(ref1, ref2)).toBe(true)
+
+    expect(ref1.hashCode()).toBe(ref2.hashCode())
+    expect(ref1.hashCode() !== ExecutionModel.alwaysAsync().hashCode()).toBe(true)
+  })
+
+  test("batched(200)", () => {
+    const ref1 = ExecutionModel.batched(200)
+    expect(ref1.type).toBe("batched")
+    expect(ref1.recommendedBatchSize).toBe(256)
+
+    const ref2 = ExecutionModel.batched(200)
+    expect(ref1 === ref2).toBe(false)
+    expect(is(ref1, ref2)).toBe(true)
+
+    expect(ref1.hashCode()).toBe(ref2.hashCode())
+    expect(ref1.hashCode() !== ExecutionModel.alwaysAsync().hashCode()).toBe(true)
+  })
+})
+
+describe("TestScheduler", () => {
+  test("executes random tasks in once batch", () => {
+    const s = new TestScheduler()
+    const count = 2000
+    let effect = 0
+
+    for (let i = 0; i < count; i++) {
+      const delay = Math.floor(Math.random() * 10) * 1000
+      if (delay === 0 && Math.floor(Math.random() * 10) % 2 === 0) {
+        s.execute(() => { effect += 1 })
+      } else {
+        s.scheduleOnce(delay, () => { effect += 1 })
+      }
+    }
+
+    expect(effect).toBe(0)
+    expect(s.tick(Duration.seconds(10))).toBe(count)
+
+    expect(effect).toBe(count)
+    expect(s.hasTasksLeft()).toBeFalsy()
+  })
+
+  test("executes random tasks in separate batches", () => {
+    const s = new TestScheduler()
+    const count = 2000
+    let effect = 0
+
+    for (let i = 0; i < count; i++) {
+      const delay = Math.floor(Math.random() * 10) * 1000
+      if (delay === 0 && Math.floor(Math.random() * 10) % 2 === 0) {
+        s.execute(() => { effect += 1 })
+      } else {
+        s.scheduleOnce(delay, () => { effect += 1 })
+      }
+    }
+
+    expect(effect).toBe(0)
+    let executed = 0
+    for (let i = 0; i < 10; i++) executed += s.tick(Duration.seconds(1))
+
+    expect(executed).toBe(count)
+    expect(effect).toBe(count)
+    expect(s.hasTasksLeft()).toBeFalsy()
+  })
+
+  test("nested execution", () => {
+    const s = new TestScheduler()
+    let effect = 0
+
+    s.execute(() => {
+      effect += 1
+
+      s.execute(() => {
+        s.execute(() => { effect += 10 })
+        effect = effect * 2
+      })
+    })
+
+    expect(effect).toBe(0)
+    expect(s.tick()).toBe(3)
+    expect(effect).toBe(1 * 2 + 10)
+  })
+
+  test("nested scheduleOnce", () => {
+    const s = new TestScheduler()
+    let effect = 0
+
+    s.scheduleOnce(Duration.seconds(4), () => {
+      effect = effect * 2
+    })
+
+    s.scheduleOnce(1000, () => {
+      effect += 1
+
+      s.scheduleOnce(1000, () => {
+        s.scheduleOnce(1000, () => { effect += 10 })
+        effect = effect * 2
+      })
+    })
+
+    expect(effect).toBe(0)
+    expect(s.tick()).toBe(0)
+
+    expect(s.tick(Duration.seconds(1))).toBe(1)
+    expect(effect).toBe(1)
+    expect(s.hasTasksLeft()).toBe(true)
+
+    expect(s.tick(Duration.seconds(1))).toBe(1)
+    expect(effect).toBe(1 * 2)
+    expect(s.hasTasksLeft()).toBe(true)
+
+    expect(s.tick(Duration.seconds(1))).toBe(1)
+    expect(effect).toBe(1 * 2 + 10)
+    expect(s.hasTasksLeft()).toBe(true)
+
+    expect(s.tick(Duration.seconds(1))).toBe(1)
+    expect(effect).toBe((1 * 2 + 10) * 2)
+    expect(s.hasTasksLeft()).toBe(false)
+  })
+
+  test("schedule with delay should be cancelable", () => {
+    const s = new TestScheduler()
+    let effect = 0
+
+    s.execute(() => { effect += 1 })
+    s.scheduleOnce(Duration.seconds(1), () => { effect += 1 })
+    const ref = s.scheduleOnce(Duration.seconds(2), () => { effect += 1 })
+    s.scheduleOnce(Duration.seconds(3), () => { effect += 1 })
+
+    ref.cancel()
+
+    expect(s.tick()).toBe(1)
+    expect(s.tick(1000)).toBe(1)
+    expect(s.tick(1000)).toBe(0)
+    expect(s.tick(1000)).toBe(1)
+
+    expect(s.hasTasksLeft()).toBe(false)
+    expect(effect).toBe(3)
+    expect(s.currentTimeMillis()).toBe(3000)
+  })
+
+  test("scheduleWithFixedDelay(number, number)", () => {
+    const s = new TestScheduler()
+    let times = 0
+
+    const ref = s.scheduleWithFixedDelay(1000, 2000, () => { times += 1 })
+
+    s.tick()
+    expect(times).toBe(0)
+    s.tick(1000)
+    expect(times).toBe(1)
+    s.tick(1000)
+    expect(times).toBe(1)
+    s.tick(1000)
+    expect(times).toBe(2)
+    s.tick(2000)
+    expect(times).toBe(3)
+
+    ref.cancel()
+    expect(s.hasTasksLeft()).toBe(false)
+    s.tick(2000)
+    expect(times).toBe(3)
+    expect(s.currentTimeMillis()).toBe(7000)
+  })
+
+  test("scheduleWithFixedDelay(Duration, Duration)", () => {
+    const s = new TestScheduler()
+    let times = 0
+
+    const ref = s.scheduleWithFixedDelay(Duration.seconds(1), Duration.seconds(2), () => { times += 1 })
+
+    s.tick()
+    expect(times).toBe(0)
+    s.tick(1000)
+    expect(times).toBe(1)
+    s.tick(1000)
+    expect(times).toBe(1)
+    s.tick(1000)
+    expect(times).toBe(2)
+    s.tick(2000)
+    expect(times).toBe(3)
+
+    ref.cancel()
+    expect(s.hasTasksLeft()).toBe(false)
+    s.tick(2000)
+    expect(times).toBe(3)
+    expect(s.currentTimeMillis()).toBe(7000)
+  })
+
+test("scheduleAtFixedRate(number, number)", () => {
+    const s = new TestScheduler()
+    let times = 0
+
+    const ref = s.scheduleAtFixedRate(1000, 2000, () => { times += 1 })
+
+    s.tick()
+    expect(times).toBe(0)
+    s.tick(1000)
+    expect(times).toBe(1)
+    s.tick(1000)
+    expect(times).toBe(1)
+    s.tick(1000)
+    expect(times).toBe(2)
+    s.tick(2000)
+    expect(times).toBe(3)
+
+    ref.cancel()
+    expect(s.hasTasksLeft()).toBe(false)
+    s.tick(2000)
+    expect(times).toBe(3)
+    expect(s.currentTimeMillis()).toBe(7000)
+  })
+
+  test("scheduleAtFixedRate(Duration, Duration)", () => {
+    const s = new TestScheduler()
+    let times = 0
+
+    const ref = s.scheduleAtFixedRate(Duration.seconds(1), Duration.seconds(2), () => { times += 1 })
+
+    s.tick()
+    expect(times).toBe(0)
+    s.tick(1000)
+    expect(times).toBe(1)
+    s.tick(1000)
+    expect(times).toBe(1)
+    s.tick(1000)
+    expect(times).toBe(2)
+    s.tick(2000)
+    expect(times).toBe(3)
+
+    ref.cancel()
+    expect(s.hasTasksLeft()).toBe(false)
+    s.tick(2000)
+    expect(times).toBe(3)
+  })
+
+  test("errors get captured", () => {
+    let errors = []
+    const s = new TestScheduler(undefined, (err) => errors.push(err))
+
+    const dummy = new DummyError("dummy")
+    s.execute(() => { throw dummy })
+    s.execute(() => { throw dummy })
+
+    s.tick()
+
+    expect(errors.length).toBe(2)
+    expect(errors[0]).toBe(dummy)
+    expect(errors[1]).toBe(dummy)
+
+    expect(s.triggeredFailures().length).toBe(2)
+    expect(s.triggeredFailures()[0]).toBe(dummy)
+    expect(s.triggeredFailures()[1]).toBe(dummy)
+  })
+
+  test("executionModel", () => {
+    const s = new TestScheduler()
+    expect(s.executionModel).toBe(ExecutionModel.default)
+
+    const s2 = s.withExecutionModel(ExecutionModel.synchronous())
+    expect(s2.executionModel.type).toBe("synchronous")
+    expect(s2.executionModel.recommendedBatchSize).toBe(1 << 30)
+
+    const s3 = s.withExecutionModel(ExecutionModel.alwaysAsync())
+    expect(s3.executionModel.type).toBe("alwaysAsync")
+    expect(s3.executionModel.recommendedBatchSize).toBe(1)
+
+    const s4 = s.withExecutionModel(ExecutionModel.batched())
+    expect(s4.executionModel.type).toBe("batched")
+    expect(s4.executionModel.recommendedBatchSize).toBe(128)
+
+    const s5 = s.withExecutionModel(ExecutionModel.batched(200))
+    expect(s5.executionModel.type).toBe("batched")
+    expect(s5.executionModel.recommendedBatchSize).toBe(256)
   })
 })

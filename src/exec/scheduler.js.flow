@@ -47,6 +47,9 @@ declare export class ExecutionModel {
   recommendedBatchSize: number;
   type: "batched" | "synchronous" | "alwaysAsync";
 
+  equals(other: ExecutionModel): boolean;
+  hashCode(): number;
+
   static synchronous(): ExecutionModel;
   static alwaysAsync(): ExecutionModel;
   static batched(recommendedBatchSize?: number): ExecutionModel;

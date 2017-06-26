@@ -41,6 +41,7 @@
 import { Duration } from "./time"
 import { Cancelable, AssignCancelable, MultiAssignCancelable } from "./cancelable"
 import { maxPowerOf2, nextPowerOf2, arrayBSearchInsertPos } from "./internals"
+import { IEquals, hashCodeOfString } from "../core/std"
 
 /**
  * A `Scheduler` is an execution context that can execute units of
@@ -268,7 +269,7 @@ export abstract class Scheduler {
  * to choose the best execution model. This can be related to
  * recursive loops or to events pushed into consumers.
  */
-export class ExecutionModel {
+export class ExecutionModel implements IEquals<ExecutionModel> {
   /**
    * Recommended batch size used for breaking synchronous loops in
    * asynchronous batches. When streaming value from a producer to
@@ -317,6 +318,17 @@ export class ExecutionModel {
         this.recommendedBatchSize = nextPowerOf2(batchSize || 128)
         break
     }
+  }
+
+  /** Implements {@link IEquals.equals}. */
+  equals(other: ExecutionModel): boolean {
+    return this.type === other.type &&
+      this.recommendedBatchSize === other.recommendedBatchSize
+  }
+
+  /** Implements {@link IEquals.hashCode}. */
+  hashCode(): number {
+    return hashCodeOfString(this.type) * 47 + this.recommendedBatchSize
   }
 
   /**
@@ -526,8 +538,8 @@ export class TestScheduler extends Scheduler {
         // Executing current batch, randomized
         while (toExecute.length > 0) {
           const index = Math.floor(Math.random() * toExecute.length)
-          const elem = toExecute[index]
-          if (elem) try {
+          const elem = toExecute[index] as any
+          try {
             toExecute.splice(index, 1)
             elem[1]()
           } catch (e) {

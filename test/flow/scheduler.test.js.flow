@@ -56,3 +56,6 @@ const finished: boolean = test4.hasTasksLeft()
 const num1: number = test4.tick()
 const num2: number = test4.tick(1000)
 const num3: number = test4.tick(Duration.seconds(1))
+
+const equals: boolean = ExecutionModel.alwaysAsync().equals(ExecutionModel.synchronous())
+const hash: number = ExecutionModel.alwaysAsync().hashCode()
