@@ -374,7 +374,9 @@ export class ExecutionModel implements IEquals<ExecutionModel> {
  * [setImmediate]{@link https://developer.mozilla.org/en/docs/Web/API/Window/setImmediate}.
  */
 export class GlobalScheduler extends Scheduler {
-  /** If `true`, then `setImmediate` is used in `execute`. */
+  /**
+   * If `true`, then `setImmediate` is used in `execute`.
+   */
   private _useSetImmediate: boolean
 
   /**
@@ -427,6 +429,22 @@ export class GlobalScheduler extends Scheduler {
  *
  * ```typescript
  * const s = new TestScheduler()
+ *
+ * s.execute(() => { console.log("Hello, world!") })
+ *
+ * // Triggers actual execution
+ * s.tick()
+ *
+ * // Simulating delayed execution
+ * const task = s.scheduleOnce(Duration.seconds(10), () => {
+ *   console.log("Hello, delayed!")
+ * })
+ *
+ * // We can cancel a delayed task if we want
+ * task.cancel()
+ *
+ * // Or we can execute it by moving the internal clock forward in time
+ * s.tick(Duration.seconds(10))
  * ```
  */
 export class TestScheduler extends Scheduler {
@@ -567,7 +585,6 @@ export class TestScheduler extends Scheduler {
     return newScheduler
   }
 
-  /** @inheritdoc */
   private _updateTasks(tasks: Array<[number, () => void]>) {
     this._tasks = tasks
     this._tasksSearch = arrayBSearchInsertPos(this._tasks, e => -e[0])

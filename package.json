@@ -33,7 +33,7 @@
     "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "prebuild": "rimraf dist",
     "copy-flow": "ts-node tools/copy-flow.ts",
-    "doc": "typedoc --theme minimal --excludeNotExported --out dist/docs --target es6 --name Funfix --readme rootdoc.md src",
+    "doc": "typedoc --theme minimal --excludeNotExported --excludePrivate --out dist/docs --target es6 --name Funfix --readme rootdoc.md src",
     "build": "tsc && rollup -c && npm run doc && yarn run copy-flow",
     "start": "tsc-watch --onSuccess 'rollup -c'",
     "test": "jest",
