@@ -20,7 +20,8 @@ import {
   Scheduler,
   GlobalScheduler,
   DummyError,
-  Duration
+  Duration,
+  ExecutionModel
 } from "../../src/funfix"
 
 describe("GlobalScheduler", () => {
@@ -67,11 +68,31 @@ describe("GlobalScheduler", () => {
     })
   })
 
-
   test("currentTimeMillis", () => {
     const now = Date.now()
     const time = Scheduler.global().currentTimeMillis()
     expect(time).toBeGreaterThanOrEqual(now)
+  })
+
+  test("executionModel", () => {
+    const s = Scheduler.global()
+    expect(s.executionModel).toBe(ExecutionModel.default)
+
+    const s2 = s.withExecutionModel(ExecutionModel.synchronous())
+    expect(s2.executionModel.type).toBe("synchronous")
+    expect(s2.executionModel.recommendedBatchSize).toBe(1 << 30)
+
+    const s3 = s.withExecutionModel(ExecutionModel.alwaysAsync())
+    expect(s3.executionModel.type).toBe("alwaysAsync")
+    expect(s3.executionModel.recommendedBatchSize).toBe(1)
+
+    const s4 = s.withExecutionModel(ExecutionModel.batched())
+    expect(s4.executionModel.type).toBe("batched")
+    expect(s4.executionModel.recommendedBatchSize).toBe(128)
+
+    const s5 = s.withExecutionModel(ExecutionModel.batched(200))
+    expect(s5.executionModel.type).toBe("batched")
+    expect(s5.executionModel.recommendedBatchSize).toBe(256)
   })
 
   test("report errors", () => {

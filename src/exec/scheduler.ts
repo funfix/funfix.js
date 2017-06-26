@@ -40,6 +40,7 @@
 
 import { Duration } from "./time"
 import { Cancelable, AssignCancelable, MultiAssignCancelable } from "./cancelable"
+import { maxPowerOf2, nextPowerOf2, arrayBSearchInsertPos } from "./internals"
 
 /**
  * A `Scheduler` is an execution context that can execute units of
@@ -51,6 +52,15 @@ import { Cancelable, AssignCancelable, MultiAssignCancelable } from "./cancelabl
  * [[Scheduler.global]] reference is implemented with `setTimeout`.
  */
 export abstract class Scheduler {
+  /**
+   * @param em the {@link ExecutionModel} to use for
+   *        {@link Scheduler.executionModel}, defaults to
+   *        {@link ExecutionModel.default}
+   */
+  constructor(em?: ExecutionModel) {
+    this.executionModel = em || ExecutionModel.default
+  }
+
   /**
    * Schedules the given `command` for async execution.
    *
@@ -200,11 +210,149 @@ export abstract class Scheduler {
   }
 
   /**
+   *  The {@link ExecutionModel} is a specification of how run-loops
+   * and producers should behave in regards to executing tasks
+   * either synchronously or asynchronously.
+   */
+  public executionModel: ExecutionModel
+
+  /**
+   * Given a function that will receive the underlying
+   * {@link ExecutionModel}, returns a new {@link Scheduler}
+   * reference, based on the source that exposes the new
+   * `ExecutionModel` value when queried by means of the
+   * {@link Scheduler.executionModel} property.
+   *
+   * This method enables reusing global scheduler references in
+   * a local scope, but with a slightly modified execution model
+   * to inject
+   *
+   * The contract of this method (things you can rely on):
+   *
+   *  1. the source `Scheduler` must not be modified in any way
+   *  2. the implementation should wrap the source efficiently, such
+   *     that the result mirrors the source `Scheduler` in every way
+   *     except for the execution model
+   *
+   * Sample:
+   *
+   * ```typescript
+   * import { Scheduler, ExecutionModel } from "funfix"
+   *
+   * const scheduler = Schedule.global()
+   *   .withExecutionModel(ExecutionModel.synchronous())
+   * ```
+   */
+  public abstract withExecutionModel(em: ExecutionModel): Scheduler
+
+  /**
    * Returns a reusable [[GlobalScheduler]] reference.
    */
   static global(): GlobalScheduler {
     return globalSchedulerRef
   }
+}
+
+/**
+ * The `ExecutionModel` is a specification for how potentially asynchronous
+ * run-loops should execute, imposed by the `Scheduler`.
+ *
+ * When executing tasks, a run-loop can always execute tasks
+ * asynchronously (by forking logical threads), or it can always
+ * execute them synchronously (same thread and call-stack, by
+ * using an internal trampoline), or it can do a mixed mode
+ * that executes tasks in batches before forking.
+ *
+ * The specification is considered a recommendation for how
+ * run loops should behave, but ultimately it's up to the client
+ * to choose the best execution model. This can be related to
+ * recursive loops or to events pushed into consumers.
+ */
+export class ExecutionModel {
+  /**
+   * Recommended batch size used for breaking synchronous loops in
+   * asynchronous batches. When streaming value from a producer to
+   * a synchronous consumer it's recommended to break the streaming
+   * in batches as to not hold the current thread or run-loop
+   * indefinitely.
+   *
+   * This is rounded to the next power of 2, because then for
+   * applying the modulo operation we can just do:
+   *
+   * ```typescript
+   * const modulus = recommendedBatchSize - 1
+   * // ...
+   * nr = (nr + 1) & modulus
+   * ```
+   */
+  public recommendedBatchSize: number
+
+  /**
+   * The type of the execution model, which can be:
+   *
+   * - `batched`: the default, specifying an mixed execution
+   *   mode under which tasks are executed synchronously in
+   *   batches up to a maximum size; after a batch of
+   *   {@link recommendedBatchSize} is executed, the next
+   *   execution should be asynchronous.
+   * - `synchronous`: specifies that execution should be
+   *   synchronous (immediate, trampolined) for as long as
+   *   possible.
+   * - `alwaysAsync`: specifies a run-loop should always do
+   *   async execution of tasks, triggering asynchronous
+   *   boundaries on each step.
+   */
+  public type: "batched" | "synchronous" | "alwaysAsync"
+
+  private constructor(type: "batched" | "synchronous" | "alwaysAsync", batchSize?: number) {
+    this.type = type
+    switch (type) {
+      case "synchronous":
+        this.recommendedBatchSize = maxPowerOf2
+        break
+      case "alwaysAsync":
+        this.recommendedBatchSize = 1
+        break
+      case "batched":
+        this.recommendedBatchSize = nextPowerOf2(batchSize || 128)
+        break
+    }
+  }
+
+  /**
+   * An {@link ExecutionModel} that specifies that execution should be
+   * synchronous (immediate, trampolined) for as long as possible.
+   */
+  static synchronous(): ExecutionModel {
+    return new ExecutionModel("synchronous")
+  }
+
+  /**
+   * An {@link ExecutionModel} that specifies a run-loop should always do
+   * async execution of tasks, thus triggering asynchronous boundaries on
+   * each step.
+   */
+  static alwaysAsync(): ExecutionModel {
+    return new ExecutionModel("alwaysAsync")
+  }
+
+  /**
+   * Returns an {@link ExecutionModel} that specifies a mixed execution
+   * mode under which tasks are executed synchronously in batches up to
+   * a maximum size, the `recommendedBatchSize`.
+   *
+   * After such a batch of {@link recommendedBatchSize} is executed, the
+   * next execution should have a forced asynchronous boundary.
+   */
+  static batched(recommendedBatchSize?: number): ExecutionModel {
+    return new ExecutionModel("batched", recommendedBatchSize)
+  }
+
+  /**
+   * The default {@link ExecutionModel} that should be used whenever
+   * an execution model isn't explicitly specified.
+   */
+  static default: ExecutionModel = ExecutionModel.batched()
 }
 
 /**
@@ -222,9 +370,12 @@ export class GlobalScheduler extends Scheduler {
    * `GlobalScheduler` implementation that it can use the nonstandard
    * `setImmediate` for scheduling asynchronous tasks without extra
    * delays.
+   *
+   * @param em is the {@link ExecutionModel} that will be exposed
+   * by the resulting `Scheduler` instance.
    */
-  constructor(canUseSetImmediate?: boolean) {
-    super()
+  constructor(canUseSetImmediate?: boolean, em?: ExecutionModel) {
+    super(em)
     // tslint:disable:strict-type-predicates
     this._useSetImmediate = (canUseSetImmediate || false) &&
       (typeof setImmediate === "function")
@@ -249,6 +400,165 @@ export class GlobalScheduler extends Scheduler {
     const ms = Math.max(0, Duration.of(delay).toMillis())
     const task = setTimeout(r, ms)
     return Cancelable.from(() => clearTimeout(task))
+  }
+  /** @inheritdoc */
+  withExecutionModel(em: ExecutionModel) {
+    return new GlobalScheduler(this._useSetImmediate, em)
+  }
+}
+
+/**
+ * The `TestScheduler` is a {@link Scheduler} type meant for testing purposes,
+ * being capable of simulating asynchronous execution and the passage of time.
+ *
+ * Example:
+ *
+ * ```typescript
+ * const s = new TestScheduler()
+ * ```
+ */
+export class TestScheduler extends Scheduler {
+  private _reporter: (error: any) => void
+  private _clock: number
+  private _triggeredFailures: Array<any>
+  private _tasks: Array<[number, () => void]>
+  private _tasksSearch: (search: number) => number
+
+  constructor(em?: ExecutionModel, reporter?: (error: any) => void) {
+    super(em)
+    this._reporter = reporter || (_ => {})
+    this._clock = 0
+    this._triggeredFailures = []
+    this._updateTasks([])
+  }
+
+  /**
+   * Returns a list of triggered errors, if any happened during
+   * the {@link tick} execution.
+   */
+  public triggeredFailures(): Array<any> { return this._triggeredFailures }
+
+  /**
+   * Returns `true` if there are any tasks left to execute, `false`
+   * otherwise.
+   */
+  public hasTasksLeft(): boolean { return this._tasks.length > 0 }
+
+  /** @inheritdoc */
+  public execute(runnable: () => void): void {
+    this._tasks.push([this._clock, runnable])
+  }
+
+  /** @inheritdoc */
+  public reportFailure(e: any): void {
+    this._triggeredFailures.push(e)
+    this._reporter(e)
+  }
+
+  /** @inheritdoc */
+  public currentTimeMillis(): number {
+    return this._clock
+  }
+
+  /** @inheritdoc */
+  public scheduleOnce(delay: number | Duration, runnable: () => void): Cancelable {
+    const d = Math.max(0, Duration.of(delay).toMillis())
+    const scheduleAt = this._clock + d
+    const insertAt = this._tasksSearch(-scheduleAt)
+    const ref: [number, () => void] = [scheduleAt, runnable]
+    this._tasks.splice(insertAt, 0, ref)
+
+    return Cancelable.from(() => {
+      const filtered: Array<[number, () => void]> = []
+      for (const e of this._tasks) {
+        if (e !== ref) filtered.push(e)
+      }
+      this._updateTasks(filtered)
+    })
+  }
+
+  /**
+   * Executes the current batch of tasks that are pending, relative
+   * to the current {@link TestScheduler.clock|clock}.
+   *
+   * ```typescript
+   * const s = new TestScheduler()
+   *
+   * // Immediate execution
+   * s.execute(() => console.log("A"))
+   * s.execute(() => console.log("B"))
+   * // Delay with 1 second from now
+   * s.scheduleOnce(Duration.seconds(1), () => console.log("C"))
+   * s.scheduleOnce(Duration.seconds(1), () => console.log("D"))
+   * // Delay with 2 seconds from now
+   * s.scheduleOnce(Duration.seconds(2), () => console.log("E"))
+   * s.scheduleOnce(Duration.seconds(2), () => console.log("F"))
+   *
+   * // Actual execution...
+   *
+   * // Prints A, B
+   * s.tick()
+   * // Prints C, D
+   * s.tick(Duration.seconds(1))
+   * // Prints E, F
+   * s.tick(Duration.seconds(1))
+   * ```
+   *
+   * @param duration is an optional timespan to user for incrementing
+   * the current {@link TestScheduler.clock|clock}, thus allowing
+   * the execution of tasks scheduled to execute with a delay.
+   *
+   * @return the number of executed tasks
+   */
+  public tick(duration?: number | Duration): number {
+    let toExecute = []
+    let jumpMs = Duration.of(duration || 0).toMillis()
+    let executed = 0
+
+    while (true) {
+      const peek = this._tasks.length > 0
+        ? this._tasks[this._tasks.length - 1]
+        : undefined
+
+      if (peek && peek[0] <= this._clock) {
+        toExecute.push(this._tasks.pop())
+      } else if (toExecute.length > 0) {
+        // Executing current batch, randomized
+        while (toExecute.length > 0) {
+          const index = Math.floor(Math.random() * toExecute.length)
+          const elem = toExecute[index]
+          if (elem) try {
+            toExecute.splice(index, 1)
+            elem[1]()
+          } catch (e) {
+            this.reportFailure(e)
+          } finally {
+            executed += 1
+          }
+        }
+      } else if (jumpMs > 0) {
+        const nextTaskJump = peek && (peek[0] - this._clock) || jumpMs
+        const add = Math.min(nextTaskJump, jumpMs)
+        this._clock += add
+        jumpMs -= add
+      } else {
+        break
+      }
+    }
+    return executed
+  }
+
+  /** @inheritdoc */
+  public withExecutionModel(em: ExecutionModel): TestScheduler {
+    const newScheduler = new TestScheduler(em)
+    newScheduler._updateTasks(this._tasks)
+    return newScheduler
+  }
+
+  /** @inheritdoc */
+  private _updateTasks(tasks: Array<[number, () => void]>) {
+    this._tasks = tasks
+    this._tasksSearch = arrayBSearchInsertPos(this._tasks, e => -e[0])
   }
 }
 
