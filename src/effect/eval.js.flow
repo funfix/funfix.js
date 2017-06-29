@@ -37,7 +37,7 @@ declare export class Eval<+A> {
   forEachL(cb: (a: A) => void): Eval<void>;
   forEach(cb: (a: A) => void): void;
 
-  static of<A>(thunk: () => A): Eval<A>;
+  static of<A>(thunk: (() => A) | string): Eval<A>;
   static pure<A>(value: A): Eval<A>;
   static now<A>(value: A): Eval<A>;
   static raise<A>(e: any): Eval<A>;

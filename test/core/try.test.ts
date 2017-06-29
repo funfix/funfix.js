@@ -32,6 +32,18 @@ describe("Try.of", () => {
     const error = new DummyError("dummy")
     expect(is(Try.of(() => { throw error }), Failure(error))).toBe(true)
   })
+
+  it("should interpret JSON", () => {
+    const fa = Try.of<{[key: string]: number}>('{ "number": 100 }')
+    const n: number = fa.get()["number"]
+    expect(n).toBe(100)
+  })
+
+  it("does not accept arbitrary strings", () => {
+    const value = 100
+    const r = Try.of("value")
+    expect(r.failed().map(_ => _.name).get()).toBe("SyntaxError")
+  })
 })
 
 describe("Try #get", () => {

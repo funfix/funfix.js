@@ -413,10 +413,45 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * Evaluates the given `thunk` and returns either a [[Success]],
    * in case the evaluation succeeded, or a [[Failure]], in case
    * an exception was thrown.
+   *
+   * The `thunk` can be either a plain no-args function, or a
+   * string that gets evaluated as JSON.
+   *
+   * Example with a plain function:
+   *
+   * ```typescript
+   * let effect = 0
+   *
+   * const e = Try.of(() => { effect += 1; return effect })
+   * e.get() // 1
+   * ```
+   *
+   * Example showing evaluation of a string as JSON:
+   *
+   * ```typescript
+   * const json = '{ "number": 1000 }'
+   *
+   * const num = Try.of<number>("1000")
+   * num.get() // 1000
+   *
+   * const obj = Try.of<{[key: string]: number}>('{ "number": 100 }')
+   * e.get()["number"] // 1000
+   * ```
+   *
+   * Note this is meant only for interpreting JSON data-structures,
+   * being equivalent with a `JSON.parse()`, only lazy. But arbitrary
+   * Javascript code does not work (i.e. this is not `eval`):
+   *
+   * ```typescript
+   * >>> Try.of("1 + 1").get()
+   * SyntaxError: Unexpected token + in JSON at position 2
+   * ```
    */
-  static of<A>(thunk: () => A): Try<A> {
+  static of<A>(thunk: (() => A) | string): Try<A> {
     try {
-      return Success(thunk())
+      return Success(typeof thunk === "function"
+        ? thunk()
+        : JSON.parse(thunk as string))
     } catch (e) {
       return Failure(e)
     }
