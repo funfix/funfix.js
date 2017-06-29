@@ -139,7 +139,7 @@ describe("GlobalScheduler", () => {
     const now = s.currentTimeMillis()
     return p.then(r => {
       expect(r).toBe(1)
-      expect(finishedAt - now).toBeGreaterThanOrEqual(50)
+      expect(finishedAt - now).toBeGreaterThanOrEqual(10)
     })
   })
 
@@ -525,6 +525,8 @@ test("scheduleAtFixedRate(number, number)", () => {
   })
 
   test("executionModel", () => {
+    let p: Promise<number> = null
+
     const s = new TestScheduler()
     expect(s.executionModel).toBe(ExecutionModel.default)
 

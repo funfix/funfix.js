@@ -113,3 +113,10 @@ const r26: Option<Animal> = dogOpt.orElse(Option.of(new Cat()))
 const r27: Option<Animal> = dogOpt.orElseL(() => Option.of(new Cat()))
 const r28: Option<Object> = dogOpt.orElse(Option.of(new Human()))
 const r29: Option<Object> = dogOpt.orElseL(() => Option.of(new Human()))
+
+// Option.of behavior
+const str1: ?string = null
+const opt1: Option<string> = Option.of(str1)
+
+const str2: string | null = null
+const opt2: Option<string> = Option.of(str2)

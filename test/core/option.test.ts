@@ -423,3 +423,23 @@ describe("Option map2, map3, map4, map5, map6", () => {
     }
   )
 })
+
+describe("Option.of", () => {
+  it("works", () => {
+    const str: string | null = "hello"
+    const opt: Option<string> = Option.of(str)
+    expect(is(opt, Some("hello"))).toBe(true)
+  })
+
+  it("type-checks for null", () => {
+    const str: string | null = null
+    const opt: Option<string> = Option.of(str)
+    expect(is(opt, None)).toBe(true)
+  })
+
+  it("type-checks for undefined", () => {
+    const str: string | undefined = undefined
+    const opt: Option<string> = Option.of(str)
+    expect(is(opt, None)).toBe(true)
+  })
+})

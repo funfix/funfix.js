@@ -42,7 +42,7 @@ declare export class Option<+A> {
 
   static empty<A>(): Option<A>;
   static none(): Option<empty>;
-  static of<A>(value: A | null | void): Option<A>;
+  static of<A>(value: ?A): Option<A>;
   static pure<A>(value: A): Option<A>;
   static some<A>(value: A): Option<A>;
 
