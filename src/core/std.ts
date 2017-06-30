@@ -114,6 +114,7 @@ export function is<A>(lh: A, rh: A): boolean {
   if (!lh || !rh) {
     return false
   }
+  /* istanbul ignore else */
   /* tslint:disable-next-line:strict-type-predicates */
   if (typeof lh.valueOf === "function" && typeof rh.valueOf === "function") {
     const lh2 = lh.valueOf()
@@ -158,6 +159,7 @@ export function hashCode(ref: any): number {
   if (typeof ref === "number") {
     return ref & ref
   }
+  /* istanbul ignore else */
   if (typeof ref.valueOf === "function") {
     const v = ref.valueOf()
     if (v !== ref) return hashCode(v)

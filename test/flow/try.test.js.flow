@@ -46,8 +46,3 @@ const r26: Try<Animal> = dogTry.orElse(Success(new Cat()))
 const r27: Try<Animal> = dogTry.orElseL(() => Success(new Cat()))
 const r28: Try<Object> = dogTry.orElse(Success(new Human()))
 const r29: Try<Object> = dogTry.orElseL(() => Success(new Human()))
-
-// Try.of(json)
-
-const json: Try<{[string]: number}> = Try.of('{ "number": 1000 }')
-const num: number = json.get()["number"]

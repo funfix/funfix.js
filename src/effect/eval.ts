@@ -334,50 +334,10 @@ export class Eval<A> {
   }
 
   /**
-   * Builds an {@link Eval.always} reference out of the
-   * given `thunk`.
-   *
-   * The `thunk` can be either a plain no-args function, or a
-   * string that gets evaluated as JSON.
-   *
-   * Example with a plain function:
-   *
-   * ```typescript
-   * let effect = 0
-   *
-   * const e = Eval.of(() => { effect += 1; return effect })
-   *
-   * e.get() // 1
-   * e.get() // 2
-   * e.get() // 3
-   * ```
-   *
-   * Example showing evaluation of a string as JSON:
-   *
-   * ```typescript
-   * const json = '{ "number": 1000 }'
-   *
-   * const num = Eval.of<number>("1000")
-   * num.get() // 1000
-   *
-   *
-   * const obj = Eval.of<{[key: string]: number}>('{ "number": 100 }')
-   * e.get()["number"] // 1000
-   * ```
-   *
-   * Note this is meant only for interpreting JSON data-structures,
-   * being equivalent with a `JSON.parse()`, only lazy. But arbitrary
-   * Javascript code does not work (i.e. this is not `eval`):
-   *
-   * ```typescript
-   * >>> Eval.of("1 + 1").get()
-   * SyntaxError: Unexpected token + in JSON at position 2
-   * ```
+   * Alias for {@link Eval.always}.
    */
-  static of<A>(thunk: (() => A) | string): Eval<A> {
-    return Eval.always(typeof thunk === "function"
-      ? thunk
-      : () => JSON.parse(thunk as string))
+  static of<A>(thunk: () => A): Eval<A> {
+    return Eval.always(thunk)
   }
 
   /**

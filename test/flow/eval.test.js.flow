@@ -106,8 +106,3 @@ const error11: Eval<Dog> = Eval.suspend(() => Eval.now(new Cat()))
 // Memoize
 const r27: Eval<Cat> = Eval.of(() => new Cat()).memoize()
 const r28: Eval<Cat> = Eval.of(() => new Cat()).memoizeOnSuccess()
-
-// Eval.of(json)
-
-const json: Eval<{[string]: number}> = Eval.of('{ "number": 1000 }')
-const num: number = json.get()["number"]

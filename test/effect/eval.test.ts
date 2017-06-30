@@ -29,7 +29,7 @@ import * as inst from "../instances"
 
 describe("Eval basic data constructors tests", () => {
   test("sealed class",() => {
-    class Another extends Eval {}
+    class Another extends Eval<number> {}
     const err = Try.of(() => new Another().get()).failed().get()
     expect(err.name).toBe("IllegalStateError")
   })
@@ -202,19 +202,6 @@ describe("Eval basic data constructors tests", () => {
     expect(fa.get()).toBe(2)
     expect(fa.get()).toBe(3)
     expect(fa.get()).toBe(4)
-  })
-
-  test("Eval.of(json)", () => {
-    const fa = Eval.of<{[key: string]: number}>('{ "number": 100 }')
-
-    const n: number = fa.get()["number"]
-    expect(n).toBe(100)
-  })
-
-  test("Eval.of does not accept arbitrary strings", () => {
-    const value = 100
-    const r = Eval.of("value").run()
-    expect(r.failed().map(_ => _.name).get()).toBe("SyntaxError")
   })
 })
 
