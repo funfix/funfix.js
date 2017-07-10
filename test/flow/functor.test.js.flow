@@ -17,7 +17,22 @@
 
 /* @flow */
 
-declare export * from "./core";
-declare export * from "./types";
-declare export * from "./exec";
-declare export * from "./effect";
+// Testing a la carte import
+import type { OptionK } from "../../src/funfix"
+import {
+  Functor,
+  HasFunctor,
+  functorOf,
+  Option,
+  Some
+} from "../../src/funfix"
+
+const hasFunctor: HasFunctor<Option<any>> = Option
+const instance: Functor<Option<any>> = hasFunctor.__types.functor()
+
+const F: Functor<Option<any>> = functorOf(Option)
+
+const opt1: OptionK<string> = F.map(Some(1), x => String(x))
+const opt2: OptionK<number> = F.map(Some(1), x => x + 1)
+// $ExpectError
+const err1: OptionK<string> = F.map(Some(1), x => x + 1)

@@ -17,7 +17,18 @@
 
 /* @flow */
 
-import { Option, Some, None } from "../../src/funfix"
+import {
+  Option,
+  OptionInstances,
+  Some,
+  None,
+  Functor,
+  functorOf,
+  Applicative,
+  applicativeOf,
+  Eq,
+  eqOf
+} from "../../src/funfix"
 
 const opt: Option<number> = Option.of(1)
 
@@ -120,3 +131,14 @@ const opt1: Option<string> = Option.of(str1)
 
 const str2: string | null = null
 const opt2: Option<string> = Option.of(str2)
+
+// Option.__types
+
+const functor1: Functor<Option<any>> = functorOf(Option)
+const functor2: Functor<Option<any>> = OptionInstances.global
+
+const ap1: Applicative<Option<any>> = applicativeOf(Option)
+const ap2: Applicative<Option<any>> = OptionInstances.global
+
+const eq1: Eq<Option<any>> = eqOf(Option)
+const eq2: Eq<Option<any>> = OptionInstances.global

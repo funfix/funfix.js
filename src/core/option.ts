@@ -39,6 +39,9 @@
 
 import * as std from "./std"
 import { NoSuchElementError } from "./errors"
+import { Applicative } from "../types/applicative"
+import { Eq } from "../types/eq"
+import { HK } from "../types/kinds"
 
 /**
  * Represents optional values, inspired by Scala's `Option` and by
@@ -54,7 +57,7 @@ import { NoSuchElementError } from "./errors"
  *
  * @final
  */
-export class Option<A> implements std.IEquals<Option<A>> {
+export class Option<A> implements std.IEquals<Option<A>>, OptionK<A> {
   // tslint:disable-next-line:variable-name
   private _isEmpty: boolean
   private _ref: A
@@ -321,6 +324,18 @@ export class Option<A> implements std.IEquals<Option<A>> {
     else return std.hashCode(this._ref) << 2
   }
 
+  // tslint:disable-next-line:variable-name
+  __hkF: () => Option<any>
+  // tslint:disable-next-line:variable-name
+  __hkA: () => A
+
+  // tslint:disable-next-line:variable-name
+  static __types = () => ({
+    functor: OptionInstances.global,
+    applicative: OptionInstances.global,
+    eq: OptionInstances.global
+  })
+
   /**
    * Builds an [[Option]] reference that contains the given value.
    *
@@ -535,3 +550,42 @@ export const None: Option<never> =
     const F: any = Option
     return new F(null, true) as Option<never>
   })()
+
+/**
+ * Alias used for encoding higher-kinded types when implementing
+ * type class instances.
+ */
+export type OptionK<A> = HK<Option<any>, A>
+
+/**
+ * Type class instances provided by default for [[Option]].
+ */
+export class OptionInstances extends Applicative<Option<any>> implements Eq<Option<any>> {
+  /** @inheritdoc */
+  eqv(lh: Option<any>, rh: Option<any>): boolean {
+    return lh.equals(rh)
+  }
+
+  /** @inheritdoc */
+  pure<A>(a: A): OptionK<A> {
+    return Some(a)
+  }
+
+  /** @inheritdoc */
+  ap<A, B>(fa: OptionK<A>, ff: OptionK<(a: A) => B>): OptionK<B> {
+    return Option.map2(fa as Option<A>, ff as Option<(a: A) => B>, (a, f) => f(a))
+  }
+
+  /** @inheritdoc */
+  map<A, B>(fa: OptionK<A>, f: (a: A) => B): OptionK<B> {
+    return (fa as Option<A>).map(f)
+  }
+
+  /** @inheritdoc */
+  map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): OptionK<Z> {
+    return Option.map2(fa as Option<A>, fb as Option<B>, f)
+  }
+
+  static global: OptionInstances =
+    new OptionInstances()
+}

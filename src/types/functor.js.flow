@@ -17,7 +17,14 @@
 
 /* @flow */
 
-declare export * from "./core";
-declare export * from "./types";
-declare export * from "./exec";
-declare export * from "./effect";
+import { HK } from "./kinds"
+
+export interface Functor<F> {
+  map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B>;
+}
+
+export interface HasFunctor<F> {
+  +__types: { functor: () => Functor<F> }
+}
+
+declare export function functorOf<F>(constructor: HasFunctor<F>): Functor<F>;

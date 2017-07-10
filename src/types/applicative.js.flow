@@ -17,7 +17,21 @@
 
 /* @flow */
 
-declare export * from "./core";
-declare export * from "./types";
-declare export * from "./exec";
-declare export * from "./effect";
+import { HK } from "./kinds"
+import { Functor, HasFunctor } from "./functor"
+
+export interface Applicative<F> extends Functor<F> {
+  pure<A>(a: A): HK<F, A>;
+  ap<A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>): HK<F, B>;
+  map2<A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z): HK<F, Z>;
+  product<A, B>(fa: HK<F, A>, fb: HK<F, B>): HK<F, [A, B]>;
+}
+
+export interface HasApplicative<F> extends HasFunctor<F> {
+  +__types: {
+    functor: () => Functor<F>,
+    applicative: () => Applicative<F>
+  }
+}
+
+declare export function applicativeOf<F>(constructor: HasApplicative<F>): Applicative<F>;

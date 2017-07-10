@@ -1,0 +1,56 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+// Testing a la carte import
+import type { OptionK } from "../../src/funfix"
+import {
+  Applicative,
+  HasApplicative,
+  applicativeOf,
+  Option,
+  Some
+} from "../../src/funfix"
+
+const hasApplicative: HasApplicative<Option<any>> = Option
+const instance: Applicative<Option<any>> = hasApplicative.__types.applicative()
+
+const F: Applicative<Option<any>> = applicativeOf(Option)
+// $ExpectError
+const FErr: Applicative<any> = applicativeOf(String)
+
+const opt1: OptionK<string> = F.map(Some(1), x => String(x))
+const opt2: OptionK<number> = F.map(Some(1), x => x + 1)
+// $ExpectError
+const err1: OptionK<string> = F.map(Some(1), x => x + 1)
+
+const opt3: OptionK<number> = F.pure(1)
+// $ExpectError
+const err2: OptionK<string> = F.pure(1)
+
+const opt4: OptionK<number> = F.ap(F.pure(1), F.pure(x => x + 1))
+const opt5: OptionK<number> = F.ap(Some(1), Some(x => x + 1))
+// $ExpectError
+const err3: OptionK<number> = F.ap(Some(1), Some(x => String(x)))
+
+const opt6: OptionK<string> = F.map2(F.pure(1), F.pure(2), (a, b) => String(a + b))
+const opt7: OptionK<string> = F.map2(Some(1), Some(2), (a, b) => String(a + b))
+
+const opt8: OptionK<[number, string]> = F.product(Some(1), Some("value"))
+// $ExpectError
+const err4: OptionK<[string, number]> = F.product(Some(1), Some("value"))

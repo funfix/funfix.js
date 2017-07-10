@@ -17,7 +17,12 @@
 
 /* @flow */
 
-declare export * from "./core";
-declare export * from "./types";
-declare export * from "./exec";
-declare export * from "./effect";
+export interface Eq<A> {
+  eqv(lh: A, rh: A): boolean
+}
+
+export interface HasEq<F> {
+  +__types: { eq: () => Eq<F> }
+}
+
+declare export function eqOf<F>(constructor: HasEq<F>): Eq<F>;
