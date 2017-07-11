@@ -20,9 +20,9 @@
  *
  * Exports sub-modules:
  *
- * - [core](./core.html) for basic types and utilities that belong in a standard library
- * - [exec](./exec.html) for low-level utilities, in support of everything else
- * - [effect](./effect.html) for dealing with side effects
+ * - {@link core} for basic types and utilities that belong in a standard library
+ * - {@link exec} for low-level utilities, in support of everything else
+ * - {@link effect} for dealing with side effects
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:
@@ -48,5 +48,6 @@
 
 // Exporting everything
 export * from "./core"
+export * from "./types"
 export * from "./exec"
 export * from "./effect"

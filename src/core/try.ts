@@ -38,9 +38,10 @@
 /***/
 
 import * as std from "./std"
-import {NoSuchElementError} from "./errors"
-import {None, Option, Some} from "./option"
-import {Either, Left, Right} from "./either"
+import { NoSuchElementError } from "./errors"
+import { None, Option, Some } from "./option"
+import { Either, Left, Right } from "./either"
+import { Applicative, Eq, HK } from "../types"
 
 /**
  * The `Try` type represents a computation that may either result in an
@@ -88,7 +89,7 @@ import {Either, Left, Right} from "./either"
  * NOTE: all `Try` combinators will catch exceptions and return failure
  * unless otherwise specified in the documentation.
  */
-export class Try<A> implements std.IEquals<Try<A>> {
+export class Try<A> implements std.IEquals<Try<A>>, TryK<A> {
   private _isSuccess: boolean
   private _successRef: A
   private _failureRef: any
@@ -409,6 +410,18 @@ export class Try<A> implements std.IEquals<Try<A>> {
       : std.hashCode(this._failureRef)
   }
 
+  // tslint:disable-next-line:variable-name
+  __hkF: () => Try<any>
+  // tslint:disable-next-line:variable-name
+  __hkA: () => A
+
+  // tslint:disable-next-line:variable-name
+  static __types = {
+    functor: () => TryInstances.global,
+    applicative: () => TryInstances.global,
+    eq: () => TryInstances.global
+  }
+
   /**
    * Evaluates the given `thunk` and returns either a [[Success]],
    * in case the evaluation succeeded, or a [[Failure]], in case
@@ -431,7 +444,7 @@ export class Try<A> implements std.IEquals<Try<A>> {
     }
   }
 
-  /** Alias of [[Try.successful]]. */
+  /** Alias of [[Try.success]]. */
   static pure<A>(value: A): Try<A> {
     return Try.success(value)
   }
@@ -697,4 +710,56 @@ export function Success<A>(value: A): Try<A> {
  */
 export function Failure(e: any): Try<never> {
   return new (Try as any)(null as never, e, false)
+}
+
+/**
+ * Alias used for encoding higher-kinded types when implementing
+ * type class instances.
+ */
+export type TryK<A> = HK<Try<any>, A>
+
+/**
+ * Type class instances provided by default for [[Option]].
+ */
+export class TryInstances extends Applicative<Try<any>> implements Eq<Try<any>> {
+  // tslint:disable-next-line:variable-name
+  private __unit: Try<void> = Success(undefined)
+
+  /** @inheritdoc */
+  eqv(lh: Try<any>, rh: Try<any>): boolean {
+    return lh.equals(rh)
+  }
+
+  /** @inheritdoc */
+  pure<A>(a: A): Try<A> {
+    return Success(a)
+  }
+
+  /** @inheritdoc */
+  unit(): Try<void> {
+    return this.__unit
+  }
+
+  /** @inheritdoc */
+  ap<A, B>(fa: TryK<A>, ff: TryK<(a: A) => B>): Try<B> {
+    return Try.map2(fa as Try<A>, ff as Try<(a: A) => B>, (a, f) => f(a))
+  }
+
+  /** @inheritdoc */
+  map<A, B>(fa: TryK<A>, f: (a: A) => B): Try<B> {
+    return (fa as Try<A>).map(f)
+  }
+
+  /** @inheritdoc */
+  map2<A, B, Z>(fa: TryK<A>, fb: TryK<B>, f: (a: A, b: B) => Z): Try<Z> {
+    return Try.map2(fa as Try<A>, fb as Try<B>, f)
+  }
+
+  /** @inheritdoc */
+  product<A, B>(fa: TryK<A>, fb: TryK<B>): Try<[A, B]> {
+    return Try.map2(fa as Try<A>, fb as Try<B>, (a, b) => [a, b] as [A, B])
+  }
+
+  static global: TryInstances =
+    new TryInstances()
 }

@@ -37,7 +37,7 @@
  */
 
 /***/
-import { HK, IsEquiv } from "./kinds"
+import { HK, Equiv } from "./kinds"
 import { id } from "../core/std"
 
 /**
@@ -70,18 +70,22 @@ export abstract class Functor<F> {
  *
  * This is an abstract definition. In order to use it in unit testing,
  * the implementor must think of a strategy to evaluate the truthiness
- * of the returned `IsEquiv` values.
+ * of the returned `Equiv` values.
  */
-export abstract class FunctorLaws<F> {
-  F: Functor<F>
+export class FunctorLaws<F> {
+  /**
+   * @param F is the {@link Functor} designated instance for `F`,
+   * to be tested.
+   */
+  constructor(public F: Functor<F>) {}
 
   /**
    * ```typescript
    * fa.map(id) <-> fa
    * ```
    */
-  covariantIdentity<A>(fa: HK<F, A>): IsEquiv<HK<F, A>> {
-    return IsEquiv.of(this.F.map(fa, id), fa)
+  covariantIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>> {
+    return Equiv.of(this.F.map(fa, id), fa)
   }
 
   /**
@@ -89,8 +93,8 @@ export abstract class FunctorLaws<F> {
    * fa.map(f).map(g) <-> fa.map(x => g(f(x)))
    * ```
    */
-  covariantComposition<A, B, C>(fa: HK<F, A>, f: (a: A) => B, g: (b: B) => C): IsEquiv<HK<F, C>> {
-    return IsEquiv.of(
+  covariantComposition<A, B, C>(fa: HK<F, A>, f: (a: A) => B, g: (b: B) => C): Equiv<HK<F, C>> {
+    return Equiv.of(
       this.F.map(this.F.map(fa, f), g),
       this.F.map(fa, x => g(f(x)))
     )

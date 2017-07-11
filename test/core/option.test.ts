@@ -17,10 +17,11 @@
 
 import { Option, Some, None } from "../../src/funfix"
 import { NoSuchElementError } from "../../src/funfix"
-import { is, hashCode } from "../../src/funfix"
+import { is, hashCode, eqOf } from "../../src/funfix"
 
 import * as jv from "jsverify"
 import * as inst from "../instances"
+import * as laws from "../laws"
 
 describe("Option's constructor", () => {
   it("Option.of <-> new Option(isEmpty=null)", () => {
@@ -442,4 +443,9 @@ describe("Option.of", () => {
     const opt: Option<string> = Option.of(str)
     expect(is(opt, None)).toBe(true)
   })
+})
+
+describe("Option obeys type class laws", () => {
+  laws.testEq(Option, inst.arbOpt)
+  laws.testApplicative(Option, inst.arbOpt, eqOf(Option))
 })

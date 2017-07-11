@@ -509,7 +509,7 @@ export class TestScheduler extends Scheduler {
 
   /**
    * Executes the current batch of tasks that are pending, relative
-   * to the current {@link TestScheduler.clock|clock}.
+   * to the current [clock]{@link TestScheduler.currentTimeMillis}.
    *
    * ```typescript
    * const s = new TestScheduler()
@@ -535,7 +535,7 @@ export class TestScheduler extends Scheduler {
    * ```
    *
    * @param duration is an optional timespan to user for incrementing
-   * the current {@link TestScheduler.clock|clock}, thus allowing
+   * the current [clock]{@link TestScheduler.currentTimeMillis}, thus allowing
    * the execution of tasks scheduled to execute with a delay.
    *
    * @return the number of executed tasks

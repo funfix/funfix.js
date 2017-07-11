@@ -42,24 +42,10 @@
 import { NotImplementedError } from "../core/errors"
 
 export abstract class HK<F, A> {
+  // istanbul ignore next
   __hkF(): F { return synthetic() }
+  // istanbul ignore next
   __hkA(): A { return synthetic() }
-}
-
-export abstract class HK2<F, A, B> extends HK<F, A> {
-  __hkB(): B { return synthetic() }
-}
-
-export abstract class HK3<F, A, B, C> extends HK2<F, A, B> {
-  __hkC(): C { return synthetic() }
-}
-
-export abstract class HK4<F, A, B, C, D> extends HK3<F, A, B, C> {
-  __hkD(): D { return synthetic() }
-}
-
-export abstract class HK5<F, A, B, C, D, E> extends HK4<F, A, B, C, D> {
-  __hkE(): E { return synthetic() }
 }
 
 /**
@@ -67,14 +53,15 @@ export abstract class HK5<F, A, B, C, D, E> extends HK4<F, A, B, C, D> {
  *
  * @final
  */
-export class IsEquiv<A> {
+export class Equiv<A> {
   private constructor(public lh: A, public rh: A) {}
 
-  static of<A>(lh: A, rh: A): IsEquiv<A> {
-    return new IsEquiv(lh, rh)
+  static of<A>(lh: A, rh: A): Equiv<A> {
+    return new Equiv(lh, rh)
   }
 }
 
+// istanbul ignore next
 function synthetic(): never {
   throw new NotImplementedError("synthetic function")
 }

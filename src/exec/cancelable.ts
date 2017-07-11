@@ -381,11 +381,11 @@ export abstract class AssignCancelable extends BoolCancelable {
   public abstract update(value: Cancelable): this
 
   /**
-   * Returns an [[AssignableCancelable]] reference that is already
+   * Returns an [[AssignCancelable]] reference that is already
    * canceled.
    *
    * ```typescript
-   * const ref = AssignableCancelable.alreadyCanceled()
+   * const ref = AssignCancelable.alreadyCanceled()
    * ref.isCanceled() //=> true
    *
    * const c = BooleanCancelable.empty()
@@ -400,7 +400,7 @@ export abstract class AssignCancelable extends BoolCancelable {
   }
 
   /**
-   * Returns a new [[AssignableCancelable]] that's empty.
+   * Returns a new [[AssignCancelable]] that's empty.
    *
    * The returned reference is an instance of
    * [[MultiAssignCancelable]], but this is an implementation
@@ -411,19 +411,19 @@ export abstract class AssignCancelable extends BoolCancelable {
   }
 
   /**
-   * Initiates an [[AssignableCancelable]] reference and assigns it
+   * Initiates an [[AssignCancelable]] reference and assigns it
    * a reference that wraps the given `cb` callback.
    *
    * So this code:
    *
    * ```typescript
-   * AssignableCancelable.from(() => console.log("cancelled"))
+   * AssignCancelable.from(() => console.log("cancelled"))
    * ```
    *
    * Is equivalent to this:
    *
    * ```typescript
-   * const ref = AssignableCancelable.empty()
+   * const ref = AssignCancelable.empty()
    * ref.update(Cancelable.from(() => console.log("cancelled")))
    * ```
    */
@@ -433,7 +433,7 @@ export abstract class AssignCancelable extends BoolCancelable {
 }
 
 /**
- * Internal reusable reference for [[AssignableCancelable]].
+ * Internal reusable reference for [[AssignCancelable]].
  * @Hidden
  */
 const AlreadyCanceledAssignable: AssignCancelable =

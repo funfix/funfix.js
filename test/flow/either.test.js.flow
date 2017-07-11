@@ -17,7 +17,18 @@
 
 /* @flow */
 
-import { Either, Left, Right } from "../../src/funfix"
+import {
+  Applicative,
+  applicativeOf,
+  Either,
+  EitherInstances,
+  Eq,
+  eqOf,
+  Functor,
+  functorOf,
+  Left,
+  Right
+} from "../../src/funfix"
 
 const optLeft: Either<number, string> = Left(1)
 const optRight: Either<number, string> = Right("unu")
@@ -51,3 +62,14 @@ const r26: Either<Animal, string> =
 // $ExpectError
 const r27: Either<Dog, string> =
   lDog.filterOrElse(_ => _ === "not", () => new Animal())
+
+// Either.__types
+
+const functor1: Functor<Either<any, any>> = functorOf(Either)
+const functor2: Functor<Either<any, any>> = EitherInstances.global
+
+const ap1: Applicative<Either<any, any>> = applicativeOf(Either)
+const ap2: Applicative<Either<any, any>> = EitherInstances.global
+
+const eq1: Eq<Either<any, any>> = eqOf(Either)
+const eq2: Eq<Either<any, any>> = EitherInstances.global

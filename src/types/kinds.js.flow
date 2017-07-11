@@ -22,25 +22,9 @@ export interface HK<F, A> {
   __hkA(): A;
 }
 
-export interface HK2<F, A, B> extends HK<F, A> {
-  __hkB(): B;
-}
-
-export interface HK3<F, A, B, C> extends HK2<F, A, B> {
-  __hkC(): C;
-}
-
-export interface HK4<F, A, B, C, D> extends HK3<F, A, B, C> {
-  __hkD(): D;
-}
-
-export interface HK5<F, A, B, C, D, E> extends HK4<F, A, B, C, D> {
-  __hkE(): E;
-}
-
-declare export class IsEquiv<A> {
+declare export class Equiv<A> {
   lh: A;
   rh: A;
 
-  static of<A>(lh: A, rh: A): IsEquiv<A>;
+  static of<A>(lh: A, rh: A): Equiv<A>;
 }

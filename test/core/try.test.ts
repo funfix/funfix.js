@@ -18,9 +18,11 @@
 import { Try, Success, Failure, DummyError, NoSuchElementError } from "../../src/funfix"
 import { None, Some, Left, Right } from "../../src/funfix"
 import { IllegalStateError } from "../../src/funfix"
-import { is, hashCode } from "../../src/funfix"
+import { is, hashCode, eqOf } from "../../src/funfix"
+
 import * as jv from "jsverify"
 import * as inst from "../instances"
+import * as laws from "../laws"
 
 describe("Try.of", () => {
   jv.property("should work for successful functions",
@@ -464,4 +466,9 @@ describe("Try map2, map3, map4, map5, map6", () => {
 
     expect(is(received, Failure(dummy))).toBe(true)
   })
+})
+
+describe("Try obeys type class laws", () => {
+  laws.testEq(Try, inst.arbTry)
+  laws.testApplicative(Try, inst.arbTry, eqOf(Try))
 })

@@ -17,12 +17,7 @@
 
 /* @flow */
 
-import { HK } from "../types/kinds"
-import { Applicative } from "../types/applicative"
-import { Functor } from "../types/functor"
-import { Eq } from "../types/eq"
-
-export type OptionK<A> = HK<Option<any>, A>;
+import { HK, Applicative, Functor, Eq } from "../types"
 
 declare export class Option<+A> {
   get(): A;
@@ -50,6 +45,12 @@ declare export class Option<+A> {
   __hkF: () => Option<any>;
   __hkA: () => A;
 
+  static __types: {
+    functor: () => Functor<Option<any>>,
+    applicative: () => Applicative<Option<any>>,
+    eq: () => Eq<Option<any>>
+  };
+
   static empty<A>(): Option<A>;
   static none(): Option<empty>;
   static of<A>(value: ?A): Option<A>;
@@ -68,24 +69,21 @@ declare export class Option<+A> {
   static map6<A1,A2,A3,A4,A5,A6,R>(
     fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>, fa5: Option<A5>, fa6: Option<A6>,
     f: (A1, A2, A3, A4, A5, A6) => R): Option<R>;
-
-  static __types: {
-    functor: () => Functor<Option<any>>,
-    applicative: () => Applicative<Option<any>>,
-    eq: () => Eq<Option<any>>
-  }
 }
 
 declare export function Some<A>(value: A): Option<A>;
 declare export var None: Option<empty>;
 
+export type OptionK<A> = HK<Option<any>, A>;
+
 declare export class OptionInstances {
   eqv(lh: Option<any>, rh: Option<any>): boolean;
-  pure<A>(a: A): OptionK<A>;
-  ap<A, B>(fa: OptionK<A>, ff: OptionK<(a: A) => B>): OptionK<B>;
-  map<A, B>(fa: OptionK<A>, f: (a: A) => B): OptionK<B>;
-  map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): OptionK<Z>;
-  product<A, B>(fa: OptionK<A>, fb: OptionK<B>): OptionK<[A, B]>;
+  pure<A>(a: A): Option<A>;
+  unit(): Option<void>;
+  ap<A, B>(fa: OptionK<A>, ff: OptionK<(a: A) => B>): Option<B>;
+  map<A, B>(fa: OptionK<A>, f: (a: A) => B): Option<B>;
+  map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): Option<Z>;
+  product<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<[A, B]>;
 
   static global: OptionInstances;
 }

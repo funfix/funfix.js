@@ -17,7 +17,18 @@
 
 /* @flow */
 
-import { Try, Success, Failure } from "../../src/funfix"
+import {
+  Applicative,
+  applicativeOf,
+  Eq,
+  eqOf,
+  Failure,
+  Functor,
+  functorOf,
+  Success,
+  Try,
+  TryInstances
+} from "../../src/funfix"
 
 const failure: Try<string> = Failure(1)
 const success: Try<string> = Success("unu")
@@ -46,3 +57,14 @@ const r26: Try<Animal> = dogTry.orElse(Success(new Cat()))
 const r27: Try<Animal> = dogTry.orElseL(() => Success(new Cat()))
 const r28: Try<Object> = dogTry.orElse(Success(new Human()))
 const r29: Try<Object> = dogTry.orElseL(() => Success(new Human()))
+
+// Try.__types
+
+const functor1: Functor<Try<any>> = functorOf(Try)
+const functor2: Functor<Try<any>> = TryInstances.global
+
+const ap1: Applicative<Try<any>> = applicativeOf(Try)
+const ap2: Applicative<Try<any>> = TryInstances.global
+
+const eq1: Eq<Try<any>> = eqOf(Try)
+const eq2: Eq<Try<any>> = TryInstances.global

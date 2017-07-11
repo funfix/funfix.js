@@ -39,6 +39,7 @@
 import * as std from "./std"
 import { NoSuchElementError } from "./errors"
 import { Option } from "./option"
+import { Applicative, Eq, HK } from "../types"
 
 /**
  * Represents a value of one of two possible types (a disjoint union).
@@ -72,7 +73,7 @@ import { Option } from "./option"
  *
  * @final
  */
-export class Either<L, R> implements std.IEquals<Either<L, R>> {
+export class Either<L, R> implements std.IEquals<Either<L, R>>, EitherK<L, R> {
   private _isRight: boolean
   private _rightRef: R
   private _leftRef: L
@@ -357,6 +358,18 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
       : std.hashCode(this._leftRef) << 3
   }
 
+  // tslint:disable-next-line:variable-name
+  __hkF: () => Either<L, any>
+  // tslint:disable-next-line:variable-name
+  __hkA: () => R
+
+  // tslint:disable-next-line:variable-name
+  static __types = {
+    functor: () => EitherInstances.global,
+    applicative: () => EitherInstances.global,
+    eq: () => EitherInstances.global
+  }
+
   static left<L, R>(value: L): Either<L, R> {
     return Left(value)
   }
@@ -521,4 +534,61 @@ export function Left<L>(value: L): Either<L, never> {
  */
 export function Right<R>(value: R): Either<never, R> {
   return new (Either as any)(null as never, value, true)
+}
+
+/**
+ * Alias used for encoding higher-kinded types when implementing
+ * type class instances.
+ */
+export type EitherK<L, R> = HK<Either<L, any>, R>
+
+/**
+ * Type class instances provided by default for [[Either]].
+ */
+export class EitherInstances<L> extends Applicative<Either<L, any>> implements Eq<Either<L, any>> {
+  // tslint:disable-next-line:variable-name
+  private __unit: Either<L, void> = Right(undefined)
+
+  /** @inheritdoc */
+  eqv(lh: Either<L, any>, rh: Either<L, any>): boolean {
+    return ((lh as any) as Either<L, any>).equals(rh as any)
+  }
+
+  /** @inheritdoc */
+  pure<A>(a: A): Either<L, A> {
+    return Right(a)
+  }
+
+  /** @inheritdoc */
+  unit(): Either<L, void> {
+    return this.__unit
+  }
+
+  /** @inheritdoc */
+  ap<A, B>(fa: EitherK<L, A>, ff: EitherK<L, (a: A) => B>): Either<L, B> {
+    const faE = (fa as any) as Either<L, A>
+    const ffE = (ff as any) as Either<L, (a: A) => B>
+    return Either.map2(faE, ffE, (a, f) => f(a))
+  }
+
+  /** @inheritdoc */
+  map<A, B>(fa: EitherK<L, A>, f: (a: A) => B): Either<L, B> {
+    return ((fa as any) as Either<L, A>).map(f)
+  }
+
+  /** @inheritdoc */
+  map2<A, B, Z>(fa: EitherK<L, A>, fb: EitherK<L, B>, f: (a: A, b: B) => Z): Either<L, Z> {
+    return Either.map2((fa as any) as Either<L, A>, (fb as any) as Either<L, B>, f)
+  }
+
+  /** @inheritdoc */
+  product<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, [A, B]> {
+    return Either.map2(
+      (fa as any) as Either<L, A>,
+      (fb as any) as Either<L, B>,
+      (a, b) => [a, b] as [A, B])
+  }
+
+  static global: EitherInstances<any> =
+    new EitherInstances()
 }

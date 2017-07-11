@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-import { hashCode, is, Left, Right, Either, Option } from "../../src/funfix"
+import { hashCode, is, Left, Right, Either, Option, eqOf, EitherK, Eq } from "../../src/funfix"
 import * as jv from "jsverify"
 import * as inst from "../instances"
+import * as laws from "../laws"
 
 describe("Either discrimination", () => {
   jv.property("isRight == !isLeft",
@@ -348,4 +349,9 @@ describe("Either map2, map3, map4, map5, map6", () => {
       )
     }
   )
+})
+
+describe("Either obeys type class laws", () => {
+  laws.testEq(Either, inst.arbEither)
+  laws.testApplicative(Either, inst.arbEither, eqOf(Either))
 })

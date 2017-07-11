@@ -264,7 +264,7 @@ describe("AssignCancelable", () => {
   })
 })
 
-describe("MultiAssignmentCancelable", () => {
+describe("MultiAssignCancelable", () => {
   test("initialized to given instance", () => {
     const c = new TestCancelable()
     const ref = new MultiAssignCancelable(c)
@@ -333,7 +333,7 @@ describe("MultiAssignmentCancelable", () => {
   })
 })
 
-describe("SerialAssignmentCancelable", () => {
+describe("SerialAssignCancelable", () => {
   test("initialized to given instance", () => {
     const c = new TestCancelable()
     const ref = new SerialCancelable(c)
@@ -403,7 +403,7 @@ describe("SerialAssignmentCancelable", () => {
   })
 })
 
-describe("SingleAssignmentCancelable", () => {
+describe("SingleAssignCancelable", () => {
   test("update once before cancel", () => {
     const ref: SingleAssignCancelable =
       SingleAssignCancelable.empty()

@@ -63,8 +63,11 @@ export abstract class Eq<A> {
   abstract eqv(lh: A, rh: A): boolean
 }
 
-export abstract class EqLaws<A> {
-  abstract F: Eq<A>
+export class EqLaws<A> {
+  /**
+   * @param F is the {@link Eq} designated instance for `A`, to be tested.
+   */
+  constructor(public F: Eq<A>) {}
 
   /**
    * Equality is reflexive, i.e.

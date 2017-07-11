@@ -37,8 +37,8 @@
  */
 
 /***/
-import { HK } from "./kinds"
-import { Functor, HasFunctor } from "./functor"
+import { HK, Equiv } from "./kinds"
+import { Functor, HasFunctor, FunctorLaws } from "./functor"
 
 /**
  * `Applicative` functor type class.
@@ -72,6 +72,10 @@ export abstract class Applicative<F> extends Functor<F> {
 
   abstract ap<A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>): HK<F, B>
 
+  unit(): HK<F, void> {
+    return this.pure(undefined)
+  }
+
   map2<A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z): HK<F, Z> {
     return this.ap(fb, this.map(fa, a => (b: B) => f(a, b)))
   }
@@ -82,6 +86,98 @@ export abstract class Applicative<F> extends Functor<F> {
 
   map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B> {
     return this.ap(fa, this.pure(f))
+  }
+}
+
+/**
+ * Type class laws defined for {@link Functor}.
+ *
+ * This is an abstract definition. In order to use it in unit testing,
+ * the implementor must think of a strategy to evaluate the truthiness
+ * of the returned `Equiv` values.
+ */
+export class ApplicativeLaws<F> extends FunctorLaws<F> {
+  /**
+   * @param F is the {@link Applicative} designated instance for `F`,
+   * to be tested.
+   */
+  constructor(public F: Applicative<F>) { super(F) }
+
+  applyComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>> {
+    const F = this.F
+    const compose = (f: (b: B) => C) => (
+      (g: (a: A) => B) => (a: A) => f(g(a))
+    )
+
+    return Equiv.of(
+      F.ap(F.ap(fa, fab), fbc),
+      F.ap(fa, F.ap(fab, F.map(fbc, compose)))
+    )
+  }
+
+  applicativeIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(
+      F.ap(fa, F.pure((a: A) => a)),
+      fa
+    )
+  }
+
+  applicativeHomomorphism<A, B>(a: A, f: (a: A) => B): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(
+      F.ap(F.pure(a), F.pure(f)),
+      F.pure(f(a))
+    )
+  }
+
+  applicativeInterchange<A, B>(a: A, ff: HK<F, (a: A) => B>): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(
+      F.ap(F.pure(a), ff),
+      F.ap(ff, F.pure((f: (a: A) => B) => f(a)))
+    )
+  }
+
+  applicativeMap<A, B>(fa: HK<F, A>, f: (a: A) => B): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(
+      F.map(fa, f),
+      F.ap(fa, F.pure(f))
+    )
+  }
+
+  applicativeComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>> {
+    const F = this.F
+    const compose = (f: (b: B) => C) => (
+      (g: (a: A) => B) => (a: A) => f(g(a))
+    )
+
+    return Equiv.of(
+      F.ap(fa, F.ap(fab, F.ap(fbc, F.pure(compose)))),
+      F.ap(F.ap(fa, fab), fbc)
+    )
+  }
+
+  apProductConsistent<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(
+      F.ap(fa, f),
+      F.map(F.product(f, fa), p => { const [f, a] = p; return f(a) })
+    )
+  }
+
+  apMap2Consistent<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(
+      F.ap(fa, f),
+      F.map2(f, fa, (f, a) => f(a))
+    )
+  }
+
+  applicativeUnit<A>(a: A): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(F.map(F.unit(), _ => a), F.pure(a))
   }
 }
 

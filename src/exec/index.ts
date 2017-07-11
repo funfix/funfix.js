@@ -21,9 +21,9 @@
  *
  * Exports sub-modules:
  *
- * - [exec/cancelable](./exec_cancelable.html) for the {@link Cancelable} data type
- * - [exec/scheduler](./exec_scheduler.html) for the {@link Scheduler} type
- * - [exec/time](./exec_time.html) for expressing time durations with
+ * - {@link exec/cancelable} for the {@link Cancelable} data type
+ * - {@link exec/scheduler} for the {@link Scheduler} type
+ * - {@link exec/time} for expressing time durations with
  *   {@link TimeUnit} and {@link Duration}
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,

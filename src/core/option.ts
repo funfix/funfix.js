@@ -330,11 +330,11 @@ export class Option<A> implements std.IEquals<Option<A>>, OptionK<A> {
   __hkA: () => A
 
   // tslint:disable-next-line:variable-name
-  static __types = () => ({
-    functor: OptionInstances.global,
-    applicative: OptionInstances.global,
-    eq: OptionInstances.global
-  })
+  static __types = {
+    functor: () => OptionInstances.global,
+    applicative: () => OptionInstances.global,
+    eq: () => OptionInstances.global
+  }
 
   /**
    * Builds an [[Option]] reference that contains the given value.
@@ -561,29 +561,42 @@ export type OptionK<A> = HK<Option<any>, A>
  * Type class instances provided by default for [[Option]].
  */
 export class OptionInstances extends Applicative<Option<any>> implements Eq<Option<any>> {
+  // tslint:disable-next-line:variable-name
+  private __unit: Option<void> = Some(undefined)
+
   /** @inheritdoc */
   eqv(lh: Option<any>, rh: Option<any>): boolean {
     return lh.equals(rh)
   }
 
   /** @inheritdoc */
-  pure<A>(a: A): OptionK<A> {
+  pure<A>(a: A): Option<A> {
     return Some(a)
   }
 
   /** @inheritdoc */
-  ap<A, B>(fa: OptionK<A>, ff: OptionK<(a: A) => B>): OptionK<B> {
+  unit(): Option<void> {
+    return this.__unit
+  }
+
+  /** @inheritdoc */
+  ap<A, B>(fa: OptionK<A>, ff: OptionK<(a: A) => B>): Option<B> {
     return Option.map2(fa as Option<A>, ff as Option<(a: A) => B>, (a, f) => f(a))
   }
 
   /** @inheritdoc */
-  map<A, B>(fa: OptionK<A>, f: (a: A) => B): OptionK<B> {
+  map<A, B>(fa: OptionK<A>, f: (a: A) => B): Option<B> {
     return (fa as Option<A>).map(f)
   }
 
   /** @inheritdoc */
-  map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): OptionK<Z> {
+  map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): Option<Z> {
     return Option.map2(fa as Option<A>, fb as Option<B>, f)
+  }
+
+  /** @inheritdoc */
+  product<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<[A, B]> {
+    return Option.map2(fa as Option<A>, fb as Option<B>, (a, b) => [a, b] as [A, B])
   }
 
   static global: OptionInstances =
