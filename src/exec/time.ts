@@ -507,7 +507,7 @@ export class Duration implements IEquals<Duration> {
     return this.plus(other.negate())
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   equals(other: Duration): boolean {
     function cmp(s: Duration, o: Duration) {
       const n = s.unit.convert(o.duration, o.unit)
@@ -522,7 +522,7 @@ export class Duration implements IEquals<Duration> {
       ? cmp(this, other) : cmp(other, this)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   hashCode(): number {
     if (this.isFinite()) {
       return this.toNanos()

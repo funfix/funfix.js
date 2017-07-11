@@ -18,7 +18,7 @@
 /* @flow */
 
 import { Option } from "./option"
-import { Functor, Applicative, Eq, HK } from "../types"
+import { Functor, Applicative, Apply, Eq, HK } from "../types"
 
 declare export class Either<+L, +R> {
   get(): R;
@@ -47,6 +47,7 @@ declare export class Either<+L, +R> {
 
   static __types: {
     functor: () => Functor<Either<any, any>>;
+    apply: () => Apply<Either<any, any>>,
     applicative: () => Applicative<Either<any, any>>;
     eq: () => Eq<Either<any, any>>;
   };

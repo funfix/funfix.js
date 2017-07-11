@@ -20,6 +20,8 @@
 import {
   Applicative,
   applicativeOf,
+  Apply,
+  applyOf,
   Either,
   EitherInstances,
   Eq,
@@ -68,8 +70,11 @@ const r27: Either<Dog, string> =
 const functor1: Functor<Either<any, any>> = functorOf(Either)
 const functor2: Functor<Either<any, any>> = EitherInstances.global
 
-const ap1: Applicative<Either<any, any>> = applicativeOf(Either)
-const ap2: Applicative<Either<any, any>> = EitherInstances.global
+const ap1: Apply<Either<any, any>> = applyOf(Either)
+const ap2: Apply<Either<any, any>> = EitherInstances.global
+
+const applicative1: Applicative<Either<any, any>> = applicativeOf(Either)
+const applicative2: Applicative<Either<any, any>> = EitherInstances.global
 
 const eq1: Eq<Either<any, any>> = eqOf(Either)
 const eq2: Eq<Either<any, any>> = EitherInstances.global

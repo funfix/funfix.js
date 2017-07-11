@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import { HK, Applicative, Functor, Eq } from "../types"
+import { HK, Applicative, Apply, Functor, Eq } from "../types"
 import { Option } from "./option"
 import { Either } from "./either"
 
@@ -50,6 +50,7 @@ declare export class Try<+A> {
 
   static __types: {
     functor: () => Functor<Try<any>>,
+    apply: () => Apply<Try<any>>,
     applicative: () => Applicative<Try<any>>,
     eq: () => Eq<Try<any>>
   };

@@ -20,6 +20,8 @@
 import {
   Applicative,
   applicativeOf,
+  Apply,
+  applyOf,
   Eq,
   eqOf,
   Failure,
@@ -63,8 +65,11 @@ const r29: Try<Object> = dogTry.orElseL(() => Success(new Human()))
 const functor1: Functor<Try<any>> = functorOf(Try)
 const functor2: Functor<Try<any>> = TryInstances.global
 
-const ap1: Applicative<Try<any>> = applicativeOf(Try)
-const ap2: Applicative<Try<any>> = TryInstances.global
+const ap1: Apply<Try<any>> = applyOf(Try)
+const ap2: Apply<Try<any>> = TryInstances.global
+
+const applicative1: Applicative<Try<any>> = applicativeOf(Try)
+const applicative2: Applicative<Try<any>> = TryInstances.global
 
 const eq1: Eq<Try<any>> = eqOf(Try)
 const eq2: Eq<Try<any>> = TryInstances.global

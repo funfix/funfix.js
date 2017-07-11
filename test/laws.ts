@@ -18,11 +18,12 @@
 import * as jv from "jsverify"
 import {
   HK, Equiv, Eq, HasEq, EqLaws, eqOf,
-  Functor, HasFunctor, FunctorLaws, functorOf,
-  Applicative, HasApplicative, ApplicativeLaws, applicativeOf
+  HasFunctor, FunctorLaws, functorOf,
+  HasApply, ApplyLaws, applyOf,
+  HasApplicative, ApplicativeLaws, applicativeOf
 } from "../src/funfix"
 
-export function testEq<A>(type: HasEq<A> & Function, arbA: jv.Arbitrary<A>): void {
+export function testEq<A>(type: HasEq<A>, arbA: jv.Arbitrary<A>): void {
   const F = eqOf(type)
   const laws = new EqLaws(F)
 
@@ -36,14 +37,14 @@ export function testEq<A>(type: HasEq<A> & Function, arbA: jv.Arbitrary<A>): voi
   }
 
   for (const key of Object.keys(tests)) {
-    test(`Eq<${type.name}>.${key}`, () => {
+    test(`Eq<${(type as any).name}>.${key}`, () => {
       jv.assert(tests[key])
     })
   }
 }
 
 export function testFunctor<F, A>(
-  type: HasFunctor<F> & Function,
+  type: HasFunctor<F>,
   arbFA: jv.Arbitrary<HK<F, A>>,
   eqF: Eq<HK<F, any>>): void {
 
@@ -64,28 +65,29 @@ export function testFunctor<F, A>(
   }
 
   for (const key of Object.keys(tests)) {
-    test(`Functor<${type.name}>.${key}`, () => {
+    test(`Functor<${(type as any).name}>.${key}`, () => {
       jv.assert(tests[key])
     })
   }
 }
 
-export function testApplicative<F, A, B>(
-  type: HasApplicative<F> & Function,
+export function testApply<F, A, B>(
+  type: HasApply<F>,
   arbFA: jv.Arbitrary<HK<F, A>>,
-  eqF: Eq<HK<F, any>>): void {
+  lift: <T>(t: T) => HK<F, T>,
+  eqF: Eq<HK<F, any>>,
+  includeSupertypes: boolean = true): void {
 
   // Tests functor first
-  testFunctor(type, arbFA, eqF)
+  if (includeSupertypes) testFunctor(type, arbFA, eqF)
 
-  const F = applicativeOf(type)
-  const laws = new ApplicativeLaws(F)
+  const F = applyOf(type)
+  const laws = new ApplyLaws(F)
 
-  const arbFB = jv.number.smap(F.pure, _ => 0)
   const arbAtoB = jv.fun(jv.number)
   const arbBtoC = jv.fun(jv.string)
-  const arbFAtoB = arbAtoB.smap(F.pure, _ => (_ => 0))
-  const arbFBtoC = arbBtoC.smap(F.pure, _ => (_ => ""))
+  const arbFAtoB = arbAtoB.smap(lift, _ => (_ => 0))
+  const arbFBtoC = arbBtoC.smap(lift, _ => (_ => ""))
 
   const equivToBool = (ref: Equiv<HK<F, any>>) =>
     eqF.eqv(ref.lh, ref.rh)
@@ -95,6 +97,44 @@ export function testApplicative<F, A, B>(
       arbFA, arbFAtoB, arbFBtoC,
       (fa, fab, fbc) => equivToBool(laws.applyComposition(fa, fab, fbc))
     ),
+    applyProductConsistency: jv.forall(
+      arbFA, arbFAtoB,
+      (fa, fab) => equivToBool(laws.applyProductConsistency(fa, fab))
+    ),
+    applyMap2Consistency: jv.forall(
+      arbFA, arbFAtoB,
+      (fa, fab) => equivToBool(laws.applyMap2Consistency(fa, fab))
+    )
+  }
+
+  for (const key of Object.keys(tests)) {
+    test(`Apply<${(type as any).name}>.${key}`, () => {
+      jv.assert(tests[key])
+    })
+  }
+}
+
+export function testApplicative<F, A, B>(
+  type: HasApplicative<F>,
+  arbFA: jv.Arbitrary<HK<F, A>>,
+  eqF: Eq<HK<F, any>>,
+  includeSupertypes: boolean = true): void {
+
+  const F = applicativeOf(type)
+  const laws = new ApplicativeLaws(F)
+
+  // Tests Apply and Functor first
+  if (includeSupertypes) testApply(type, arbFA, F.pure, eqF)
+
+  const arbAtoB = jv.fun(jv.number)
+  const arbBtoC = jv.fun(jv.string)
+  const arbFAtoB = arbAtoB.smap(F.pure, _ => (_ => 0))
+  const arbFBtoC = arbBtoC.smap(F.pure, _ => (_ => ""))
+
+  const equivToBool = (ref: Equiv<HK<F, any>>) =>
+    eqF.eqv(ref.lh, ref.rh)
+
+  const tests = {
     applicativeIdentity: jv.forall(
       arbFA,
       fa => equivToBool(laws.applicativeIdentity(fa))
@@ -115,14 +155,6 @@ export function testApplicative<F, A, B>(
       arbFA, arbFAtoB, arbFBtoC,
       (fa, fab, fbc) => equivToBool(laws.applicativeComposition(fa, fab, fbc))
     ),
-    apProductConsistent: jv.forall(
-      arbFA, arbFAtoB,
-      (fa, fab) => equivToBool(laws.apProductConsistent(fa, fab))
-    ),
-    apMap2Consistent: jv.forall(
-      arbFA, arbFAtoB,
-      (fa, fab) => equivToBool(laws.apMap2Consistent(fa, fab))
-    ),
     applicativeUnit: jv.forall(
       jv.number,
       a => equivToBool(laws.applicativeUnit(a))
@@ -130,7 +162,7 @@ export function testApplicative<F, A, B>(
   }
 
   for (const key of Object.keys(tests)) {
-    test(`Applicative<${type.name}>.${key}`, () => {
+    test(`Applicative<${(type as any).name}>.${key}`, () => {
       jv.assert(tests[key])
     })
   }

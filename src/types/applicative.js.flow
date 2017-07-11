@@ -20,32 +20,51 @@
 import { HK, Equiv } from "./kinds"
 import { Functor, HasFunctor, FunctorLaws } from "./functor"
 
-export interface Applicative<F> extends Functor<F> {
-  pure<A>(a: A): HK<F, A>;
-  unit(): HK<F, void>;
+export interface Apply<F> extends Functor<F> {
   ap<A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>): HK<F, B>;
   map2<A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z): HK<F, Z>;
   product<A, B>(fa: HK<F, A>, fb: HK<F, B>): HK<F, [A, B]>;
 }
 
-declare export class ApplicativeLaws<F> extends FunctorLaws<F> {
+declare export class ApplyLaws<F> extends FunctorLaws<F> {
+  +F: Apply<F>;
+  constructor(F: Apply<F>): ApplyLaws<F>;
+
+  applyComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>>;
+  applyProductConsistency<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
+  applyMap2Consistency<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
+}
+
+export interface HasApply<F> extends HasFunctor<F> {
+  +__types: {
+    functor: () => Functor<F>,
+    apply: () => Apply<F>
+  }
+}
+
+declare export function applyOf<F>(constructor: HasApply<F>): Apply<F>;
+
+export interface Applicative<F> extends Apply<F> {
+  pure<A>(a: A): HK<F, A>;
+  unit(): HK<F, void>;
+}
+
+declare export class ApplicativeLaws<F> extends ApplyLaws<F> {
   +F: Applicative<F>;
   constructor(F: Applicative<F>): ApplicativeLaws<F>;
 
-  applyComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>>;
   applicativeIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>>;
   applicativeHomomorphism<A, B>(a: A, f: (a: A) => B): Equiv<HK<F, B>>;
   applicativeInterchange<A, B>(a: A, ff: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
   applicativeMap<A, B>(fa: HK<F, A>, f: (a: A) => B): Equiv<HK<F, B>>;
   applicativeComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>>;
-  apProductConsistent<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
-  apMap2Consistent<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
   applicativeUnit<A>(a: A): Equiv<HK<F, A>>;
 }
 
 export interface HasApplicative<F> extends HasFunctor<F> {
   +__types: {
     functor: () => Functor<F>,
+    apply: () => Apply<F>,
     applicative: () => Applicative<F>
   }
 }

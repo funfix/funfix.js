@@ -332,6 +332,7 @@ export class Option<A> implements std.IEquals<Option<A>>, OptionK<A> {
   // tslint:disable-next-line:variable-name
   static __types = {
     functor: () => OptionInstances.global,
+    apply: () => OptionInstances.global,
     applicative: () => OptionInstances.global,
     eq: () => OptionInstances.global
   }
@@ -564,37 +565,37 @@ export class OptionInstances extends Applicative<Option<any>> implements Eq<Opti
   // tslint:disable-next-line:variable-name
   private __unit: Option<void> = Some(undefined)
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   eqv(lh: Option<any>, rh: Option<any>): boolean {
     return lh.equals(rh)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   pure<A>(a: A): Option<A> {
     return Some(a)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   unit(): Option<void> {
     return this.__unit
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   ap<A, B>(fa: OptionK<A>, ff: OptionK<(a: A) => B>): Option<B> {
     return Option.map2(fa as Option<A>, ff as Option<(a: A) => B>, (a, f) => f(a))
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   map<A, B>(fa: OptionK<A>, f: (a: A) => B): Option<B> {
     return (fa as Option<A>).map(f)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): Option<Z> {
     return Option.map2(fa as Option<A>, fb as Option<B>, f)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   product<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<[A, B]> {
     return Option.map2(fa as Option<A>, fb as Option<B>, (a, b) => [a, b] as [A, B])
   }

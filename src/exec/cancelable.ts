@@ -472,17 +472,17 @@ export class MultiAssignCancelable extends AssignCancelable {
     this._canceled = false
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public update(value: Cancelable): this {
     if (this._canceled) value.cancel()
     else this._underlying = value
     return this
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public isCanceled(): boolean { return this._canceled }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public cancel(): void {
     if (!this._canceled) {
       this._canceled = true
@@ -551,7 +551,7 @@ export class SerialCancelable extends AssignCancelable {
     this._canceled = false
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public update(value: Cancelable): this {
     if (this._canceled) value.cancel(); else {
       if (this._underlying) this._underlying.cancel()
@@ -560,10 +560,10 @@ export class SerialCancelable extends AssignCancelable {
     return this
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public isCanceled(): boolean { return this._canceled }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public cancel(): void {
     if (!this._canceled) {
       this._canceled = true
@@ -630,7 +630,7 @@ export class SingleAssignCancelable extends AssignCancelable {
     this._wasAssigned = false
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public update(value: Cancelable): this {
     if (this._wasAssigned)
       throw new IllegalStateError("SingleAssignCancelable#update multiple times")
@@ -641,10 +641,10 @@ export class SingleAssignCancelable extends AssignCancelable {
     return this
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public isCanceled(): boolean { return this._canceled }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public cancel(): void {
     if (!this._canceled) {
       this._canceled = true

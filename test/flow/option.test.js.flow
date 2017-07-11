@@ -24,6 +24,8 @@ import {
   None,
   Functor,
   functorOf,
+  Apply,
+  applyOf,
   Applicative,
   applicativeOf,
   Eq,
@@ -137,8 +139,11 @@ const opt2: Option<string> = Option.of(str2)
 const functor1: Functor<Option<any>> = functorOf(Option)
 const functor2: Functor<Option<any>> = OptionInstances.global
 
-const ap1: Applicative<Option<any>> = applicativeOf(Option)
-const ap2: Applicative<Option<any>> = OptionInstances.global
+const ap1: Apply<Option<any>> = applyOf(Option)
+const ap2: Apply<Option<any>> = OptionInstances.global
+
+const applicative1: Applicative<Option<any>> = applicativeOf(Option)
+const applicative2: Applicative<Option<any>> = OptionInstances.global
 
 const eq1: Eq<Option<any>> = eqOf(Option)
 const eq2: Eq<Option<any>> = OptionInstances.global

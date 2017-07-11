@@ -418,6 +418,7 @@ export class Try<A> implements std.IEquals<Try<A>>, TryK<A> {
   // tslint:disable-next-line:variable-name
   static __types = {
     functor: () => TryInstances.global,
+    apply: () => TryInstances.global,
     applicative: () => TryInstances.global,
     eq: () => TryInstances.global
   }
@@ -725,37 +726,37 @@ export class TryInstances extends Applicative<Try<any>> implements Eq<Try<any>> 
   // tslint:disable-next-line:variable-name
   private __unit: Try<void> = Success(undefined)
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   eqv(lh: Try<any>, rh: Try<any>): boolean {
     return lh.equals(rh)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   pure<A>(a: A): Try<A> {
     return Success(a)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   unit(): Try<void> {
     return this.__unit
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   ap<A, B>(fa: TryK<A>, ff: TryK<(a: A) => B>): Try<B> {
     return Try.map2(fa as Try<A>, ff as Try<(a: A) => B>, (a, f) => f(a))
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   map<A, B>(fa: TryK<A>, f: (a: A) => B): Try<B> {
     return (fa as Try<A>).map(f)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   map2<A, B, Z>(fa: TryK<A>, fb: TryK<B>, f: (a: A, b: B) => Z): Try<Z> {
     return Try.map2(fa as Try<A>, fb as Try<B>, f)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   product<A, B>(fa: TryK<A>, fb: TryK<B>): Try<[A, B]> {
     return Try.map2(fa as Try<A>, fb as Try<B>, (a, b) => [a, b] as [A, B])
   }

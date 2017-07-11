@@ -31,6 +31,7 @@ export class Box<A> {
   // tslint:disable-next-line:variable-name
   static __types = {
     functor: () => new BoxInstances(),
+    apply: () => new BoxInstances(),
     applicative: () => new BoxInstances(),
     eq: () => new BoxInstances()
   }

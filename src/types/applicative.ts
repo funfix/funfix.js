@@ -16,7 +16,7 @@
  */
 
 /**
- * Exposes the {@link Applicative} type class.
+ * Exposes the {@link Apply} and {@link Applicative} type classes.
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:
@@ -41,6 +41,129 @@ import { HK, Equiv } from "./kinds"
 import { Functor, HasFunctor, FunctorLaws } from "./functor"
 
 /**
+ * The `Apply` type class, a weaker version of {@link Applicative};
+ * has `ap` (apply), but `pure`.
+ *
+ * Must obey the laws defined in {@link ApplyLaws}.
+ *
+ * Note that having an `Apply` instance implies that a
+ * {@link Functor} implementation is also available, which is why
+ * `Apply` is a subtype of `Functor`.
+ *
+ * CREDITS: this type class is inspired by the equivalent in Haskell's
+ * standard library and the implementation is inspired by the
+ * [Typelevel Cats]{@link http://typelevel.org/cats/} project.
+ */
+export abstract class Apply<F> extends Functor<F> {
+  /**
+   * Given a value and a function in the `Apply` context,
+   * applies the function to the value.
+   */
+  abstract ap<A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>): HK<F, B>
+
+  /**
+   * Applies the pure (binary) function `f` to the effectful values
+   * `fa` and `fb`.
+   *
+   * `map2` can be seen as a binary version of {@link Functor.map}.
+   */
+  map2<A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z): HK<F, Z> {
+    return this.ap(fb, this.map(fa, a => (b: B) => f(a, b)))
+  }
+
+  /**
+   * Captures the idea of composing independent effectful values.
+   *
+   * It is of particular interest when taken together with [[Functor]].
+   * Where [[Functor]] captures the idea of applying a unary pure
+   * function to an effectful value, calling `product` with `map`
+   * allows one to apply a function of arbitrary arity to multiple
+   * independent effectful values.
+   *
+   * This operation is equivalent with:
+   *
+   * ```typescript
+   * map2(fa, fb, (a, b) => [a, b])
+   * ```
+   */
+  product<A, B>(fa: HK<F, A>, fb: HK<F, B>): HK<F, [A, B]> {
+    return this.map2(fa, fb, (a: A, b: B) => [a, b] as [A, B])
+  }
+}
+
+/**
+ * Type class laws defined for {@link Apply}.
+ *
+ * This is an abstract definition. In order to use it in unit testing,
+ * the implementor must think of a strategy to evaluate the truthiness
+ * of the returned `Equiv` values.
+ */
+export class ApplyLaws<F> extends FunctorLaws<F> {
+  /**
+   * @param F is the {@link Apply} designated instance for `F`,
+   * to be tested.
+   */
+  constructor(public F: Apply<F>) { super(F) }
+
+  applyComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>> {
+    const F = this.F
+    const compose = (f: (b: B) => C) => (
+      (g: (a: A) => B) => (a: A) => f(g(a))
+    )
+
+    return Equiv.of(
+      F.ap(F.ap(fa, fab), fbc),
+      F.ap(fa, F.ap(fab, F.map(fbc, compose)))
+    )
+  }
+
+  applyProductConsistency<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(
+      F.ap(fa, f),
+      F.map(F.product(f, fa), p => { const [f, a] = p; return f(a) })
+    )
+  }
+
+  applyMap2Consistency<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(
+      F.ap(fa, f),
+      F.map2(f, fa, (f, a) => f(a))
+    )
+  }
+}
+
+/**
+ * Interface to be implemented by types, as `static` methods, meant
+ * to expose the default {@link Apply} instance.
+ *
+ * Note that by exposing an `Apply` instance, we are also
+ * exposing a {@link Functor} implementation as well, since an
+ * `Apply` is a `Functor`.
+ */
+export interface HasApply<F> extends HasFunctor<F> {
+  __types: {
+    functor: () => Functor<F>,
+    apply: () => Apply<F>
+  }
+}
+
+/**
+ * Given a `constructor` reference that implements {@link HasApply},
+ * returns its associated {@link Apply} instance.
+ *
+ * ```typescript
+ * import { Option, Apply, applyOf } from "funfix"
+ *
+ * const F: Apply<Option<any>> = applyOf(Option)
+ * ```
+ */
+export function applyOf<F>(constructor: HasApply<F>): Apply<F> {
+  return constructor.__types.apply()
+}
+
+/**
  * `Applicative` functor type class.
  *
  * Allows application of a function in an Applicative context to a
@@ -59,29 +182,20 @@ import { Functor, HasFunctor, FunctorLaws } from "./functor"
  * F.ap(F.pure(1), F.pure((x: number) => x + 1)) // Some(2)
  * ```
  *
- * Note that having an `Applicative` instance implies that a
- * {@link Functor} implementation is also available, which is why
- * `Applicative` is a subtype of `Functor`.
+ * Note that having an `Applicative` instance implies
+ * {@link Functor} and {@link Apply} implementations are also
+ * available, which is why `Applicative` is a subtype of
+ * `Functor` and `Apply`.
  *
  * CREDITS: this type class is inspired by the equivalent in Haskell's
  * standard library and the implementation is inspired by the
  * [Typelevel Cats]{@link http://typelevel.org/cats/} project.
  */
-export abstract class Applicative<F> extends Functor<F> {
+export abstract class Applicative<F> extends Apply<F> {
   abstract pure<A>(a: A): HK<F, A>
-
-  abstract ap<A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>): HK<F, B>
 
   unit(): HK<F, void> {
     return this.pure(undefined)
-  }
-
-  map2<A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z): HK<F, Z> {
-    return this.ap(fb, this.map(fa, a => (b: B) => f(a, b)))
-  }
-
-  product<A, B>(fa: HK<F, A>, fb: HK<F, B>): HK<F, [A, B]> {
-    return this.map2(fa, fb, (a: A, b: B) => [a, b] as [A, B])
   }
 
   map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B> {
@@ -90,30 +204,18 @@ export abstract class Applicative<F> extends Functor<F> {
 }
 
 /**
- * Type class laws defined for {@link Functor}.
+ * Type class laws defined for {@link Applicative}.
  *
  * This is an abstract definition. In order to use it in unit testing,
  * the implementor must think of a strategy to evaluate the truthiness
  * of the returned `Equiv` values.
  */
-export class ApplicativeLaws<F> extends FunctorLaws<F> {
+export class ApplicativeLaws<F> extends ApplyLaws<F> {
   /**
    * @param F is the {@link Applicative} designated instance for `F`,
    * to be tested.
    */
   constructor(public F: Applicative<F>) { super(F) }
-
-  applyComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>> {
-    const F = this.F
-    const compose = (f: (b: B) => C) => (
-      (g: (a: A) => B) => (a: A) => f(g(a))
-    )
-
-    return Equiv.of(
-      F.ap(F.ap(fa, fab), fbc),
-      F.ap(fa, F.ap(fab, F.map(fbc, compose)))
-    )
-  }
 
   applicativeIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>> {
     const F = this.F
@@ -159,22 +261,6 @@ export class ApplicativeLaws<F> extends FunctorLaws<F> {
     )
   }
 
-  apProductConsistent<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>> {
-    const F = this.F
-    return Equiv.of(
-      F.ap(fa, f),
-      F.map(F.product(f, fa), p => { const [f, a] = p; return f(a) })
-    )
-  }
-
-  apMap2Consistent<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>> {
-    const F = this.F
-    return Equiv.of(
-      F.ap(fa, f),
-      F.map2(f, fa, (f, a) => f(a))
-    )
-  }
-
   applicativeUnit<A>(a: A): Equiv<HK<F, A>> {
     const F = this.F
     return Equiv.of(F.map(F.unit(), _ => a), F.pure(a))
@@ -186,12 +272,13 @@ export class ApplicativeLaws<F> extends FunctorLaws<F> {
  * to expose the default {@link Applicative} instance.
  *
  * Note that by exposing an `Applicative` instance, we are also
- * exposing a {@link Functor} implementation as well, since an
- * `Applicative` is a `Functor`.
+ * exposing {@link Functor} and {@link Apply} implementations as well,
+ * since an `Applicative` implements `Apply` and `Functor`.
  */
-export interface HasApplicative<F> extends HasFunctor<F> {
+export interface HasApplicative<F> extends HasApply<F> {
   __types: {
     functor: () => Functor<F>,
+    apply: () => Apply<F>,
     applicative: () => Applicative<F>
   }
 }

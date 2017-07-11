@@ -366,6 +366,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, EitherK<L, R> {
   // tslint:disable-next-line:variable-name
   static __types = {
     functor: () => EitherInstances.global,
+    apply: () => EitherInstances.global,
     applicative: () => EitherInstances.global,
     eq: () => EitherInstances.global
   }
@@ -549,39 +550,39 @@ export class EitherInstances<L> extends Applicative<Either<L, any>> implements E
   // tslint:disable-next-line:variable-name
   private __unit: Either<L, void> = Right(undefined)
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   eqv(lh: Either<L, any>, rh: Either<L, any>): boolean {
     return ((lh as any) as Either<L, any>).equals(rh as any)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   pure<A>(a: A): Either<L, A> {
     return Right(a)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   unit(): Either<L, void> {
     return this.__unit
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   ap<A, B>(fa: EitherK<L, A>, ff: EitherK<L, (a: A) => B>): Either<L, B> {
     const faE = (fa as any) as Either<L, A>
     const ffE = (ff as any) as Either<L, (a: A) => B>
     return Either.map2(faE, ffE, (a, f) => f(a))
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   map<A, B>(fa: EitherK<L, A>, f: (a: A) => B): Either<L, B> {
     return ((fa as any) as Either<L, A>).map(f)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   map2<A, B, Z>(fa: EitherK<L, A>, fb: EitherK<L, B>, f: (a: A, b: B) => Z): Either<L, Z> {
     return Either.map2((fa as any) as Either<L, A>, (fb as any) as Either<L, B>, f)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   product<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, [A, B]> {
     return Either.map2(
       (fa as any) as Either<L, A>,

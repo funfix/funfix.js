@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import { HK, Applicative, Functor, Eq } from "../types"
+import { HK, Applicative, Apply, Functor, Eq } from "../types"
 
 declare export class Option<+A> {
   get(): A;
@@ -27,19 +27,19 @@ declare export class Option<+A> {
   orElseL<AA : $Supertype<A>>(thunk: () => Option<AA>): Option<AA>;
   orNull(): A | null;
 
-  chain<B>(f: A => Option<B>): Option<B>;
+  chain<B>(f: (a: A) => Option<B>): Option<B>;
   contains(elem: A): boolean;
   equals(that: Option<A>): boolean;
-  exists(p: A => boolean): boolean;
-  filter(p: A => boolean): Option<A>;
-  flatMap<B>(f: A => Option<B>): Option<B>;
-  fold<B>(fallback: () => B, f: A => B): B;
-  forAll(p: A => boolean): boolean;
-  forEach(cb: A => void): void;
+  exists(p: (a: A) => boolean): boolean;
+  filter(p: (a: A) => boolean): Option<A>;
+  flatMap<B>(f: (a: A) => Option<B>): Option<B>;
+  fold<B>(fallback: () => B, f: (a: A) => B): B;
+  forAll(p: (a: A) => boolean): boolean;
+  forEach(cb: (a: A) => void): void;
   hashCode(): number;
   isEmpty(): boolean;
-  map<B>(f: A => B): Option<B>;
-  mapN<B>(f: A => B): Option<B>;
+  map<B>(f: (a: A) => B): Option<B>;
+  mapN<B>(f: (a: A) => B): Option<B>;
   nonEmpty(): boolean;
 
   __hkF: () => Option<any>;
@@ -47,6 +47,7 @@ declare export class Option<+A> {
 
   static __types: {
     functor: () => Functor<Option<any>>,
+    apply: () => Apply<Option<any>>,
     applicative: () => Applicative<Option<any>>,
     eq: () => Eq<Option<any>>
   };

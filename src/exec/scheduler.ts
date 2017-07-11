@@ -394,28 +394,28 @@ export class GlobalScheduler extends Scheduler {
     this._useSetImmediate = (canUseSetImmediate || false) &&
       (typeof setImmediate === "function")
   }
-  /** @inheritdoc */
+  /** @inheritDoc */
   execute(runnable: () => void): void {
     const r = safeRunnable(runnable, this.reportFailure)
     if (this._useSetImmediate) setImmediate(r)
     else setTimeout(r)
   }
-  /** @inheritdoc */
+  /** @inheritDoc */
   reportFailure(e: any): void {
     console.error(e)
   }
-  /** @inheritdoc */
+  /** @inheritDoc */
   currentTimeMillis(): number {
     return Date.now()
   }
-  /** @inheritdoc */
+  /** @inheritDoc */
   scheduleOnce(delay: number | Duration, runnable: () => void): Cancelable {
     const r = safeRunnable(runnable, this.reportFailure)
     const ms = Math.max(0, Duration.of(delay).toMillis())
     const task = setTimeout(r, ms)
     return Cancelable.from(() => clearTimeout(task))
   }
-  /** @inheritdoc */
+  /** @inheritDoc */
   withExecutionModel(em: ExecutionModel) {
     return new GlobalScheduler(this._useSetImmediate, em)
   }
@@ -474,23 +474,23 @@ export class TestScheduler extends Scheduler {
    */
   public hasTasksLeft(): boolean { return this._tasks.length > 0 }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public execute(runnable: () => void): void {
     this._tasks.push([this._clock, runnable])
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public reportFailure(e: any): void {
     this._triggeredFailures.push(e)
     this._reporter(e)
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public currentTimeMillis(): number {
     return this._clock
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public scheduleOnce(delay: number | Duration, runnable: () => void): Cancelable {
     const d = Math.max(0, Duration.of(delay).toMillis())
     const scheduleAt = this._clock + d
@@ -578,7 +578,7 @@ export class TestScheduler extends Scheduler {
     return executed
   }
 
-  /** @inheritdoc */
+  /** @inheritDoc */
   public withExecutionModel(em: ExecutionModel): TestScheduler {
     const newScheduler = new TestScheduler(em)
     newScheduler._updateTasks(this._tasks)
