@@ -179,7 +179,7 @@ export function registerTypeClassInstance<F>(tc: TypeClass<F>):
 
   return <T>(c: Constructor<T>, instance: F) => {
     const obj = c as any
-    const types: {[id: string]: Object} = (obj._funTypes || {})
+    const types: {[id: string]: any} = (obj._funTypes || {})
     obj._funTypes = types
 
     const existing = types[tc._funTypeId]
@@ -217,9 +217,9 @@ export function getTypeClassInstance<F>(tc: TypeClass<F>):
 
   return <T>(c: Constructor<T>) => {
     const obj = c as any
-    const types: {[id: string]: Object} = obj._funTypes || {}
+    const types: {[id: string]: any} = obj._funTypes || {}
     const instance = types[tc._funTypeId]
     if (instance) return instance as any
-    throw new NotImplementedError(`${(tc as any).name}<${obj.name ? obj.name : obj}>`)
+    throw new NotImplementedError(`${(tc as any).name}<${obj.name}>`)
   }
 }

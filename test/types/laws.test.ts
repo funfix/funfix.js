@@ -18,7 +18,11 @@
 import * as jv from "jsverify"
 import * as laws from "../laws"
 import { Box, BoxInstances } from "./box"
-import { eqOf, registerTypeClassInstance, Applicative } from "../../src/types"
+import {
+  eqOf, Eq, Applicative, applicativeOf,
+  getTypeClassInstance,
+  registerTypeClassInstance
+} from "../../src/types"
 
 const arbBox = jv.number.smap(n => new Box(n), b => b.value)
 
@@ -34,12 +38,25 @@ describe("Default Applicative ops obey laws", () => {
   laws.testApplicative(Box, arbBox, eqOf(Box))
 })
 
-describe("Type class coherence", () => {
+describe("Type class registration", () => {
+  it("should not throw error if registering the same instance", () => {
+    const ap = applicativeOf(Box)
+    registerTypeClassInstance(Applicative)(Box, ap)
+  })
+
   it("should throw error if registering type class multiple times", () => {
     try {
       registerTypeClassInstance(Applicative)(Box, new BoxInstances())
     } catch (e) {
       expect(e.name).toBe("IllegalArgumentError")
+    }
+  })
+
+  it("should throw error if type class isn't implemented", () => {
+    try {
+      getTypeClassInstance(Eq)(String)
+    } catch (e) {
+      expect(e.name).toBe("NotImplementedError")
     }
   })
 })
