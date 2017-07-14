@@ -18,17 +18,18 @@
 /* @flow */
 
 // Testing a la carte import
-import type { OptionK } from "../../src/funfix"
+import type { OptionK, TypeClass } from "../../src/funfix"
 import {
   Functor,
-  HasFunctor,
   functorOf,
   Option,
   Some
 } from "../../src/funfix"
 
-const hasFunctor: HasFunctor<Option<any>> = Option
-const instance: Functor<Option<any>> = hasFunctor.__types.functor()
+const erasure: Functor<any> = Functor._funErasure
+const typeId: string = Functor._funTypeId
+const supertypes: string[] = Functor._funSupertypeIds
+const tc: TypeClass<Functor<any>> = Functor
 
 const F: Functor<Option<any>> = functorOf(Option)
 

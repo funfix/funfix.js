@@ -17,8 +17,6 @@
 
 /* @flow */
 
-import { HK, Applicative, Apply, Functor, Eq } from "../types"
-
 declare export class Option<+A> {
   get(): A;
   getOrElse<AA : $Supertype<A>>(fallback: AA): AA;
@@ -42,15 +40,12 @@ declare export class Option<+A> {
   mapN<B>(f: (a: A) => B): Option<B>;
   nonEmpty(): boolean;
 
-  __hkF: () => Option<any>;
-  __hkA: () => A;
+  // Implements HK<F, A>
+  +_funKindF: Option<any>;
+  +_funKindA: A;
 
-  static __types: {
-    functor: () => Functor<Option<any>>,
-    apply: () => Apply<Option<any>>,
-    applicative: () => Applicative<Option<any>>,
-    eq: () => Eq<Option<any>>
-  };
+  // Implements Constructor<T>
+  static +_funErasure: Option<any>;
 
   static empty<A>(): Option<A>;
   static none(): Option<empty>;
@@ -74,17 +69,3 @@ declare export class Option<+A> {
 
 declare export function Some<A>(value: A): Option<A>;
 declare export var None: Option<empty>;
-
-export type OptionK<A> = HK<Option<any>, A>;
-
-declare export class OptionInstances {
-  eqv(lh: Option<any>, rh: Option<any>): boolean;
-  pure<A>(a: A): Option<A>;
-  unit(): Option<void>;
-  ap<A, B>(fa: OptionK<A>, ff: OptionK<(a: A) => B>): Option<B>;
-  map<A, B>(fa: OptionK<A>, f: (a: A) => B): Option<B>;
-  map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): Option<Z>;
-  product<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<[A, B]>;
-
-  static global: OptionInstances;
-}

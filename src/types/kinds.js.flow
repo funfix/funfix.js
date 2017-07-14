@@ -17,14 +17,28 @@
 
 /* @flow */
 
+export type Constructor<T> =
+  Class<T> | { +_funErasure: T }
+
+export type TypeClass<F> = Constructor<F> & {
+  +_funTypeId: string;
+  +_funSupertypeIds: string[];
+}
+
 export interface HK<F, A> {
-  __hkF(): F;
-  __hkA(): A;
+  +_funKindF: F;
+  +_funKindA: A;
 }
 
 declare export class Equiv<A> {
-  lh: A;
-  rh: A;
+  +lh: A;
+  +rh: A;
 
   static of<A>(lh: A, rh: A): Equiv<A>;
 }
+
+declare export function registerTypeClassInstance<F>(tc: TypeClass<F>):
+  <T>(c: Constructor<T>, instance: F) => void;
+
+declare export function getTypeClassInstance<F>(tc: TypeClass<F>):
+  <T>(c: Constructor<T>) => F;

@@ -38,6 +38,8 @@
 
 /***/
 
+import { Constructor, getTypeClassInstance } from "./kinds"
+
 /**
  * The `Eq` is a type class used to determine equality between 2
  * instances of the same type. Any 2 instances `x` and `y` are equal
@@ -61,6 +63,11 @@
  */
 export abstract class Eq<A> {
   abstract eqv(lh: A, rh: A): boolean
+
+  // Implements TypeClass<F>
+  static readonly _funTypeId: string = "eq"
+  static readonly _funSupertypeIds: string[] = []
+  static readonly _funErasure: Eq<any>
 }
 
 export class EqLaws<A> {
@@ -101,16 +108,9 @@ export class EqLaws<A> {
 }
 
 /**
- * Interface to be implemented by types, as `static` methods, meant
- * to expose the default {@link Eq} instance.
- */
-export interface HasEq<F> {
-  __types: { eq: () => Eq<F> }
-}
-
-/**
- * Given a `constructor` reference that implements {@link HasEq},
- * returns its associated {@link Eq} instance.
+ * Given a {@link Constructor} reference, returns its associated
+ * {@link Eq} instance if it exists, or throws a {@link NotImplementedError}
+ * in case there's no such association.
  *
  * ```typescript
  * import { Option, Eq, eqOf } from "funfix"
@@ -118,6 +118,5 @@ export interface HasEq<F> {
  * const F: Eq<Option<any>> = eqOf(Option)
  * ```
  */
-export function eqOf<F>(constructor: HasEq<F>): Eq<F> {
-  return constructor.__types.eq()
-}
+export const eqOf: <F>(c: Constructor<F>) => Eq<F> =
+  getTypeClassInstance(Eq)

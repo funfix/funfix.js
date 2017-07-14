@@ -17,27 +17,29 @@
 
 import * as jv from "jsverify"
 import * as laws from "../laws"
-import { Box } from "./box"
-import { eqOf, HK } from "../../src/types"
+import { Box, BoxInstances } from "./box"
+import { eqOf, registerTypeClassInstance, Applicative } from "../../src/types"
 
 const arbBox = jv.number.smap(n => new Box(n), b => b.value)
 
-describe("Box is sane", () => {
+describe("Default Eq ops obey laws", () => {
   laws.testEq(Box, arbBox)
-
-  test("can do higher kinds", () => {
-    const box = new Box(1)
-    const hk: HK<Box<any>, number> = box
-
-    expect(() => box.__hkF()).toThrowError()
-    expect(() => box.__hkA()).toThrowError()
-  })
 })
 
-describe("Default Functor ops obeys laws", () => {
+describe("Default Functor ops obey laws", () => {
   laws.testFunctor(Box, arbBox, eqOf(Box))
 })
 
-describe("Default Applicative ops obeys laws", () => {
+describe("Default Applicative ops obey laws", () => {
   laws.testApplicative(Box, arbBox, eqOf(Box))
+})
+
+describe("Type class coherence", () => {
+  it("should throw error if registering type class multiple times", () => {
+    try {
+      registerTypeClassInstance(Applicative)(Box, new BoxInstances())
+    } catch (e) {
+      expect(e.name).toBe("IllegalArgumentError")
+    }
+  })
 })

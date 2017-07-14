@@ -74,10 +74,10 @@ Low-level data types and utilities:
 
 - [[IEquals]] interface for structural equality in [[is]]
 - [[Cancelable]] / [[BoolCancelable]] for describing composable cancellation actions
-- [TimeUnit and Duration]{@link exec/time} for
+- [TimeUnit and Duration]{@link "exec/time"} for
   expressing timespans, along operations and conversions between time units
 - [[Scheduler]] for scheduling units of work for asynchronous execution
-  (also see [TestScheduler]{@link exec/scheduler} for simulating async execution
+  (also see [TestScheduler]{@link "exec/scheduler"} for simulating async execution
   and delays in tests)
 
 More is coming (e.g. `Task`, etc)

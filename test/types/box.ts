@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Applicative, Eq, HK } from "../../src/types"
+import { Functor, Applicative, Eq, HK, registerTypeClassInstance } from "../../src/types"
 
 /**
  * Dummy class meant to test default type class operations.
@@ -23,18 +23,9 @@ import { Applicative, Eq, HK } from "../../src/types"
 export class Box<A> {
   constructor(public value: A) {}
 
-  // tslint:disable-next-line:variable-name
-  __hkF: () => Box<any>
-  // tslint:disable-next-line:variable-name
-  __hkA: () => A
-
-  // tslint:disable-next-line:variable-name
-  static __types = {
-    functor: () => new BoxInstances(),
-    apply: () => new BoxInstances(),
-    applicative: () => new BoxInstances(),
-    eq: () => new BoxInstances()
-  }
+  readonly _funKindF: Box<any>
+  readonly _funKindA: A
+  static readonly _erasure: Box<any>
 }
 
 export class BoxInstances<A> extends Applicative<Box<any>> implements Eq<Box<any>> {
@@ -52,3 +43,7 @@ export class BoxInstances<A> extends Applicative<Box<any>> implements Eq<Box<any
     return lh.value === rh.value
   }
 }
+
+registerTypeClassInstance(Eq)(Box, new BoxInstances())
+registerTypeClassInstance(Functor)(Box, new BoxInstances())
+registerTypeClassInstance(Applicative)(Box, new BoxInstances())

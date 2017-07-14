@@ -17,12 +17,24 @@
 
 /* @flow */
 
+import type { Constructor } from "./kinds"
+
 export interface Eq<A> {
-  eqv(lh: A, rh: A): boolean
+  eqv(lh: A, rh: A): boolean;
+
+  // Implements TypeClass<F>
+  static +_funTypeId: string;
+  static +_funSupertypeIds: string[];
+  static +_funErasure: Eq<any>;
 }
 
-export interface HasEq<F> {
-  +__types: { eq: () => Eq<F> }
+declare export class EqLaws<A> {
+  +F: Eq<A>;
+  constructor(F: Eq<A>): EqLaws<A>;
+
+  reflexive(a: A): boolean;
+  symmetric(x: A, y: A): boolean;
+  transitive(x: A, y: A, z: A): boolean;
 }
 
-declare export function eqOf<F>(constructor: HasEq<F>): Eq<F>;
+declare export function eqOf<F>(c: Constructor<F>): Eq<F>;

@@ -20,9 +20,11 @@
  *
  * Exports sub-modules:
  *
- * - {@link core} for basic types and utilities that belong in a standard library
- * - {@link exec} for low-level utilities, in support of everything else
- * - {@link effect} for dealing with side effects
+ * - [core]{@link "core/index"} for basic types and utilities that belong in a standard library
+ * - [types]{@link "types/index"} for type class definitions inspired by
+ *   Haskell's standard library and Typelevel Cats
+ * - [exec]{@link "exec/index"} for low-level utilities, in support of everything else
+ * - [effect]{@link "effect/index"} for dealing with side effects
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:

@@ -21,7 +21,7 @@
  *
  * Exports sub-modules:
  *
- * - {@link effect/eval} for the {@link Eval} data type
+ * - [effect/eval]{@link "effect/eval"} for the {@link Eval} data type
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:

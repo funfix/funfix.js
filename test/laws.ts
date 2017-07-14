@@ -17,13 +17,13 @@
 
 import * as jv from "jsverify"
 import {
-  HK, Equiv, Eq, HasEq, EqLaws, eqOf,
-  HasFunctor, FunctorLaws, functorOf,
-  HasApply, ApplyLaws, applyOf,
-  HasApplicative, ApplicativeLaws, applicativeOf
+  HK, Equiv, Eq, Constructor, EqLaws, eqOf,
+  FunctorLaws, functorOf,
+  ApplyLaws, applyOf,
+  ApplicativeLaws, applicativeOf
 } from "../src/funfix"
 
-export function testEq<A>(type: HasEq<A>, arbA: jv.Arbitrary<A>): void {
+export function testEq<A>(type: Constructor<A>, arbA: jv.Arbitrary<A>): void {
   const F = eqOf(type)
   const laws = new EqLaws(F)
 
@@ -44,7 +44,7 @@ export function testEq<A>(type: HasEq<A>, arbA: jv.Arbitrary<A>): void {
 }
 
 export function testFunctor<F, A>(
-  type: HasFunctor<F>,
+  type: Constructor<F>,
   arbFA: jv.Arbitrary<HK<F, A>>,
   eqF: Eq<HK<F, any>>): void {
 
@@ -72,7 +72,7 @@ export function testFunctor<F, A>(
 }
 
 export function testApply<F, A, B>(
-  type: HasApply<F>,
+  type: Constructor<F>,
   arbFA: jv.Arbitrary<HK<F, A>>,
   lift: <T>(t: T) => HK<F, T>,
   eqF: Eq<HK<F, any>>,
@@ -115,7 +115,7 @@ export function testApply<F, A, B>(
 }
 
 export function testApplicative<F, A, B>(
-  type: HasApplicative<F>,
+  type: Constructor<F>,
   arbFA: jv.Arbitrary<HK<F, A>>,
   eqF: Eq<HK<F, any>>,
   includeSupertypes: boolean = true): void {

@@ -17,13 +17,19 @@
 
 /* @flow */
 
+import type { Constructor } from "./kinds"
 import { HK, Equiv } from "./kinds"
-import { Functor, HasFunctor, FunctorLaws } from "./functor"
+import { Functor, FunctorLaws } from "./functor"
 
 export interface Apply<F> extends Functor<F> {
   ap<A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>): HK<F, B>;
   map2<A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z): HK<F, Z>;
   product<A, B>(fa: HK<F, A>, fb: HK<F, B>): HK<F, [A, B]>;
+
+  // Implements TypeClass<F>
+  static +_funTypeId: string;
+  static +_funSupertypeIds: string[];
+  static +_funErasure: Apply<any>;
 }
 
 declare export class ApplyLaws<F> extends FunctorLaws<F> {
@@ -35,18 +41,16 @@ declare export class ApplyLaws<F> extends FunctorLaws<F> {
   applyMap2Consistency<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
 }
 
-export interface HasApply<F> extends HasFunctor<F> {
-  +__types: {
-    functor: () => Functor<F>,
-    apply: () => Apply<F>
-  }
-}
-
-declare export function applyOf<F>(constructor: HasApply<F>): Apply<F>;
+declare export function applyOf<F>(c: Constructor<F>): Apply<F>;
 
 export interface Applicative<F> extends Apply<F> {
   pure<A>(a: A): HK<F, A>;
   unit(): HK<F, void>;
+
+  // Implements TypeClass<F>
+  static +_funTypeId: string;
+  static +_funSupertypeIds: string[];
+  static +_funErasure: Applicative<any>;
 }
 
 declare export class ApplicativeLaws<F> extends ApplyLaws<F> {
@@ -61,12 +65,4 @@ declare export class ApplicativeLaws<F> extends ApplyLaws<F> {
   applicativeUnit<A>(a: A): Equiv<HK<F, A>>;
 }
 
-export interface HasApplicative<F> extends HasFunctor<F> {
-  +__types: {
-    functor: () => Functor<F>,
-    apply: () => Apply<F>,
-    applicative: () => Applicative<F>
-  }
-}
-
-declare export function applicativeOf<F>(constructor: HasApplicative<F>): Applicative<F>;
+declare export function applicativeOf<F>(c: Constructor<F>): Applicative<F>;

@@ -17,10 +17,16 @@
 
 /* @flow */
 
+import type { Constructor } from "./kinds"
 import { HK, Equiv } from "./kinds"
 
 export interface Functor<F> {
   map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B>;
+
+  // Implements TypeClass<F>
+  static +_funTypeId: string;
+  static +_funSupertypeIds: string[];
+  static +_funErasure: Functor<any>;
 }
 
 declare export class FunctorLaws<F> {
@@ -31,8 +37,4 @@ declare export class FunctorLaws<F> {
   covariantComposition<A, B, C>(fa: HK<F, A>, f: (a: A) => B, g: (b: B) => C): Equiv<HK<F, C>>;
 }
 
-export interface HasFunctor<F> {
-  +__types: { functor: () => Functor<F> }
-}
-
-declare export function functorOf<F>(constructor: HasFunctor<F>): Functor<F>;
+declare export function functorOf<F>(c: Constructor<F>): Functor<F>;

@@ -18,7 +18,6 @@
 /* @flow */
 
 import { Option } from "./option"
-import { Functor, Applicative, Apply, Eq, HK } from "../types"
 
 declare export class Either<+L, +R> {
   get(): R;
@@ -42,15 +41,11 @@ declare export class Either<+L, +R> {
   equals(other: Either<L, R>): boolean;
   hashCode(): number;
 
-  __hkF: () => Either<L, any>;
-  __hkA: () => R;
+  +_funKindF: Either<L, any>;
+  +_funKindA: R;
 
-  static __types: {
-    functor: () => Functor<Either<any, any>>;
-    apply: () => Apply<Either<any, any>>,
-    applicative: () => Applicative<Either<any, any>>;
-    eq: () => Eq<Either<any, any>>;
-  };
+  // Implements Constructor<T>
+  static +_funErasure: Either<any, any>;
 
   static left<L, R>(value: L): Either<L, R>;
   static right<L, R>(value: R): Either<L, R>;
@@ -72,17 +67,3 @@ declare export class Either<+L, +R> {
 
 declare export function Left<L>(value: L): Either<L, empty>;
 declare export function Right<R>(value: R): Either<empty, R>;
-
-export type EitherK<L, R> = HK<Either<L, any>, R>;
-
-declare export class EitherInstances<L> {
-  eqv(lh: Either<L, any>, rh: Either<L, any>): boolean;
-  pure<A>(a: A): Either<L, A>;
-  unit(): Either<L, void>;
-  ap<A, B>(fa: EitherK<L, A>, ff: EitherK<L, (a: A) => B>): Either<L, B>;
-  map<A, B>(fa: EitherK<L, A>, f: (a: A) => B): Either<L, B>;
-  map2<A, B, Z>(fa: EitherK<L, A>, fb: EitherK<L, B>, f: (a: A, b: B) => Z): Either<L, Z>;
-  product<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, [A, B]>;
-
-  static global: EitherInstances<any>;
-}

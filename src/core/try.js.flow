@@ -17,7 +17,6 @@
 
 /* @flow */
 
-import { HK, Applicative, Apply, Functor, Eq } from "../types"
 import { Option } from "./option"
 import { Either } from "./either"
 
@@ -45,15 +44,12 @@ declare export class Try<+A> {
   equals(that: Try<A>): boolean;
   hashCode(): number;
 
-  __hkF: () => Try<any>;
-  __hkA: () => A;
+  // Implements HK<F, A>
+  +_funKindF: Try<any>;
+  +_funKindA: A;
 
-  static __types: {
-    functor: () => Functor<Try<any>>,
-    apply: () => Apply<Try<any>>,
-    applicative: () => Applicative<Try<any>>,
-    eq: () => Eq<Try<any>>
-  };
+  // Implements Constructor<T>
+  static +_funErasure: Try<any>;
 
   static of<A>(thunk: () => A): Try<A>;
   static pure<A>(value: A): Try<A>;
@@ -78,17 +74,3 @@ declare export class Try<+A> {
 
 declare export function Success<A>(value: A): Try<A>;
 declare export function Failure(e: any): Try<empty>;
-
-export type TryK<A> = HK<Try<any>, A>;
-
-declare export class TryInstances {
-  eqv(lh: Try<any>, rh: Try<any>): boolean;
-  pure<A>(a: A): Try<A>;
-  unit(): Try<void>;
-  ap<A, B>(fa: TryK<A>, ff: TryK<(a: A) => B>): Try<B>;
-  map<A, B>(fa: TryK<A>, f: (a: A) => B): Try<B>;
-  map2<A, B, Z>(fa: TryK<A>, fb: TryK<B>, f: (a: A, b: B) => Z): Try<Z>;
-  product<A, B>(fa: TryK<A>, fb: TryK<B>): Try<[A, B]>;
-
-  static global: TryInstances;
-}

@@ -18,21 +18,20 @@
 /* @flow */
 
 // Testing a la carte import
-import type { OptionK } from "../../src/funfix"
+import type { OptionK, TypeClass } from "../../src/funfix"
 import {
   Applicative,
-  HasApplicative,
   applicativeOf,
   Option,
   Some
 } from "../../src/funfix"
 
-const hasApplicative: HasApplicative<Option<any>> = Option
-const instance: Applicative<Option<any>> = hasApplicative.__types.applicative()
+const erasure: Applicative<any> = Applicative._funErasure
+const typeId: string = Applicative._funTypeId
+const supertypes: string[] = Applicative._funSupertypeIds
+const tc: TypeClass<Applicative<any>> = Applicative
 
 const F: Applicative<Option<any>> = applicativeOf(Option)
-// $ExpectError
-const FErr: Applicative<any> = applicativeOf(String)
 
 const opt1: OptionK<string> = F.map(Some(1), x => String(x))
 const opt2: OptionK<number> = F.map(Some(1), x => x + 1)

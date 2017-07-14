@@ -37,8 +37,8 @@
  */
 
 /***/
-import { HK, Equiv } from "./kinds"
 import { id } from "../core/std"
+import { HK, Equiv, Constructor, getTypeClassInstance } from "./kinds"
 
 /**
  * The `Functor` is a type class providing the `map` operation that
@@ -62,6 +62,11 @@ import { id } from "../core/std"
  * [Typelevel Cats]{@link http://typelevel.org/cats/} project.
  */
 export abstract class Functor<F> {
+  // Implements TypeClass<F>
+  static readonly _funTypeId: string = "functor"
+  static readonly _funSupertypeIds: string[] = []
+  static readonly _funErasure: Functor<any>
+
   abstract map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B>
 }
 
@@ -77,7 +82,7 @@ export class FunctorLaws<F> {
    * @param F is the {@link Functor} designated instance for `F`,
    * to be tested.
    */
-  constructor(public F: Functor<F>) {}
+  constructor(public readonly F: Functor<F>) {}
 
   /**
    * ```typescript
@@ -102,16 +107,9 @@ export class FunctorLaws<F> {
 }
 
 /**
- * Interface to be implemented by types, as `static` methods, meant
- * to expose the default {@link Functor} instance.
- */
-export interface HasFunctor<F> {
-  __types: { functor: () => Functor<F> }
-}
-
-/**
- * Given a `constructor` reference that implements {@link HasFunctor},
- * returns its associated {@link Functor} instance.
+ * Given a {@link Constructor} reference, returns its associated
+ * {@link Functor} instance if it exists, or throws a {@link NotImplementedError}
+ * in case there's no such association.
  *
  * ```typescript
  * import { Option, Functor, functorOf } from "funfix"
@@ -119,6 +117,5 @@ export interface HasFunctor<F> {
  * const F: Functor<Option<any>> = functorOf(Option)
  * ```
  */
-export function functorOf<F>(constructor: HasFunctor<F>): Functor<F> {
-  return constructor.__types.functor()
-}
+export const functorOf: <F>(c: Constructor<F>) => Functor<F> =
+  getTypeClassInstance(Functor)

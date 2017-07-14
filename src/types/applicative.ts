@@ -37,8 +37,9 @@
  */
 
 /***/
-import { HK, Equiv } from "./kinds"
-import { Functor, HasFunctor, FunctorLaws } from "./functor"
+import { HK, Equiv, Constructor, getTypeClassInstance } from "./kinds"
+import { Functor, FunctorLaws } from "./functor"
+import { NotImplementedError } from "../core/errors"
 
 /**
  * The `Apply` type class, a weaker version of {@link Applicative};
@@ -89,6 +90,11 @@ export abstract class Apply<F> extends Functor<F> {
   product<A, B>(fa: HK<F, A>, fb: HK<F, B>): HK<F, [A, B]> {
     return this.map2(fa, fb, (a: A, b: B) => [a, b] as [A, B])
   }
+
+  // Implements TypeClass<F>
+  static readonly _funTypeId: string = "apply"
+  static readonly _funSupertypeIds: string[] = ["functor"]
+  static readonly _funErasure: Apply<any>
 }
 
 /**
@@ -103,7 +109,7 @@ export class ApplyLaws<F> extends FunctorLaws<F> {
    * @param F is the {@link Apply} designated instance for `F`,
    * to be tested.
    */
-  constructor(public F: Apply<F>) { super(F) }
+  constructor(public readonly F: Apply<F>) { super(F) }
 
   applyComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>> {
     const F = this.F
@@ -135,23 +141,9 @@ export class ApplyLaws<F> extends FunctorLaws<F> {
 }
 
 /**
- * Interface to be implemented by types, as `static` methods, meant
- * to expose the default {@link Apply} instance.
- *
- * Note that by exposing an `Apply` instance, we are also
- * exposing a {@link Functor} implementation as well, since an
- * `Apply` is a `Functor`.
- */
-export interface HasApply<F> extends HasFunctor<F> {
-  __types: {
-    functor: () => Functor<F>,
-    apply: () => Apply<F>
-  }
-}
-
-/**
- * Given a `constructor` reference that implements {@link HasApply},
- * returns its associated {@link Apply} instance.
+ * Given a {@link Constructor} reference, returns its associated
+ * {@link Apply} instance if it exists, or throws a {@link NotImplementedError}
+ * in case there's no such association.
  *
  * ```typescript
  * import { Option, Apply, applyOf } from "funfix"
@@ -159,9 +151,8 @@ export interface HasApply<F> extends HasFunctor<F> {
  * const F: Apply<Option<any>> = applyOf(Option)
  * ```
  */
-export function applyOf<F>(constructor: HasApply<F>): Apply<F> {
-  return constructor.__types.apply()
-}
+export const applyOf: <F>(c: Constructor<F>) => Apply<F> =
+  getTypeClassInstance(Apply)
 
 /**
  * `Applicative` functor type class.
@@ -201,6 +192,11 @@ export abstract class Applicative<F> extends Apply<F> {
   map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B> {
     return this.ap(fa, this.pure(f))
   }
+
+  // Implements TypeClass<F>
+  static readonly _funTypeId: string = "applicative"
+  static readonly _funSupertypeIds: string[] = ["functor", "apply"]
+  static readonly _funErasure: Applicative<any>
 }
 
 /**
@@ -268,24 +264,9 @@ export class ApplicativeLaws<F> extends ApplyLaws<F> {
 }
 
 /**
- * Interface to be implemented by types, as `static` methods, meant
- * to expose the default {@link Applicative} instance.
- *
- * Note that by exposing an `Applicative` instance, we are also
- * exposing {@link Functor} and {@link Apply} implementations as well,
- * since an `Applicative` implements `Apply` and `Functor`.
- */
-export interface HasApplicative<F> extends HasApply<F> {
-  __types: {
-    functor: () => Functor<F>,
-    apply: () => Apply<F>,
-    applicative: () => Applicative<F>
-  }
-}
-
-/**
- * Given a `constructor` reference that implements {@link HasApplicative},
- * returns its associated {@link Applicative} instance.
+ * Given a {@link Constructor} reference, returns its associated
+ * {@link Applicative} instance if it exists, or throws a {@link NotImplementedError}
+ * in case there's no such association.
  *
  * ```typescript
  * import { Option, Applicative, applicativeOf } from "funfix"
@@ -293,6 +274,5 @@ export interface HasApplicative<F> extends HasApply<F> {
  * const F: Applicative<Option<any>> = applicativeOf(Option)
  * ```
  */
-export function applicativeOf<F>(constructor: HasApplicative<F>): Applicative<F> {
-  return constructor.__types.applicative()
-}
+export const applicativeOf: <F>(c: Constructor<F>) => Applicative<F> =
+  getTypeClassInstance(Applicative)
