@@ -49,43 +49,36 @@ import { Eq } from "./eq"
 export type OptionK<A> = HK<Option<any>, A>
 
 /**
- * Type class instances provided by default for [[Option]].
+ * Type class instances provided by global for [[Option]].
  */
 export class OptionInstances implements Applicative<Option<any>>, Eq<Option<any>> {
   // tslint:disable-next-line:variable-name
   private __unit: Option<void> = Some(undefined)
 
-  /** @inheritDoc */
   eqv(lh: Option<any>, rh: Option<any>): boolean {
     return lh.equals(rh)
   }
 
-  /** @inheritDoc */
   pure<A>(a: A): Option<A> {
     return Some(a)
   }
 
-  /** @inheritDoc */
   unit(): Option<void> {
     return this.__unit
   }
 
-  /** @inheritDoc */
   ap<A, B>(fa: OptionK<A>, ff: OptionK<(a: A) => B>): Option<B> {
     return Option.map2(fa as Option<A>, ff as Option<(a: A) => B>, (a, f) => f(a))
   }
 
-  /** @inheritDoc */
   map<A, B>(fa: OptionK<A>, f: (a: A) => B): Option<B> {
     return (fa as Option<A>).map(f)
   }
 
-  /** @inheritDoc */
   map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): Option<Z> {
     return Option.map2(fa as Option<A>, fb as Option<B>, f)
   }
 
-  /** @inheritDoc */
   product<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<[A, B]> {
     return Option.map2(fa as Option<A>, fb as Option<B>, (a, b) => [a, b] as [A, B])
   }
@@ -105,43 +98,36 @@ registerTypeClassInstance(Applicative)(Option, OptionInstances.global)
 export type TryK<A> = HK<Try<any>, A>
 
 /**
- * Type class instances provided by default for [[Option]].
+ * Type class instances provided by global for [[Option]].
  */
 export class TryInstances implements Applicative<Try<any>>, Eq<Try<any>> {
   // tslint:disable-next-line:variable-name
   private __unit: Try<void> = Success(undefined)
 
-  /** @inheritDoc */
   eqv(lh: Try<any>, rh: Try<any>): boolean {
     return lh.equals(rh)
   }
 
-  /** @inheritDoc */
   pure<A>(a: A): Try<A> {
     return Success(a)
   }
 
-  /** @inheritDoc */
   unit(): Try<void> {
     return this.__unit
   }
 
-  /** @inheritDoc */
   ap<A, B>(fa: TryK<A>, ff: TryK<(a: A) => B>): Try<B> {
     return Try.map2(fa as Try<A>, ff as Try<(a: A) => B>, (a, f) => f(a))
   }
 
-  /** @inheritDoc */
   map<A, B>(fa: TryK<A>, f: (a: A) => B): Try<B> {
     return (fa as Try<A>).map(f)
   }
 
-  /** @inheritDoc */
   map2<A, B, Z>(fa: TryK<A>, fb: TryK<B>, f: (a: A, b: B) => Z): Try<Z> {
     return Try.map2(fa as Try<A>, fb as Try<B>, f)
   }
 
-  /** @inheritDoc */
   product<A, B>(fa: TryK<A>, fb: TryK<B>): Try<[A, B]> {
     return Try.map2(fa as Try<A>, fb as Try<B>, (a, b) => [a, b] as [A, B])
   }
@@ -161,45 +147,38 @@ registerTypeClassInstance(Applicative)(Try, TryInstances.global)
 export type EitherK<L, R> = HK<Either<L, any>, R>
 
 /**
- * Type class instances provided by default for [[Either]].
+ * Type class instances provided by global for [[Either]].
  */
 export class EitherInstances<L> implements Applicative<Either<L, any>>, Eq<Either<L, any>> {
   // tslint:disable-next-line:variable-name
   private __unit: Either<L, void> = Right(undefined)
 
-  /** @inheritDoc */
   eqv(lh: Either<L, any>, rh: Either<L, any>): boolean {
     return ((lh as any) as Either<L, any>).equals(rh as any)
   }
 
-  /** @inheritDoc */
   pure<A>(a: A): Either<L, A> {
     return Right(a)
   }
 
-  /** @inheritDoc */
   unit(): Either<L, void> {
     return this.__unit
   }
 
-  /** @inheritDoc */
   ap<A, B>(fa: EitherK<L, A>, ff: EitherK<L, (a: A) => B>): Either<L, B> {
     const faE = (fa as any) as Either<L, A>
     const ffE = (ff as any) as Either<L, (a: A) => B>
     return Either.map2(faE, ffE, (a, f) => f(a))
   }
 
-  /** @inheritDoc */
   map<A, B>(fa: EitherK<L, A>, f: (a: A) => B): Either<L, B> {
     return ((fa as any) as Either<L, A>).map(f)
   }
 
-  /** @inheritDoc */
   map2<A, B, Z>(fa: EitherK<L, A>, fb: EitherK<L, B>, f: (a: A, b: B) => Z): Either<L, Z> {
     return Either.map2((fa as any) as Either<L, A>, (fb as any) as Either<L, B>, f)
   }
 
-  /** @inheritDoc */
   product<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, [A, B]> {
     return Either.map2(
       (fa as any) as Either<L, A>,

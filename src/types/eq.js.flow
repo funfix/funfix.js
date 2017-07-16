@@ -28,9 +28,8 @@ export interface Eq<A> {
   static +_funErasure: Eq<any>;
 }
 
-declare export class EqLaws<A> {
+export interface EqLaws<A> {
   +F: Eq<A>;
-  constructor(F: Eq<A>): EqLaws<A>;
 
   reflexive(a: A): boolean;
   symmetric(x: A, y: A): boolean;
@@ -38,3 +37,4 @@ declare export class EqLaws<A> {
 }
 
 declare export function eqOf<F>(c: Constructor<F>): Eq<F>;
+declare export function eqLawsOf<A>(instance: Eq<A>): EqLaws<A>;

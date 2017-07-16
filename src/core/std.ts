@@ -189,3 +189,32 @@ export function hashCodeOfString(str: string): number {
 export function id<A>(a: A): A {
   return a
 }
+
+/**
+ * Utility function for implementing mixins, based on the
+ * [TypeScript Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * documentation.
+ *
+ * Sample:
+ *
+ * ```typescript
+ * class Disposable { ... }
+ * class Activatable { ... }
+ * class SmartObject implements Disposable, Activatable { ... }
+ *
+ * applyMixins(SmartObject, [Disposable, Activatable]);
+ * ```
+ *
+ * Using `implements` instead of `extends` for base classes
+ * will make the type system treat them like interfaces instead of
+ * classes. And by `applyMixins` we can also supply global
+ * implementations for the non-abstract members.
+ */
+export function applyMixins(derivedCtor: {prototype: any}, baseCtors: {prototype: any}[]) {
+  baseCtors.forEach(baseCtor => {
+    Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
+      if (!derivedCtor.prototype[name])
+        derivedCtor.prototype[name] = baseCtor.prototype[name]
+    })
+  })
+}

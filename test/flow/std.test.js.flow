@@ -25,7 +25,8 @@ import {
   equals,
   hashCode,
   isValueObject,
-  hashCodeOfString
+  hashCodeOfString,
+  applyMixins
 } from "../../src/core"
 
 // IEquals test (1)
@@ -58,3 +59,15 @@ hashCodeOfString("test")
 hashCodeOfString(10)
 
 isValueObject(1)
+
+class Mixin { base(): number { return 1 } }
+class Child {}
+
+applyMixins(Child, [Mixin])
+applyMixins(ff.Apply, [ff.Functor])
+
+// $ExpectError
+applyMixins("", [Mixin])
+
+// $ExpectError
+applyMixins(Child, [""])

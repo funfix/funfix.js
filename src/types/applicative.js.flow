@@ -32,9 +32,8 @@ export interface Apply<F> extends Functor<F> {
   static +_funErasure: Apply<any>;
 }
 
-declare export class ApplyLaws<F> extends FunctorLaws<F> {
+export interface ApplyLaws<F> extends FunctorLaws<F> {
   +F: Apply<F>;
-  constructor(F: Apply<F>): ApplyLaws<F>;
 
   applyComposition<A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>): Equiv<HK<F, C>>;
   applyProductConsistency<A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
@@ -42,6 +41,7 @@ declare export class ApplyLaws<F> extends FunctorLaws<F> {
 }
 
 declare export function applyOf<F>(c: Constructor<F>): Apply<F>;
+declare export function applyLawsOf<F>(instance: Apply<F>): ApplyLaws<F>;
 
 export interface Applicative<F> extends Apply<F> {
   pure<A>(a: A): HK<F, A>;
@@ -53,9 +53,8 @@ export interface Applicative<F> extends Apply<F> {
   static +_funErasure: Applicative<any>;
 }
 
-declare export class ApplicativeLaws<F> extends ApplyLaws<F> {
+export interface ApplicativeLaws<F> extends ApplyLaws<F> {
   +F: Applicative<F>;
-  constructor(F: Applicative<F>): ApplicativeLaws<F>;
 
   applicativeIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>>;
   applicativeHomomorphism<A, B>(a: A, f: (a: A) => B): Equiv<HK<F, B>>;
@@ -66,3 +65,4 @@ declare export class ApplicativeLaws<F> extends ApplyLaws<F> {
 }
 
 declare export function applicativeOf<F>(c: Constructor<F>): Applicative<F>;
+declare export function applicativeLawsOf<F>(instance: Applicative<F>): ApplicativeLaws<F>;

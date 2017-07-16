@@ -373,7 +373,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * Returns an empty [[Option]].
    *
    * Similar to [[Option.none]], but this one allows specifying a
-   * type parameter (in the context of Typescript or Flow or other
+   * type parameter (in the context of TypeScript or Flow or other
    * type system).
    *
    * NOTE: Because `Option` is immutable, this function returns the

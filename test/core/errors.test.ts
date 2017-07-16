@@ -37,14 +37,15 @@ describe("DummyError", () => {
 describe("CompositeError", () => {
   it("has custom message for 3 errors", () => {
     const ex = () => new DummyError("dummy")
-    const composite = new CompositeError([ex(), ex(), ex()])
+    const composite = new CompositeError(["simple", ex(), ex(), ex()])
 
     expect(composite.name).toBe("CompositeError")
-    expect(composite.message).toBe("DummyError(dummy), DummyError(dummy), ...")
+    expect(composite.message).toBe("simple, DummyError(dummy), ...")
 
-    expect(composite.errors().length).toBe(3)
+    expect(composite.errors().length).toBe(4)
     for (const e of composite.errors()) {
-      expect(e instanceof DummyError).toBe(true)
+      expect(e instanceof DummyError || typeof e === "string")
+        .toBe(true)
     }
   })
 

@@ -47,9 +47,9 @@ const opt = Option.of("hello")
 Note that these à la carte imports (that you have to import from `dist`)
 only work with a toolchain that recognizes ES2015 modules and imports.
 
-## Typescript, Flow support
+## TypeScript, Flow support
 
-Funfix supports both [Typescript](https://www.typescriptlang.org/)
+Funfix supports both [TypeScript](https://www.typescriptlang.org/)
 and [Flow](https://flow.org/) out of the box, being packaged with
 all necessary declaration files.
 
@@ -60,24 +60,48 @@ const email: string | null =
   Try.of(() => users[0].profile.email).orNull()
 ```
 
-## Features
+## Features Overview
 
-High-level data types:
+The code is organized in ES2015 modules, but all types, classes and
+functions are exported by the [root module]{@link "funfix"}.
 
-- [[Option]] which is like the "Maybe" monadic type from Haskell
-- [[Either]] for working with values of two possible types
-- [[Try]] for capturing exceptional results and manipulating them as values
-- [[Eval]] for suspending synchronous side effects and controlling evaluation
-  (e.g. memoization, error handling)
+**Sub-module ["core"]{@link "core/index"}** defines core
+data types and universal interfaces:
 
-Low-level data types and utilities:
+- [Option&lt;A&gt;]{@link Option}: data type for representing optional values,
+  much like the "`Maybe`" monadic type from Haskell or
+  "`Option`" from Scala
+- [Either&lt;L,R&gt;]{@link Either}: data type for representing disjoint unions,
+  for working with values of two possible types,
+  inspired by the data type with the same name from Haskell and Scala
+- [Try&lt;A&gt;]{@link Try}**: data type for capturing exceptional results and manipulating 
+  them as values, being equivalent in spirit with `Either&lt;Throwable, A&gt;`,
+  inspired by the data type with the same name from Scala
+- [core/errors]{@link "core/errors"}: sub-module that defines the 
+  standard `Error` types
+- [core/std]{@link "core/std"}: sub-module that defines the 
+  [[IEquals]] interface for structural equality in [[is]] along with
+  other utilities
 
-- [[IEquals]] interface for structural equality in [[is]]
-- [[Cancelable]] / [[BoolCancelable]] for describing composable cancellation actions
-- [TimeUnit and Duration]{@link "exec/time"} for
-  expressing timespans, along operations and conversions between time units
-- [[Scheduler]] for scheduling units of work for asynchronous execution
-  (also see [TestScheduler]{@link "exec/scheduler"} for simulating async execution
-  and delays in tests)
+**Sub-module ["effect"]{@link "effect/index"}** defines data types
+for dealing with side effects:
 
-More is coming (e.g. `Task`, etc)
+- [Eval&lt;A&gt;]{@link Eval}: data type for suspending synchronous side 
+  effects and controlling evaluation (e.g. memoization, error handling)
+
+**Sub-module ["types"]{@link "types/index"}** defines
+[type classes]{@link https://en.wikipedia.org/wiki/Type_class}
+inspired by Haskell's standard library and by 
+[Typelevel Cats]{@link http://typelevel.org/cats/}:
+
+- [[Eq]]: a type class for determining equality between instances of the 
+  same type and that obeys the laws defined in [[EqLaws]]
+- [[Functor]]: a type class exposing [map]{@link Functor.map} and that 
+  obeys the laws defined in [[FunctorLaws]]
+- [[Apply]]: a type class that extends [[Functor]], that exposes
+  [ap]{@link Apply.ap} and that obeys the laws defined in [[ApplyLaws]]
+- [[Applicative]]: a type class that extends [[Functor]] and [[Apply]], 
+  that exposes [pure]{@link Applicative.pure} and that obeys the laws 
+  defined in [[ApplicativeLaws]]
+  
+More is coming 😉

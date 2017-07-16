@@ -57,17 +57,75 @@ import { HK, Equiv, Constructor, getTypeClassInstance } from "./kinds"
  *
  * MUST obey the laws defined in {@link FunctorLaws}.
  *
- * CREDITS: this type class is inspired by the equivalent in Haskell's
+ * ## Implementation notes
+ *
+ * Even though in TypeScript the Funfix library is using `abstract class` to
+ * express type classes, when implementing this type class it is recommended
+ * that you implement it as a mixin using "`implements`", instead of extending
+ * it directly with "`extends`". See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * Implementation example:
+ *
+ * ```typescript
+ * import { HK, Functor, registerTypeClassInstance } from "funfix"
+ *
+ * class Box<T> implements HK<Box<any>, T> {
+ *   constructor(public value: T) {}
+ *
+ *   // Implements HK<Box<any>, A>, not really needed, but useful in order
+ *   // to avoid type casts. Note these can and should be undefined:
+ *   readonly _funKindF: Box<any>
+ *   readonly _funKindA: T
+ * }
+ *
+ * // Type alias defined for readability
+ * type BoxK<T> = HK<Box<any>, T>
+ *
+ * // Actual implementation
+ * class BoxFunctor implements Functor<Box<any>> {
+ *   map<A, B>(fa: BoxK<A>, f: (a: A) => B): Box<B> {
+ *     const a = (fa as Box<A>).value
+ *     return new Box(f(a))
+ *   }
+ * }
+ *
+ * // Registering global Functor instance for Box
+ * registerTypeClassInstance(Functor)(Box, new BoxFunctor())
+ * ```
+ *
+ * We are using `implements` in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these type classes are defined with
+ * "`interface`", as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
+ *
+ * ## Credits
+ *
+ * This type class is inspired by the equivalent in Haskell's
  * standard library and the implementation is inspired by the
  * [Typelevel Cats]{@link http://typelevel.org/cats/} project.
  */
 export abstract class Functor<F> {
-  // Implements TypeClass<F>
-  static readonly _funTypeId: string = "functor"
-  static readonly _funSupertypeIds: string[] = []
-  static readonly _funErasure: Functor<any>
-
+  /**
+   * Given a mapping function, transforms the source.
+   *
+   * The `map` operation must follow these laws:
+   *
+   * - `fa.map(id) <-> fa`
+   * - `fa.map(f).map(g) <-> fa.map(x => g(f(x)))`
+   */
   abstract map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B>
+
+  // Implements TypeClass<F>
+
+  /** @hidden */
+  static readonly _funTypeId: string = "functor"
+  /** @hidden */
+  static readonly _funSupertypeIds: string[] = []
+  /** @hidden */
+  static readonly _funErasure: Functor<any>
 }
 
 /**
@@ -76,13 +134,26 @@ export abstract class Functor<F> {
  * This is an abstract definition. In order to use it in unit testing,
  * the implementor must think of a strategy to evaluate the truthiness
  * of the returned `Equiv` values.
+ *
+ * Even though in TypeScript the Funfix library is using classes to
+ * express type classes, when implementing this type class it is recommended
+ * that you implement it as a mixin using `implements`, instead of extending
+ * it directly with `extends`. See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * We are doing this in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these type classes are defined with
+ * `interface`, as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
  */
-export class FunctorLaws<F> {
+export abstract class FunctorLaws<F> {
   /**
-   * @param F is the {@link Functor} designated instance for `F`,
+   * The {@link Functor} designated instance for `F`,
    * to be tested.
    */
-  constructor(public readonly F: Functor<F>) {}
+  abstract readonly F: Functor<F>
 
   /**
    * ```typescript
@@ -119,3 +190,11 @@ export class FunctorLaws<F> {
  */
 export const functorOf: <F>(c: Constructor<F>) => Functor<F> =
   getTypeClassInstance(Functor)
+
+/**
+ * Given an {@link Functor} instance, returns the {@link FunctorLaws}
+ * associated with it.
+ */
+export function functorLawsOf<F>(instance: Functor<F>): FunctorLaws<F> {
+  return new (class extends FunctorLaws<F> { public readonly F = instance })()
+}

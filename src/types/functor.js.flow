@@ -29,12 +29,12 @@ export interface Functor<F> {
   static +_funErasure: Functor<any>;
 }
 
-declare export class FunctorLaws<F> {
+export interface FunctorLaws<F> {
   +F: Functor<F>;
-  constructor(F: Functor<F>): FunctorLaws<F>;
 
   covariantIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>>;
   covariantComposition<A, B, C>(fa: HK<F, A>, f: (a: A) => B, g: (b: B) => C): Equiv<HK<F, C>>;
 }
 
 declare export function functorOf<F>(c: Constructor<F>): Functor<F>;
+declare export function functorLawsOf<F>(instance: Functor<F>): FunctorLaws<F>;

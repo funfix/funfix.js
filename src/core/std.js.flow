@@ -27,3 +27,4 @@ declare export function is<A>(lh: A, rh: A): boolean;
 declare export function equals<A>(lh: A, rh: A): boolean;
 declare export function hashCode(ref: any): number;
 declare export function hashCodeOfString(str: string): number;
+declare export function applyMixins(derivedCtor: Class<any>, baseCtors: Class<any>[]): void;

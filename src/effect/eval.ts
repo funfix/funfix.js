@@ -363,7 +363,7 @@ export class Eval<A> {
    * Promote a `thunk` function to an `Eval`, catching exceptions in
    * the process.
    *
-   * Note that since `Eval` is not memoized by default, this will
+   * Note that since `Eval` is not memoized by global, this will
    * recompute the value each time the `Eval` is executed.
    */
   static always<A>(thunk: () => A): Eval<A> {

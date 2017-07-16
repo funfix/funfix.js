@@ -65,16 +65,21 @@ export abstract class Eq<A> {
   abstract eqv(lh: A, rh: A): boolean
 
   // Implements TypeClass<F>
+
+  /** @hidden */
   static readonly _funTypeId: string = "eq"
+  /** @hidden */
   static readonly _funSupertypeIds: string[] = []
+  /** @hidden */
   static readonly _funErasure: Eq<any>
 }
 
-export class EqLaws<A> {
+export abstract class EqLaws<A> {
   /**
-   * @param F is the {@link Eq} designated instance for `A`, to be tested.
+   * The {@link Eq} designated instance for `F`,
+   * to be tested.
    */
-  constructor(public F: Eq<A>) {}
+  public readonly F: Eq<A>
 
   /**
    * Equality is reflexive, i.e.
@@ -120,3 +125,11 @@ export class EqLaws<A> {
  */
 export const eqOf: <F>(c: Constructor<F>) => Eq<F> =
   getTypeClassInstance(Eq)
+
+/**
+ * Given an {@link Eq} instance, returns the {@link EqLaws}
+ * associated with it.
+ */
+export function eqLawsOf<A>(instance: Eq<A>): EqLaws<A> {
+  return new (class extends EqLaws<A> { public readonly F = instance })()
+}

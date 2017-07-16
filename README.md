@@ -20,43 +20,69 @@ and [Monix](https://monix.io/).
 npm install --save funfix
 ```
 
-### Features
+### Features Overview
 
-High-level data types:
+The code is organized in ES2015 modules, but all types, 
+classes and functions are exported by the 
+[root module](https://funfix.org/api/modules/_funfix_.html).
 
-- [Option](https://funfix.org/api/classes/core_option.option.html),
-  which is like the "Maybe" monadic type from Haskell
-- [Either](https://funfix.org/api/classes/core_either.either.html),
-  for working with values of two possible types
-- [Try](https://funfix.org/api/classes/core_try.try.html),
-  for capturing exceptional results and manipulating them as values
-- [Eval](https://funfix.org/api/classes/effect_eval.eval.html)
-  for suspending synchronous side effects and controlling evaluation
-  (e.g. memoization, error handling)
+**Sub-module ["core"](https://funfix.org/api/modules/_core_index_.html)** 
+defines core data types and universal interfaces:
 
-Low-level data types and utilities:
+- [Option](https://funfix.org/api/classes/_core_option_.option.html): 
+  data type for representing optional values, much like the "`Maybe`" 
+  monadic type from Haskell or "`Option`" from Scala
+- [Either](https://funfix.org/api/classes/_core_either_.either.html): 
+  data type for representing disjoint unions, for working with values of 
+  two possible types, inspired by the data type with the same name 
+  from Haskell and Scala
+- [Try](https://funfix.org/api/classes/_core_try_.try.html): 
+  data type for capturing exceptional results and manipulating 
+  them as values, being equivalent in spirit with `Either&lt;Throwable, A&gt;`,
+  inspired by the data type with the same name from Scala
+- [core/errors](https://funfix.org/api/modules/_core_errors_.html): 
+  sub-module that defines the standard `Error` types
+- [core/std](https://funfix.org/api/modules/_core_std_.html):
+  sub-module that defines the `IEquals` interface for structural equality,
+  along with other utilities
 
-- [IEquals](https://funfix.org/api/interfaces/core_std.iequals.html) interface
-  for structural equality in [is](https://funfix.org/api/modules/core_std.html#is)
-- [Cancelable](https://funfix.org/api/classes/exec_cancelable.cancelable.html) /
-  [BoolCancelable](https://funfix.org/api/classes/exec_cancelable.boolcancelable.html),
-  for describing composable cancellation actions
-- [TimeUnit and Duration](https://funfix.org/api/modules/exec_time.html) for
-  expressing timespans, along operations and conversions between time units
-- [Scheduler](https://funfix.org/api/classes/exec_scheduler.scheduler.html)
-  for scheduling units of work for asynchronous execution (also see
-  [TestScheduler](https://funfix.org/api/classes/exec_scheduler.testscheduler.html)
-  for simulating async execution and delays in tests)
+**Sub-module ["effect"](https://funfix.org/api/modules/_effect_index_.html)**
+defines data types for dealing with side effects:
 
-More is coming (e.g. `Task`, etc)
+- [Eval](https://funfix.org/api/classes/_effect_eval_.try.html): 
+  data type for suspending synchronous side effects and controlling 
+  evaluation (e.g. memoization, error handling)
+
+**Sub-module ["types"](https://funfix.org/api/modules/_types_index_.html)** 
+defines [type classes](https://en.wikipedia.org/wiki/Type_class)
+inspired by Haskell's standard library and by 
+[Typelevel Cats](http://typelevel.org/cats/):
+
+- [Eq](https://funfix.org/api/classes/_types_eq_.eq.html): 
+  a type class for determining equality between instances of the 
+  same type and that obeys the laws defined in 
+  [EqLaws](https://funfix.org/api/classes/_types_eq_.eqlaws.html)
+- [Functor](https://funfix.org/api/classes/_types_functor_.functor.html):
+  a type class exposing `map` and that obeys the laws defined in 
+  [FunctorLaws](https://funfix.org/api/classes/_types_functor_.functorlaws.html)
+- [Apply](https://funfix.org/api/classes/_types_applicative_.apply.html):
+  a type class that extends `Functor`, exposing `ap` and that obeys 
+  the laws defined in 
+  [ApplyLaws](https://funfix.org/api/classes/_types_apply_.applylaws.html)
+- [Applicative](https://funfix.org/api/classes/_types_applicative_.applicative.html):
+  a type class that extends `Functor` and `Apply`, exposing `pure` 
+  and that obeys the laws defined in 
+  [ApplicativeLaws](https://funfix.org/api/classes/_types_applicative_.applicativelaws.html)
+  
+More is coming 😉
 
 See **[API Docs](https://funfix.org/api)**.
 
-### Typescript or Flow?
+### TypeScript or Flow?
 
-Funfix supports both [Typescript](https://www.typescriptlang.org/) and [Flow](https://flow.org/) type annotations out of the box.
+Funfix supports both [TypeScript](https://www.typescriptlang.org/) and [Flow](https://flow.org/) type annotations out of the box.
 
-It also makes the best use of the capabilities of each. For example Typescript has bivariant generics, but Flow supports variance annotations and Funfix makes use of them. Development happens in Typescript, due to better tooling, but both are first class citizens.
+It also makes the best use of the capabilities of each. For example TypeScript has bivariant generics, but Flow supports variance annotations and Funfix makes use of them. Development happens in TypeScript, due to better tooling, but both are first class citizens.
 
 ### Semantic versioning
 

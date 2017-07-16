@@ -34,6 +34,10 @@ describe("Default Functor ops obey laws", () => {
   laws.testFunctor(Box, arbBox, eqOf(Box))
 })
 
+describe("Default Apply ops obey laws", () => {
+  laws.testApply(Box, arbBox, t => new Box(t), eqOf(Box))
+})
+
 describe("Default Applicative ops obey laws", () => {
   laws.testApplicative(Box, arbBox, eqOf(Box))
 })

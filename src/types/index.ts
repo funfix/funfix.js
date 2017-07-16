@@ -19,6 +19,14 @@
  * Module implementing type classes, inspired by Haskell's standard
  * library and by [Typelevel Cats]{@link http://typelevel.org/cats/}.
  *
+ * Exports sub-modules:
+ *
+ * - [types/eq]{@link "types/eq"}: exposes the {@link Eq} type class
+ * - [types/functor]{@link "types/functor"}: exposes the {@link Functor}
+ *   type class
+ * - [types/applicative]{@link "types/applicative"}: exposes the
+ *   {@link Apply} and {@link Applicative} type classes
+ *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:
  *

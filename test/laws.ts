@@ -17,15 +17,16 @@
 
 import * as jv from "jsverify"
 import {
-  HK, Equiv, Eq, Constructor, EqLaws, eqOf,
-  FunctorLaws, functorOf,
-  ApplyLaws, applyOf,
-  ApplicativeLaws, applicativeOf
+  HK, Equiv, Constructor,
+  Eq, EqLaws, eqLawsOf, eqOf,
+  FunctorLaws, functorLawsOf, functorOf,
+  ApplyLaws, applyLawsOf, applyOf,
+  ApplicativeLaws, applicativeLawsOf, applicativeOf
 } from "../src/funfix"
 
-export function testEq<A>(type: Constructor<A>, arbA: jv.Arbitrary<A>): void {
-  const F = eqOf(type)
-  const laws = new EqLaws(F)
+export function testEq<A>(
+  type: Constructor<A>, arbA: jv.Arbitrary<A>,
+  laws: EqLaws<A> = eqLawsOf(eqOf(type))): void {
 
   const tests = {
     reflexive: jv.forall(arbA,
@@ -46,10 +47,8 @@ export function testEq<A>(type: Constructor<A>, arbA: jv.Arbitrary<A>): void {
 export function testFunctor<F, A>(
   type: Constructor<F>,
   arbFA: jv.Arbitrary<HK<F, A>>,
-  eqF: Eq<HK<F, any>>): void {
-
-  const F = functorOf(type)
-  const laws = new FunctorLaws(F)
+  eqF: Eq<HK<F, any>>,
+  laws: FunctorLaws<F> = functorLawsOf(functorOf(type))): void {
 
   const equivToBool = (ref: Equiv<HK<F, any>>) =>
     eqF.eqv(ref.lh, ref.rh)
@@ -76,13 +75,13 @@ export function testApply<F, A, B>(
   arbFA: jv.Arbitrary<HK<F, A>>,
   lift: <T>(t: T) => HK<F, T>,
   eqF: Eq<HK<F, any>>,
+  laws: ApplyLaws<F> = applyLawsOf(applyOf(type)),
   includeSupertypes: boolean = true): void {
 
   // Tests functor first
-  if (includeSupertypes) testFunctor(type, arbFA, eqF)
-
-  const F = applyOf(type)
-  const laws = new ApplyLaws(F)
+  if (includeSupertypes) {
+    testFunctor(type, arbFA, eqF, laws)
+  }
 
   const arbAtoB = jv.fun(jv.number)
   const arbBtoC = jv.fun(jv.string)
@@ -118,18 +117,18 @@ export function testApplicative<F, A, B>(
   type: Constructor<F>,
   arbFA: jv.Arbitrary<HK<F, A>>,
   eqF: Eq<HK<F, any>>,
+  laws: ApplicativeLaws<F> = applicativeLawsOf(applicativeOf(type)),
   includeSupertypes: boolean = true): void {
 
-  const F = applicativeOf(type)
-  const laws = new ApplicativeLaws(F)
-
   // Tests Apply and Functor first
-  if (includeSupertypes) testApply(type, arbFA, F.pure, eqF)
+  if (includeSupertypes) {
+    testApply(type, arbFA, laws.F.pure, eqF, laws)
+  }
 
   const arbAtoB = jv.fun(jv.number)
   const arbBtoC = jv.fun(jv.string)
-  const arbFAtoB = arbAtoB.smap(F.pure, _ => (_ => 0))
-  const arbFBtoC = arbBtoC.smap(F.pure, _ => (_ => ""))
+  const arbFAtoB = arbAtoB.smap(laws.F.pure, _ => (_ => 0))
+  const arbFBtoC = arbBtoC.smap(laws.F.pure, _ => (_ => ""))
 
   const equivToBool = (ref: Equiv<HK<F, any>>) =>
     eqF.eqv(ref.lh, ref.rh)

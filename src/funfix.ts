@@ -20,10 +20,10 @@
  *
  * Exports sub-modules:
  *
- * - [core]{@link "core/index"} for basic types and utilities that belong in a standard library
+ * - [core]{@link "core/index"} for core data types and utilities that belong in
+ *   a standard library
  * - [types]{@link "types/index"} for type class definitions inspired by
  *   Haskell's standard library and Typelevel Cats
- * - [exec]{@link "exec/index"} for low-level utilities, in support of everything else
  * - [effect]{@link "effect/index"} for dealing with side effects
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
@@ -51,5 +51,4 @@
 // Exporting everything
 export * from "./core"
 export * from "./types"
-export * from "./exec"
 export * from "./effect"

@@ -18,15 +18,17 @@
 import { Functor, Applicative, Eq, HK, registerTypeClassInstance } from "../../src/types"
 
 /**
- * Dummy class meant to test default type class operations.
+ * Dummy class meant to test global type class operations.
  */
-export class Box<A> {
+export class Box<A> implements HK<Box<any>, A> {
   constructor(public value: A) {}
 
+  // Implements HK<Box<any>, A>
   readonly _funKindF: Box<any>
   readonly _funKindA: A
-  static readonly _erasure: Box<any>
 }
+
+export type BoxK<A> = HK<Box<any>, A>
 
 export class BoxInstances<A> extends Applicative<Box<any>> implements Eq<Box<any>> {
   pure<A>(a: A): HK<Box<any>, A> {

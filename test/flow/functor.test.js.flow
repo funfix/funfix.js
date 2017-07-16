@@ -20,10 +20,14 @@
 // Testing a la carte import
 import type { OptionK, TypeClass } from "../../src/funfix"
 import {
+  Equiv,
   Functor,
+  FunctorLaws,
   functorOf,
+  functorLawsOf,
   Option,
-  Some
+  Some,
+  applyMixins
 } from "../../src/funfix"
 
 const erasure: Functor<any> = Functor._funErasure
@@ -32,8 +36,23 @@ const supertypes: string[] = Functor._funSupertypeIds
 const tc: TypeClass<Functor<any>> = Functor
 
 const F: Functor<Option<any>> = functorOf(Option)
+const laws: FunctorLaws<Option<any>> = functorLawsOf(F)
 
 const opt1: OptionK<string> = F.map(Some(1), x => String(x))
 const opt2: OptionK<number> = F.map(Some(1), x => x + 1)
+
 // $ExpectError
 const err1: OptionK<string> = F.map(Some(1), x => x + 1)
+
+// $ExpectError
+const err2: FunctorLaws<string> = functorLawsOf(F)
+
+class FunctorLawsForOption implements FunctorLaws<Option<any>> {
+  +F: Functor<Option<any>> = functorOf(Option);
+
+  // Mixed-in
+  covariantIdentity: <A>(fa: OptionK<A>) => Equiv<OptionK<A>>;
+  covariantComposition: <A, B, C>(fa: OptionK<A>, f: (a: A) => B, g: (b: B) => C) => Equiv<OptionK<C>>;
+}
+
+applyMixins(FunctorLawsForOption, [FunctorLaws])

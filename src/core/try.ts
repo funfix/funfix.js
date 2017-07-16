@@ -83,7 +83,7 @@ import { Either, Left, Right } from "./either"
  * by the next combinator in the chain, or the exception wrapped in the
  * [[Failure]] type usually to be simply passed on down the chain.
  * Combinators such as `handleError` and `handleErrorWith` are designed to provide
- * some type of default behavior in the case of failure.
+ * some type of global behavior in the case of failure.
  *
  * NOTE: all `Try` combinators will catch exceptions and return failure
  * unless otherwise specified in the documentation.

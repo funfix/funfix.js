@@ -21,31 +21,27 @@
 import type { OptionK, TypeClass } from "../../src/funfix"
 import {
   Equiv,
-  Applicative,
-  ApplicativeLaws,
   Apply,
   ApplyLaws,
   Functor,
   FunctorLaws,
-  applicativeOf,
-  applicativeLawsOf,
+  applyOf,
+  applyLawsOf,
   Option,
   Some,
   applyMixins
 } from "../../src/funfix"
 
-const erasure: Applicative<any> = Applicative._funErasure
-const typeId: string = Applicative._funTypeId
-const supertypes: string[] = Applicative._funSupertypeIds
-const tc: TypeClass<Applicative<any>> = Applicative
+const erasure: Apply<any> = Apply._funErasure
+const typeId: string = Apply._funTypeId
+const supertypes: string[] = Apply._funSupertypeIds
+const tc: TypeClass<Apply<any>> = Apply
 
-const F: Applicative<Option<any>> = applicativeOf(Option)
-const apply: Apply<Option<any>> = F
+const F: Apply<Option<any>> = applyOf(Option)
 const functor: Functor<Option<any>> = F
 
-const laws1: ApplicativeLaws<Option<any>> = applicativeLawsOf(F)
-const laws2: ApplyLaws<Option<any>> = laws1
-const laws3: FunctorLaws<Option<any>> = laws1
+const laws1: ApplyLaws<Option<any>> = applyLawsOf(F)
+const laws2: FunctorLaws<Option<any>> = laws1
 
 const opt1: OptionK<string> = F.map(Some(1), x => String(x))
 const opt2: OptionK<number> = F.map(Some(1), x => x + 1)
@@ -69,10 +65,10 @@ const opt8: OptionK<[number, string]> = F.product(Some(1), Some("value"))
 const err4: OptionK<[string, number]> = F.product(Some(1), Some("value"))
 
 // $ExpectError
-const err5: ApplicativeLaws<string> = applicativeLawsOf(F)
+const err5: ApplyLaws<string> = applyLawsOf(F)
 
-class ApplicativeLawsForOption implements ApplicativeLaws<Option<any>> {
-  +F: Applicative<Option<any>> = applicativeOf(Option);
+class ApplyLawsForOption implements ApplyLaws<Option<any>> {
+  +F: Apply<Option<any>> = applyOf(Option);
 
   // Mixed-in
   covariantIdentity: <A>(fa: OptionK<A>) => Equiv<OptionK<A>>;
@@ -80,12 +76,7 @@ class ApplicativeLawsForOption implements ApplicativeLaws<Option<any>> {
   applyComposition: <A, B, C>(fa: OptionK<A>, fab: OptionK<(a: A) => B>, fbc: OptionK<(b: B) => C>) => Equiv<OptionK<C>>;
   applyProductConsistency: <A, B>(fa: OptionK<A>, f: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
   applyMap2Consistency: <A, B>(fa: OptionK<A>, f: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
-  applicativeIdentity: <A>(fa: OptionK<A>) => Equiv<OptionK<A>>;
-  applicativeHomomorphism: <A, B>(a: A, f: (a: A) => B) => Equiv<OptionK<B>>;
-  applicativeInterchange: <A, B>(a: A, ff: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
-  applicativeMap: <A, B>(fa: OptionK<A>, f: (a: A) => B) => Equiv<OptionK<B>>;
-  applicativeComposition: <A, B, C>(fa: OptionK<A>, fab: OptionK<(a: A) => B>, fbc: OptionK<(b: B) => C>) => Equiv<OptionK<C>>;
-  applicativeUnit: <A>(a: A) => Equiv<OptionK<A>>;
+
 }
 
-applyMixins(ApplicativeLawsForOption, [ApplicativeLaws])
+applyMixins(ApplyLawsForOption, [ApplyLaws])

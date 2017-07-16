@@ -19,5 +19,4 @@
 
 declare export * from "./core";
 declare export * from "./types";
-declare export * from "./exec";
 declare export * from "./effect";
