@@ -38,7 +38,7 @@ defines core data types and universal interfaces:
   from Haskell and Scala
 - **[Try&lt;A&gt;](https://funfix.org/api/classes/_core_disjunctions_.try.html)**: 
   data type for capturing exceptional results and manipulating 
-  them as values, being equivalent in spirit with `Either&lt;Throwable, A&gt;`,
+  them as values, being equivalent in spirit with `Either<Throwable, A>`,
   inspired by the data type with the same name from Scala
 - **[core/errors](https://funfix.org/api/modules/_core_errors_.html)**: 
   sub-module that defines the standard `Error` types
