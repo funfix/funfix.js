@@ -8,8 +8,8 @@
 [![npm](https://img.shields.io/npm/v/funfix.svg)](https://www.npmjs.com/package/funfix)
 [![Join chat](https://badges.gitter.im/funfix/funfix.svg)](https://gitter.im/funfix/funfix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Funfix is a library of data types for functional and asynchronous
-programming in Javascript.
+Funfix is a library of type classes and data types for Functional Programming 
+in JavaScript, [TypeScript](https://www.typescriptlang.org/) and [Flow](https://flow.org/).
 
 Inspired by [Scala](http://www.scala-lang.org/), [Cats](http://typelevel.org/cats/)
 and [Monix](https://monix.io/).
