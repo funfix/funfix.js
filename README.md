@@ -49,7 +49,7 @@ defines core data types and universal interfaces:
 **["effect"](https://funfix.org/api/modules/_effect_index_.html)**
 defines data types for dealing with side effects:
 
-- **[Eval&lt;A&gt;](https://funfix.org/api/classes/_effect_eval_.try.html)**: 
+- **[Eval&lt;A&gt;](https://funfix.org/api/classes/_effect_eval_.eval.html)**: 
   data type for suspending synchronous side effects and controlling 
   evaluation (e.g. memoization, error handling)
 
