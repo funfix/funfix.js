@@ -16,34 +16,39 @@
  */
 
 /**
- * The `exec` package contains low level utilities and data types, providing a
- * standard library that is needed for building higher level concurrency tools.
+ * Module implementing type classes, inspired by Haskell's standard
+ * library and by [Typelevel Cats]{@link http://typelevel.org/cats/}.
  *
  * Exports sub-modules:
  *
- * - [exec/cancelable](./exec_cancelable.html) for the {@link Cancelable} data type
- * - [exec/scheduler](./exec_scheduler.html) for the {@link Scheduler} type
- * - [exec/time](./exec_time.html) for expressing time durations with
- *   {@link TimeUnit} and {@link Duration}
+ * - [types/eq]{@link "types/eq"}: exposes the {@link Eq} type class
+ * - [types/functor]{@link "types/functor"}: exposes the {@link Functor}
+ *   type class
+ * - [types/applicative]{@link "types/applicative"}: exposes the
+ *   {@link Apply} and {@link Applicative} type classes
+ * - [types/monad]{@link "types/monad"}: exposes the
+ *   {@link FlatMap} and {@link Monad} type classes
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:
  *
  * ```typescript
- * import { Cancelable } from "funfix/dist/exec"
+ * import { Monad } from "funfix/dist/types"
  * // ... or ...
- * import { Cancelable } from "funfix"
+ * import { Monad } from "funfix"
  * ```
  *
  * In absence of ES2015 compatibility, you can still rely on working with the
  * packaged (`pkg.main`) universal distribution that works within all browsers
  * and environments.
  *
- * @module exec
+ * @module types
  */
 
 /***/
-
-export * from "./cancelable"
-export * from "./time"
-export * from "./scheduler"
+export * from "./kinds"
+export * from "./eq"
+export * from "./functor"
+export * from "./applicative"
+export * from "./monad"
+export * from "./instances"

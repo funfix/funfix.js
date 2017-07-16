@@ -18,8 +18,21 @@
 /* @flow */
 
 import * as ff from "../../src/funfix"
-import { Try } from "../../src/funfix"
+import { Try, Right } from "../../src/funfix"
 import { Eval } from "../../src/effect"
+import {
+  Functor,
+  functorOf,
+  Apply,
+  applyOf,
+  Applicative,
+  applicativeOf,
+  FlatMap,
+  flatMapOf,
+  Monad,
+  monadOf,
+  EvalInstances
+} from "../../src/types"
 
 const ref1: ff.Eval<number> = ff.Eval.always(() => 1)
 const ref2: Eval<number> = Eval.always(() => 1)
@@ -49,19 +62,30 @@ const r6: Animal = dogEval.getOrElse(new Cat())
 const r7: Object = dogEval.getOrElse(new Human())
 
 // $ExpectError
-const error3: Dog = dogEval.getOrElse(new Cat())
+const super11: Dog = dogEval.getOrElse(new Cat())
 // $ExpectError
-const error4: Animal = dogEval.getOrElse(new Human())
+const super21: Dog = dogEval.getOrElseL(() => new Cat())
 // $ExpectError
-const error4: Human = dogEval.getOrElse(new Human())
+const super12: Animal = dogEval.getOrElse(new Human())
+// $ExpectError
+const super22: Animal = dogEval.getOrElseL(() => new Human())
+// $ExpectError
+const super13: Human = dogEval.getOrElse(new Human())
+// $ExpectError
+const super23: Human = dogEval.getOrElseL(() => new Human())
 
 // Covariance for recover and recoverWith
-const r8: Eval<Animal> = dogEval.recover(_ => new Animal())
-const r9: Eval<Animal> = dogEval.recoverWith(_ => Eval.now(new Animal()))
-const r10: Eval<Animal> = dogEval.recover(_ => new Cat())
-const r11: Eval<Animal> = dogEval.recoverWith(_ => Eval.now(new Cat()))
-const r12: Eval<Object> = dogEval.recover(_ => new Human())
-const r13: Eval<Object> = dogEval.recoverWith(_ => Eval.now(new Human()))
+const recover1: Eval<Animal> = dogEval.recover(_ => new Animal())
+const recover2: Eval<Animal> = dogEval.recoverWith(_ => Eval.now(new Animal()))
+const recover3: Eval<Animal> = dogEval.recover(_ => new Cat())
+const recover4: Eval<Animal> = dogEval.recoverWith(_ => Eval.now(new Cat()))
+const recover5: Eval<Object> = dogEval.recover(_ => new Human())
+const recover6: Eval<Object> = dogEval.recoverWith(_ => Eval.now(new Human()))
+
+// $ExpectError
+const recoverE1: Eval<string> = dogEval.recoverWith(_ => Eval.now(new Human()))
+// $ExpectError
+const recoverE2: Eval<Dog> = dogEval.recover(_ => new Animal())
 
 // Map and flatMap
 const r14: Eval<Cat> = dogEval.map(_ => new Cat())
@@ -106,3 +130,23 @@ const error11: Eval<Dog> = Eval.suspend(() => Eval.now(new Cat()))
 // Memoize
 const r27: Eval<Cat> = Eval.of(() => new Cat()).memoize()
 const r28: Eval<Cat> = Eval.of(() => new Cat()).memoizeOnSuccess()
+
+const u: Eval<void> = Eval.unit()
+const a: Eval<number> = Eval.tailRecM("initial", a => Eval.now(Right(1)))
+
+// Option.__types
+
+const functor1: Functor<Eval<any>> = functorOf(Eval)
+const functor2: Functor<Eval<any>> = EvalInstances.global
+
+const ap1: Apply<Eval<any>> = applyOf(Eval)
+const ap2: Apply<Eval<any>> = EvalInstances.global
+
+const applicative1: Applicative<Eval<any>> = applicativeOf(Eval)
+const applicative2: Applicative<Eval<any>> = EvalInstances.global
+
+const flatMap1: FlatMap<Eval<any>> = flatMapOf(Eval)
+const flatMap2: FlatMap<Eval<any>> = EvalInstances.global
+
+const monad1: Monad<Eval<any>> = monadOf(Eval)
+const monad2: Monad<Eval<any>> = EvalInstances.global

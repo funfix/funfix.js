@@ -17,6 +17,9 @@
 
 /* @flow */
 
-declare export * from "./cancelable"
-declare export * from "./time"
-declare export * from "./scheduler"
+declare export * from "./kinds"
+declare export * from "./eq"
+declare export * from "./functor"
+declare export * from "./applicative"
+declare export * from "./monad"
+declare export * from "./instances"

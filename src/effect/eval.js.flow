@@ -17,32 +17,45 @@
 
 /* @flow */
 
-import { Try } from "../core/try"
+import { Try, Either } from "../core/disjunctions"
 
 declare export class Eval<+A> {
   get(): A;
   run(): Try<A>;
-  getOrElse<AA : $Supertype<A>>(fallback: AA): AA;
-  getOrElseL<AA : $Supertype<A>>(thunk: () => AA): AA;
+
+  getOrElse<AA>(fallback: AA): A | AA;
+  getOrElseL<AA>(thunk: () => AA): A | AA;
 
   map<B>(f: (a: A) => B): Eval<B>;
   flatMap<B>(f: (a: A) => Eval<B>): Eval<B>;
   chain<B>(f: (a: A) => Eval<B>): Eval<B>;
   transform<R>(failure: (e: any) => R, success: (a: A) => R): Eval<R>;
   transformWith<R>(failure: (e: any) => Eval<R>, success: (a: A) => Eval<R>): Eval<R>;
-  recover<AA : $Supertype<A>>(f: (e: any) => AA): Eval<AA>;
-  recoverWith<AA : $Supertype<A>>(f: (e: any) => Eval<AA>): Eval<AA>;
+
+  recover<AA>(f: (e: any) => AA): Eval<A | AA>;
+  recoverWith<AA>(f: (e: any) => Eval<AA>): Eval<A | AA>;
+
   memoize(): Eval<A>;
   memoizeOnSuccess(): Eval<A>;
   forEachL(cb: (a: A) => void): Eval<void>;
   forEach(cb: (a: A) => void): void;
 
+  // Implements HK<F, A>
+  +_funKindF: Eval<any>;
+  +_funKindA: A;
+
+  // Implements Constructor<T>
+  static +_funErasure: Eval<any>;
+
   static of<A>(thunk: () => A): Eval<A>;
   static pure<A>(value: A): Eval<A>;
   static now<A>(value: A): Eval<A>;
+  static unit(): Eval<void>;
   static raise<A>(e: any): Eval<A>;
   static always<A>(thunk: () => A): Eval<A>;
   static once<A>(thunk: () => A): Eval<A>;
   static suspend<A>(thunk: () => Eval<A>): Eval<A>;
   static defer<A>(thunk: () => Eval<A>): Eval<A>;
+
+  static tailRecM<A, B>(a: A, f: (a: A) => Eval<Either<A, B>>): Eval<B>;
 }

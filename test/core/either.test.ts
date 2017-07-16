@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-import { hashCode, is, Left, Right, Either, Option } from "../../src/funfix"
+import { hashCode, is, Left, Right, Either, Option, eqOf } from "../../src/funfix"
 import * as jv from "jsverify"
 import * as inst from "../instances"
+import * as laws from "../laws"
 
 describe("Either discrimination", () => {
   jv.property("isRight == !isLeft",
@@ -348,4 +349,21 @@ describe("Either map2, map3, map4, map5, map6", () => {
       )
     }
   )
+})
+
+describe("Either.tailRecM", () => {
+  it("is stack safe", () => {
+    const fa = Either.tailRecM(0, a => Right(a < 1000 ? Left(a + 1) : Right(a)))
+    expect(fa.get()).toBe(1000)
+  })
+
+  it("Left interrupts the loop", () => {
+    const fa = Either.tailRecM(0, a => Left("value"))
+    expect(fa.swap().get()).toBe("value")
+  })
+})
+
+describe("Either obeys type class laws", () => {
+  laws.testEq(Either, inst.arbEither)
+  laws.testMonad(Either, jv.number, inst.arbEither, eqOf(Either))
 })

@@ -18,9 +18,11 @@
 import { Try, Success, Failure, DummyError, NoSuchElementError } from "../../src/funfix"
 import { None, Some, Left, Right } from "../../src/funfix"
 import { IllegalStateError } from "../../src/funfix"
-import { is, hashCode } from "../../src/funfix"
+import { is, hashCode, eqOf } from "../../src/funfix"
+
 import * as jv from "jsverify"
 import * as inst from "../instances"
+import * as laws from "../laws"
 
 describe("Try.of", () => {
   jv.property("should work for successful functions",
@@ -464,4 +466,37 @@ describe("Try map2, map3, map4, map5, map6", () => {
 
     expect(is(received, Failure(dummy))).toBe(true)
   })
+})
+
+describe("Try.unit", () => {
+  test("returns the same reference and works", () => {
+    const e1 = Try.unit()
+    const e2 = Try.unit()
+
+    expect(e1).toBe(e2)
+    expect(e1.get()).toBeUndefined()
+  })
+})
+
+describe("Try.tailRecM", () => {
+  it("is stack safe", () => {
+    const fa = Try.tailRecM(0, a => a < 1000 ? Success(Left(a + 1)) : Success(Right(a)))
+    expect(fa.get()).toBe(1000)
+  })
+
+  it("returns the failure unchanged", () => {
+    const fa = Try.tailRecM(0, a => Failure("failure"))
+    expect(fa.failed().get()).toBe("failure")
+  })
+
+  it("protects against user errors", () => {
+    // tslint:disable:no-string-throw
+    const fa = Try.tailRecM(0, a => { throw "dummy" })
+    expect(fa.failed().get()).toBe("dummy")
+  })
+})
+
+describe("Try obeys type class laws", () => {
+  laws.testEq(Try, inst.arbTry)
+  laws.testMonad(Try, jv.number, inst.arbTry, eqOf(Try))
 })
