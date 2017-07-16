@@ -74,6 +74,22 @@ export abstract class Eq<A> {
   static readonly _funErasure: Eq<any>
 }
 
+/**
+ * Type class laws defined for {@link Eq}.
+ *
+ * Even though in TypeScript the Funfix library is using classes to
+ * express these laws, when implementing this class it is recommended
+ * that you implement it as a mixin using `implements`, instead of extending
+ * it directly with `extends`. See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * We are doing this in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these classes are defined with
+ * `interface`, as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
+ */
 export abstract class EqLaws<A> {
   /**
    * The {@link Eq} designated instance for `F`,

@@ -26,54 +26,62 @@ The code is organized in ES2015 modules, but all types,
 classes and functions are exported by the 
 [root module](https://funfix.org/api/modules/_funfix_.html).
 
-**Sub-module ["core"](https://funfix.org/api/modules/_core_index_.html)** 
+**["core"](https://funfix.org/api/modules/_core_index_.html)** 
 defines core data types and universal interfaces:
 
-- [Option](https://funfix.org/api/classes/_core_option_.option.html): 
+- **[Option&lt;A&gt;](https://funfix.org/api/classes/_core_option_.option.html)**: 
   data type for representing optional values, much like the "`Maybe`" 
   monadic type from Haskell or "`Option`" from Scala
-- [Either](https://funfix.org/api/classes/_core_either_.either.html): 
+- **[Either&lt;L,R&gt;](https://funfix.org/api/classes/_core_either_.either.html)**: 
   data type for representing disjoint unions, for working with values of 
   two possible types, inspired by the data type with the same name 
   from Haskell and Scala
-- [Try](https://funfix.org/api/classes/_core_try_.try.html): 
+- **[Try&lt;A&gt;](https://funfix.org/api/classes/_core_try_.try.html)**: 
   data type for capturing exceptional results and manipulating 
   them as values, being equivalent in spirit with `Either&lt;Throwable, A&gt;`,
   inspired by the data type with the same name from Scala
-- [core/errors](https://funfix.org/api/modules/_core_errors_.html): 
+- **[core/errors](https://funfix.org/api/modules/_core_errors_.html)**: 
   sub-module that defines the standard `Error` types
-- [core/std](https://funfix.org/api/modules/_core_std_.html):
+- **[core/std](https://funfix.org/api/modules/_core_std_.html)**:
   sub-module that defines the `IEquals` interface for structural equality,
   along with other utilities
 
-**Sub-module ["effect"](https://funfix.org/api/modules/_effect_index_.html)**
+**["effect"](https://funfix.org/api/modules/_effect_index_.html)**
 defines data types for dealing with side effects:
 
-- [Eval](https://funfix.org/api/classes/_effect_eval_.try.html): 
+- **[Eval&lt;A&gt;](https://funfix.org/api/classes/_effect_eval_.try.html)**: 
   data type for suspending synchronous side effects and controlling 
   evaluation (e.g. memoization, error handling)
 
-**Sub-module ["types"](https://funfix.org/api/modules/_types_index_.html)** 
+**["types"](https://funfix.org/api/modules/_types_index_.html)** 
 defines [type classes](https://en.wikipedia.org/wiki/Type_class)
 inspired by Haskell's standard library and by 
 [Typelevel Cats](http://typelevel.org/cats/):
 
-- [Eq](https://funfix.org/api/classes/_types_eq_.eq.html): 
+- **[Eq](https://funfix.org/api/classes/_types_eq_.eq.html)**: 
   a type class for determining equality between instances of the 
   same type and that obeys the laws defined in 
   [EqLaws](https://funfix.org/api/classes/_types_eq_.eqlaws.html)
-- [Functor](https://funfix.org/api/classes/_types_functor_.functor.html):
+- **[Functor](https://funfix.org/api/classes/_types_functor_.functor.html)**:
   a type class exposing `map` and that obeys the laws defined in 
   [FunctorLaws](https://funfix.org/api/classes/_types_functor_.functorlaws.html)
-- [Apply](https://funfix.org/api/classes/_types_applicative_.apply.html):
+- **[Apply](https://funfix.org/api/classes/_types_applicative_.apply.html)**:
   a type class that extends `Functor`, exposing `ap` and that obeys 
   the laws defined in 
   [ApplyLaws](https://funfix.org/api/classes/_types_apply_.applylaws.html)
-- [Applicative](https://funfix.org/api/classes/_types_applicative_.applicative.html):
+- **[Applicative](https://funfix.org/api/classes/_types_applicative_.applicative.html)**:
   a type class that extends `Functor` and `Apply`, exposing `pure` 
   and that obeys the laws defined in 
   [ApplicativeLaws](https://funfix.org/api/classes/_types_applicative_.applicativelaws.html)
-  
+- **[FlatMap](https://funfix.org/api/classes/_types_monad_.flatmap.html)**:
+  a type class that extends `Functor` and `Apply`, exposing `flatMap` 
+  and `tailRecM` and that obeys the laws defined in 
+  [FlatMapLaws](https://funfix.org/api/classes/_types_monad_.flatmaplaws.html)
+- **[Monad](https://funfix.org/api/classes/_types_monad_.monad.html)**:
+  a type class that extends `Applicative` and `FlatMap`
+  and that obeys the laws defined in 
+  [MonadLaws](https://funfix.org/api/classes/_types_monad_.monadlaws.html)
+    
 More is coming 😉
 
 See **[API Docs](https://funfix.org/api)**.

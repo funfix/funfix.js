@@ -15,7 +15,17 @@
  * limitations under the License.
  */
 
-import { Functor, Applicative, Eq, HK, registerTypeClassInstance } from "../../src/types"
+import { applyMixins, Either } from "../../src/core"
+import {
+  Functor,
+  Apply,
+  Applicative,
+  FlatMap,
+  Monad,
+  Eq,
+  HK,
+  registerTypeClassInstance
+} from "../../src/types"
 
 /**
  * Dummy class meant to test global type class operations.
@@ -30,22 +40,126 @@ export class Box<A> implements HK<Box<any>, A> {
 
 export type BoxK<A> = HK<Box<any>, A>
 
-export class BoxInstances<A> extends Applicative<Box<any>> implements Eq<Box<any>> {
-  pure<A>(a: A): HK<Box<any>, A> {
-    return new Box(a)
-  }
-
-  ap<A, B>(fa: HK<Box<any>, A>, ff: HK<Box<any>, (a: A) => B>): HK<Box<any>, B> {
-    const a = (fa as Box<A>).value
-    const f = (ff as Box<(a: A) => B>).value
-    return new Box(f(a))
-  }
-
+export class BoxEq implements Eq<Box<any>> {
   eqv(lh: Box<any>, rh: Box<any>): boolean {
     return lh.value === rh.value
   }
 }
 
-registerTypeClassInstance(Eq)(Box, new BoxInstances())
-registerTypeClassInstance(Functor)(Box, new BoxInstances())
-registerTypeClassInstance(Applicative)(Box, new BoxInstances())
+export class BoxFunctor implements Functor<Box<any>> {
+  map<A, B>(fa: BoxK<A>, f: (a: A) => B): Box<B> {
+    return new Box(f((fa as Box<A>).value))
+  }
+}
+
+export class BoxApply implements Apply<Box<any>> {
+  map<A, B>(fa: BoxK<A>, f: (a: A) => B): Box<B> {
+    const a = (fa as Box<A>).value
+    return new Box(f(a))
+  }
+
+  ap<A, B>(fa: BoxK<A>, ff: BoxK<(a: A) => B>): Box<B> {
+    const a = (fa as Box<A>).value
+    const f = (ff as Box<(a: A) => B>).value
+    return new Box(f(a))
+  }
+
+  // Mixed-in, as these have default implementations
+  map2: <A, B, Z>(fa: BoxK<A>, fb: BoxK<B>, f: (a: A, b: B) => Z) => Box<Z>
+  product: <A, B> (fa: BoxK<A>, fb: BoxK<B>) => Box<[A, B]>
+}
+
+applyMixins(BoxApply, [Apply])
+
+export class BoxApplicative implements Applicative<Box<any>> {
+  pure<A>(a: A): Box<A> { return new Box(a) }
+
+  ap<A, B>(fa: BoxK<A>, ff: BoxK<(a: A) => B>): Box<B> {
+    const a = (fa as Box<A>).value
+    const f = (ff as Box<(a: A) => B>).value
+    return new Box(f(a))
+  }
+
+  // Mixed-in, as these have default implementations
+  map: <A, B>(fa: BoxK<A>, f: (a: A) => B) => Box<B>
+  map2: <A, B, Z>(fa: BoxK<A>, fb: BoxK<B>, f: (a: A, b: B) => Z) => Box<Z>
+  product: <A, B> (fa: BoxK<A>, fb: BoxK<B>) => Box<[A, B]>
+  unit: () => Box<void>
+}
+
+applyMixins(BoxApplicative, [Applicative])
+
+export class BoxFlatMap implements FlatMap<Box<any>> {
+  map<A, B>(fa: BoxK<A>, f: (a: A) => B): Box<B> {
+    return new Box(f((fa as Box<A>).value))
+  }
+
+  flatMap<A, B>(fa: BoxK<A>, f: (a: A) => BoxK<B>): Box<B> {
+    return f((fa as Box<A>).value) as Box<B>
+  }
+
+  tailRecM<A, B>(a: A, f: (a: A) => BoxK<Either<A, B>>): Box<B> {
+    let cursor = a
+    while (true) {
+      const box = f(cursor) as Box<Either<A, B>>
+      const v = box.value
+
+      if (v.isRight()) {
+        return new Box(v.get())
+      } else {
+        cursor = v.swap().get()
+      }
+    }
+  }
+
+  // Mixed-in, as these have default implementations
+  map2: <A, B, Z>(fa: BoxK<A>, fb: BoxK<B>, f: (a: A, b: B) => Z) => Box<Z>
+  ap: <A, B>(fa: BoxK<A>, ff: BoxK<(a: A) => B>) => Box<B>
+  product: <A, B> (fa: BoxK<A>, fb: BoxK<B>) => Box<[A, B]>
+  unit: () => Box<void>
+  followedBy: <A, B>(fa: BoxK<A>, fb: BoxK<B>) => Box<B>
+  followedByL: <A, B>(fa: BoxK<A>, fb: () => BoxK<B>) => Box<B>
+  forEffect: <A, B>(fa: BoxK<A>, fb: BoxK<B>) => Box<A>
+  forEffectL: <A, B>(fa: BoxK<A>, fb: () => BoxK<B>) => Box<A>
+}
+
+applyMixins(BoxFlatMap, [FlatMap])
+
+export class BoxMonad<A> implements Monad<Box<any>> {
+  pure<A>(a: A): Box<A> { return new Box(a) }
+
+  flatMap<A, B>(fa: BoxK<A>, f: (a: A) => BoxK<B>): Box<B> {
+    return f((fa as Box<A>).value) as Box<B>
+  }
+
+  tailRecM<A, B>(a: A, f: (a: A) => BoxK<Either<A, B>>): Box<B> {
+    let cursor = a
+    while (true) {
+      const box = f(cursor) as Box<Either<A, B>>
+      const v = box.value
+      if (v.isRight()) return new Box(v.get())
+      cursor = v.swap().get()
+    }
+  }
+
+  // Mixed in
+  map: <A, B>(fa: BoxK<A>, f: (a: A) => B) => Box<B>
+  map2: <A, B, Z>(fa: BoxK<A>, fb: BoxK<B>, f: (a: A, b: B) => Z) => Box<Z>
+  ap: <A, B>(fa: BoxK<A>, ff: BoxK<(a: A) => B>) => Box<B>
+  product: <A, B> (fa: BoxK<A>, fb: BoxK<B>) => Box<[A, B]>
+  unit: () => Box<void>
+  followedBy: <A, B>(fa: BoxK<A>, fb: BoxK<B>) => Box<B>
+  followedByL: <A, B>(fa: BoxK<A>, fb: () => BoxK<B>) => Box<B>
+  forEffect: <A, B>(fa: BoxK<A>, fb: BoxK<B>) => Box<A>
+  forEffectL: <A, B>(fa: BoxK<A>, fb: () => BoxK<B>) => Box<A>
+}
+
+applyMixins(BoxMonad, [Monad])
+
+// Global instance registration
+registerTypeClassInstance(Eq)(Box, new BoxEq())
+registerTypeClassInstance(Functor)(Box, new BoxFunctor())
+registerTypeClassInstance(Apply)(Box, new BoxApply())
+registerTypeClassInstance(Applicative)(Box, new BoxApplicative())
+registerTypeClassInstance(FlatMap)(Box, new BoxFlatMap())
+registerTypeClassInstance(Monad)(Box, new BoxMonad())

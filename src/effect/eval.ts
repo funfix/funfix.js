@@ -36,7 +36,7 @@
 
 /***/
 
-import { Try } from "../core/try"
+import { Try, Either } from "../core/disjunctions"
 import { IllegalStateError } from "../core/errors"
 
 /**
@@ -142,7 +142,7 @@ export class Eval<A> {
    *
    * See [[Eval.getOrElseL]] for a lazy alternative.
    */
-  getOrElse(fallback: A): A {
+  getOrElse<AA>(fallback: AA): A | AA {
     return this.run().getOrElse(fallback)
   }
 
@@ -161,7 +161,7 @@ export class Eval<A> {
    *
    * See [[Eval.getOrElse]] for a strict alternative.
    */
-  getOrElseL(thunk: () => A): A {
+  getOrElseL<AA>(thunk: () => AA): A | AA {
     return this.run().getOrElseL(thunk)
   }
 
@@ -252,7 +252,7 @@ export class Eval<A> {
    * This function is the equivalent of a `try/catch` statement,
    * or the equivalent of {@link Eval.map .map} for errors.
    */
-  recover(f: (e: any) => A): Eval<A> {
+  recover<AA>(f: (e: any) => AA): Eval<A | AA> {
     return this.recoverWith(a => Eval.now(f(a)))
   }
 
@@ -264,8 +264,8 @@ export class Eval<A> {
    * This function is the equivalent of a `try/catch` statement,
    * or the equivalent of {@link Eval.flatMap .flatMap} for errors.
    */
-  recoverWith(f: (e: any) => Eval<A>): Eval<A> {
-    return this.transformWith(f, Eval.now)
+  recoverWith<AA>(f: (e: any) => Eval<AA>): Eval<A | AA> {
+    return this.transformWith(f, Eval.now as any)
   }
 
   /**
@@ -333,6 +333,13 @@ export class Eval<A> {
     this.forEachL(cb).get()
   }
 
+  // Implements HK<F, A>
+  readonly _funKindF: Eval<any>
+  readonly _funKindA: A
+
+  // Implements Constructor<T>
+  static readonly _funErasure: Eval<any>
+
   /**
    * Alias for {@link Eval.always}.
    */
@@ -352,6 +359,14 @@ export class Eval<A> {
    * emitting the given strict value.
    */
   static now<A>(value: A): Eval<A> { return new Now(value) }
+
+  /**
+   * Shorthand for `now(undefined as void)`, always returning
+   * the same reference as optimization.
+   */
+  static unit(): Eval<void> {
+    return evalUnitRef
+  }
 
   /**
    * Returns an `Eval` that on execution is always finishing in error
@@ -402,6 +417,29 @@ export class Eval<A> {
   static defer<A>(thunk: () => Eval<A>): Eval<A> {
     return Eval.suspend(thunk)
   }
+
+  /**
+   * Keeps calling `f` until a `Right(b)` is returned.
+   *
+   * Based on Phil Freeman's
+   * [Stack Safety for Free]{@link http://functorial.com/stack-safety-for-free/index.pdf}.
+   *
+   * Described in {@link FlatMap.tailRecM}.
+   */
+  static tailRecM<A, B>(a: A, f: (a: A) => Eval<Either<A, B>>): Eval<B> {
+    try {
+      return f(a).flatMap(either => {
+        if (either.isRight()) {
+          return Eval.now(either.get())
+        } else {
+          // Recursive call
+          return Eval.tailRecM(either.swap().get(), f)
+        }
+      })
+    } catch (e) {
+      return Eval.raise(e)
+    }
+  }
 }
 
 /**
@@ -421,6 +459,13 @@ class Now<A> extends Eval<A> {
   run(): Try<A> { return Try.success(this.value) }
   toString(): string { return `Eval.now(${JSON.stringify(this.value)})` }
 }
+
+/**
+ * Reusable reference, to use in {@link Eval.unit}.
+ *
+ * @private
+ */
+const evalUnitRef: Now<void> = new Now(undefined)
 
 /**
  * `Raise` is an internal `Eval` state that wraps any error / failure

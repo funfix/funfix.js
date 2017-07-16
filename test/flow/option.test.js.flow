@@ -28,6 +28,10 @@ import {
   applyOf,
   Applicative,
   applicativeOf,
+  FlatMap,
+  flatMapOf,
+  Monad,
+  monadOf,
   Eq,
   eqOf
 } from "../../src/funfix"
@@ -127,6 +131,9 @@ const r27: Option<Animal> = dogOpt.orElseL(() => Option.of(new Cat()))
 const r28: Option<Object> = dogOpt.orElse(Option.of(new Human()))
 const r29: Option<Object> = dogOpt.orElseL(() => Option.of(new Human()))
 
+const either1: Option<number | string> = Some(1).orElse(Some("2"))
+const either2: number | string = Some(1).getOrElse("2")
+
 // Option.of behavior
 const str1: ?string = null
 const opt1: Option<string> = Option.of(str1)
@@ -147,3 +154,9 @@ const applicative2: Applicative<Option<any>> = OptionInstances.global
 
 const eq1: Eq<Option<any>> = eqOf(Option)
 const eq2: Eq<Option<any>> = OptionInstances.global
+
+const flatMap1: FlatMap<Option<any>> = flatMapOf(Option)
+const flatMap2: FlatMap<Option<any>> = OptionInstances.global
+
+const monad1: Monad<Option<any>> = monadOf(Option)
+const monad2: Monad<Option<any>> = OptionInstances.global

@@ -65,43 +65,49 @@ const email: string | null =
 The code is organized in ES2015 modules, but all types, classes and
 functions are exported by the [root module]{@link "funfix"}.
 
-**Sub-module ["core"]{@link "core/index"}** defines core
+**["core"]{@link "core/index"}** defines core
 data types and universal interfaces:
 
-- [Option&lt;A&gt;]{@link Option}: data type for representing optional values,
+- **[Option&lt;A&gt;]{@link Option}**: data type for representing optional values,
   much like the "`Maybe`" monadic type from Haskell or
   "`Option`" from Scala
-- [Either&lt;L,R&gt;]{@link Either}: data type for representing disjoint unions,
+- **[Either&lt;L,R&gt;]{@link Either}**: data type for representing disjoint unions,
   for working with values of two possible types,
   inspired by the data type with the same name from Haskell and Scala
-- [Try&lt;A&gt;]{@link Try}**: data type for capturing exceptional results and manipulating 
+- **[Try&lt;A&gt;]{@link Try}**: data type for capturing exceptional results and manipulating 
   them as values, being equivalent in spirit with `Either&lt;Throwable, A&gt;`,
   inspired by the data type with the same name from Scala
-- [core/errors]{@link "core/errors"}: sub-module that defines the 
+- **[core/errors]{@link "core/errors"}**: sub-module that defines the 
   standard `Error` types
-- [core/std]{@link "core/std"}: sub-module that defines the 
+- **[core/std]{@link "core/std"}**: sub-module that defines the 
   [[IEquals]] interface for structural equality in [[is]] along with
   other utilities
 
-**Sub-module ["effect"]{@link "effect/index"}** defines data types
+**["effect"]{@link "effect/index"}** defines data types
 for dealing with side effects:
 
-- [Eval&lt;A&gt;]{@link Eval}: data type for suspending synchronous side 
+- **[Eval&lt;A&gt;]{@link Eval}**: data type for suspending synchronous side 
   effects and controlling evaluation (e.g. memoization, error handling)
 
-**Sub-module ["types"]{@link "types/index"}** defines
+**["types"]{@link "types/index"}** defines
 [type classes]{@link https://en.wikipedia.org/wiki/Type_class}
 inspired by Haskell's standard library and by 
 [Typelevel Cats]{@link http://typelevel.org/cats/}:
 
-- [[Eq]]: a type class for determining equality between instances of the 
+- **[[Eq]]**: a type class for determining equality between instances of the 
   same type and that obeys the laws defined in [[EqLaws]]
-- [[Functor]]: a type class exposing [map]{@link Functor.map} and that 
+- **[[Functor]]**: a type class exposing [map]{@link Functor.map} and that 
   obeys the laws defined in [[FunctorLaws]]
-- [[Apply]]: a type class that extends [[Functor]], that exposes
+- **[[Apply]]**: a type class that extends [[Functor]], that exposes
   [ap]{@link Apply.ap} and that obeys the laws defined in [[ApplyLaws]]
-- [[Applicative]]: a type class that extends [[Functor]] and [[Apply]], 
+- **[[Applicative]]**: a type class that extends [[Functor]] and [[Apply]], 
   that exposes [pure]{@link Applicative.pure} and that obeys the laws 
   defined in [[ApplicativeLaws]]
+- **[[FlatMap]]**: a type class that extends [[Functor]] and [[Apply]], 
+  that exposes [flatMap]{@link FlatMap.flatMap} and
+  [tailRecM]{@link FlatMap.tailRecM} and that obeys the laws 
+  defined in [[FlatMapLaws]]
+- **[[Monad]]**: a type class that extends [[Applicative]] and [[FlatMap]]
+  and that obeys the laws defined in [[MonadLaws]]
   
 More is coming 😉

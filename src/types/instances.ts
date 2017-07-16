@@ -35,11 +35,11 @@
  */
 
 /***/
-import { Option, Some } from "../core/option"
-import { Try, Success } from "../core/try"
-import { Either, Right } from "../core/either"
+import { applyMixins } from "../core/std"
+import { Try, Success, Option, Some, Either, Right } from "../core/disjunctions"
+import { Eval } from "../effect/eval"
 import { HK, registerTypeClassInstance } from "./kinds"
-import { Applicative } from "./applicative"
+import { Monad } from "./monad"
 import { Eq } from "./eq"
 
 /**
@@ -49,9 +49,9 @@ import { Eq } from "./eq"
 export type OptionK<A> = HK<Option<any>, A>
 
 /**
- * Type class instances provided by global for [[Option]].
+ * Type class instances provided by default for [[Option]].
  */
-export class OptionInstances implements Applicative<Option<any>>, Eq<Option<any>> {
+export class OptionInstances implements Monad<Option<any>>, Eq<Option<any>> {
   // tslint:disable-next-line:variable-name
   private __unit: Option<void> = Some(undefined)
 
@@ -83,13 +83,30 @@ export class OptionInstances implements Applicative<Option<any>>, Eq<Option<any>
     return Option.map2(fa as Option<A>, fb as Option<B>, (a, b) => [a, b] as [A, B])
   }
 
+  flatMap<A, B>(fa: OptionK<A>, f: (a: A) => OptionK<B>): Option<B> {
+    return (fa as any).flatMap(f)
+  }
+
+  tailRecM<A, B>(a: A, f: (a: A) => OptionK<Either<A, B>>): Option<B> {
+    return Option.tailRecM(a, f as any) as any
+  }
+
+  // Mixed-in
+  followedBy: <A, B>(fa: OptionK<A>, fb: OptionK<B>) => Option<B>
+  followedByL: <A, B>(fa: OptionK<A>, fb: () => OptionK<B>) => Option<B>
+  forEffect: <A, B>(fa: OptionK<A>, fb: OptionK<B>) => Option<A>
+  forEffectL: <A, B>(fa: OptionK<A>, fb: () => OptionK<B>) => Option<A>
+
   static readonly global: OptionInstances =
     new OptionInstances()
 }
 
+// Mixins the default implementations
+applyMixins(OptionInstances, [Monad])
+
 // Registering `OptionInstances` as global instances for Option
 registerTypeClassInstance(Eq)(Option, OptionInstances.global)
-registerTypeClassInstance(Applicative)(Option, OptionInstances.global)
+registerTypeClassInstance(Monad)(Option, OptionInstances.global)
 
 /**
  * Alias used for encoding higher-kinded types when implementing
@@ -98,9 +115,9 @@ registerTypeClassInstance(Applicative)(Option, OptionInstances.global)
 export type TryK<A> = HK<Try<any>, A>
 
 /**
- * Type class instances provided by global for [[Option]].
+ * Type class instances provided by default for [[Option]].
  */
-export class TryInstances implements Applicative<Try<any>>, Eq<Try<any>> {
+export class TryInstances implements Monad<Try<any>>, Eq<Try<any>> {
   // tslint:disable-next-line:variable-name
   private __unit: Try<void> = Success(undefined)
 
@@ -113,7 +130,7 @@ export class TryInstances implements Applicative<Try<any>>, Eq<Try<any>> {
   }
 
   unit(): Try<void> {
-    return this.__unit
+    return Try.unit()
   }
 
   ap<A, B>(fa: TryK<A>, ff: TryK<(a: A) => B>): Try<B> {
@@ -132,13 +149,30 @@ export class TryInstances implements Applicative<Try<any>>, Eq<Try<any>> {
     return Try.map2(fa as Try<A>, fb as Try<B>, (a, b) => [a, b] as [A, B])
   }
 
+  flatMap<A, B>(fa: TryK<A>, f: (a: A) => TryK<B>): Try<B> {
+    return (fa as any).flatMap(f)
+  }
+
+  tailRecM<A, B>(a: A, f: (a: A) => TryK<Either<A, B>>): Try<B> {
+    return Try.tailRecM(a, f as any) as any
+  }
+
+  // Mixed-in
+  followedBy: <A, B>(fa: TryK<A>, fb: TryK<B>) => Try<B>
+  followedByL: <A, B>(fa: TryK<A>, fb: () => TryK<B>) => Try<B>
+  forEffect: <A, B>(fa: TryK<A>, fb: TryK<B>) => Try<A>
+  forEffectL: <A, B>(fa: TryK<A>, fb: () => TryK<B>) => Try<A>
+
   static global: TryInstances =
     new TryInstances()
 }
 
+// Mixins the default implementations
+applyMixins(TryInstances, [Monad])
+
 // Registering `TryInstances` as global instances for Try
 registerTypeClassInstance(Eq)(Try, TryInstances.global)
-registerTypeClassInstance(Applicative)(Try, TryInstances.global)
+registerTypeClassInstance(Monad)(Try, TryInstances.global)
 
 /**
  * Alias used for encoding higher-kinded types when implementing
@@ -147,9 +181,9 @@ registerTypeClassInstance(Applicative)(Try, TryInstances.global)
 export type EitherK<L, R> = HK<Either<L, any>, R>
 
 /**
- * Type class instances provided by global for [[Either]].
+ * Type class instances provided by default for [[Either]].
  */
-export class EitherInstances<L> implements Applicative<Either<L, any>>, Eq<Either<L, any>> {
+export class EitherInstances<L> implements Monad<Either<L, any>>, Eq<Either<L, any>> {
   // tslint:disable-next-line:variable-name
   private __unit: Either<L, void> = Right(undefined)
 
@@ -186,10 +220,79 @@ export class EitherInstances<L> implements Applicative<Either<L, any>>, Eq<Eithe
       (a, b) => [a, b] as [A, B])
   }
 
+  flatMap<A, B>(fa: HK<Either<L, any>, A>, f: (a: A) => HK<Either<L, any>, B>): HK<Either<L, any>, B> {
+    return (fa as any).flatMap(f)
+  }
+
+  tailRecM<A, B>(a: A, f: (a: A) => HK<Either<L, any>, Either<A, B>>): HK<Either<L, any>, B> {
+    return Either.tailRecM(a, f as any) as any
+  }
+
+  // Mixed-in
+  followedBy: <A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>) => Either<L, B>
+  followedByL: <A, B>(fa: EitherK<L, A>, fb: () => EitherK<L, B>) => Either<L, B>
+  forEffect: <A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>) => Either<L, A>
+  forEffectL: <A, B>(fa: EitherK<L, A>, fb: () => EitherK<L, B>) => Either<L, A>
+
   static global: EitherInstances<any> =
     new EitherInstances()
 }
 
+// Mixins the default implementations
+applyMixins(EitherInstances, [Monad])
 // Registering `TryInstances` as global instances for Try
 registerTypeClassInstance(Eq)(Either, EitherInstances.global)
-registerTypeClassInstance(Applicative)(Either, EitherInstances.global)
+registerTypeClassInstance(Monad)(Either, EitherInstances.global)
+
+/**
+ * Alias used for encoding higher-kinded types when implementing
+ * type class instances.
+ */
+export type EvalK<A> = HK<Eval<any>, A>
+
+/**
+ * Type class instances provided by default for [[Eval]].
+ */
+export class EvalInstances implements Monad<Eval<any>> {
+  pure<A>(a: A): Eval<A> {
+    return Eval.now(a)
+  }
+
+  flatMap<A, B>(fa: EvalK<A>, f: (a: A) => EvalK<B>): Eval<B> {
+    return (fa as any).flatMap(f)
+  }
+
+  tailRecM<A, B>(a: A, f: (a: A) => EvalK<Either<A, B>>): Eval<B> {
+    return Eval.tailRecM(a, f as any) as any
+  }
+
+  ap<A, B>(fa: EvalK<A>, ff: EvalK<(a: A) => B>): Eval<B> {
+    return (fa as Eval<A>).flatMap(a =>
+      (ff as Eval<(a: A) => B>).map(f => f(a))
+    )
+  }
+
+  map<A, B>(fa: EvalK<A>, f: (a: A) => B): Eval<B> {
+    return (fa as Eval<A>).map(f)
+  }
+
+  unit(): Eval<void> {
+    return Eval.unit()
+  }
+
+  // Mixed-in
+  map2: <A, B, Z>(fa: EvalK<A>, fb: EvalK<B>, f: (a: A, b: B) => Z) => Eval<Z>
+  product: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => EvalK<[A, B]>
+  followedBy: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => Eval<B>
+  followedByL: <A, B>(fa: EvalK<A>, fb: () => EvalK<B>) => Eval<B>
+  forEffect: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => Eval<A>
+  forEffectL: <A, B>(fa: EvalK<A>, fb: () => EvalK<B>) => Eval<A>
+
+  static global: EvalInstances =
+    new EvalInstances()
+}
+
+// Mixins the default implementations
+applyMixins(EvalInstances, [Monad])
+// Registering `EvalInstances` as global instances for `Eval`
+registerTypeClassInstance(Monad)(Eval, EvalInstances.global)

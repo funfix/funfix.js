@@ -17,15 +17,18 @@
 
 import {
   is, id,
-  Eval,
+  Eq, Eval,
   Success,
   Failure,
+  Left,
+  Right,
   DummyError,
   Try
 } from "../../src/funfix"
 
 import * as jv from "jsverify"
 import * as inst from "../instances"
+import * as laws from "../laws"
 
 describe("Eval basic data constructors tests", () => {
   test("sealed class",() => {
@@ -190,7 +193,7 @@ describe("Eval basic data constructors tests", () => {
   })
 
   test("String(flatMap(...))", () => {
-    expect(String(Eval.now("value").flatMap(id)))
+    expect(String(Eval.now("value").flatMap(x => Eval.now(x))))
       .toBe('Eval#FlatMap(Eval.now("value"), [function])')
   })
 
@@ -381,6 +384,14 @@ describe("Eval is a monad", () => {
     for (let i = 0; i < n; i++) fa = fa.map(_ => _ + 1)
     expect(fa.get()).toBe(n)
   })
+
+  test("unit", () => {
+    const e1 = Eval.unit()
+    const e2 = Eval.unit()
+
+    expect(e1).toBe(e2)
+    expect(e1.run().get()).toBeUndefined()
+  })
 })
 
 describe("Eval memoization", () => {
@@ -513,4 +524,33 @@ describe("Eval.foreach and foreachL", () => {
     const fa: Eval<number> = Eval.raise("dummy")
     expect(() => fa.forEach(a => {})).toThrowError("dummy")
   })
+})
+
+describe("Eval.tailRecM", () => {
+  it("is stack safe", () => {
+    const fa = Eval.tailRecM(0, a => Eval.now(a < 1000 ? Left(a + 1) : Right(a)))
+    expect(fa.get()).toBe(1000)
+  })
+
+  it("returns the failure unchanged", () => {
+    const fa = Eval.tailRecM(0, a => Eval.raise("failure"))
+    expect(fa.run().failed().get()).toBe("failure")
+  })
+
+  it("protects against user errors", () => {
+    // tslint:disable:no-string-throw
+    const fa = Eval.tailRecM(0, a => { throw "dummy" })
+    expect(fa.run().failed().get()).toBe("dummy")
+  })
+})
+
+describe("Eval obeys type class laws", () => {
+  const eq =
+    new (class extends Eq<Eval<any>> {
+      eqv(lh: Eval<any>, rh: Eval<any>): boolean {
+        return lh.run().equals(rh.run())
+      }
+    })()
+
+  laws.testMonad(Eval, jv.number, inst.arbEval, eq)
 })

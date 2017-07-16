@@ -17,8 +17,13 @@
 
 import * as jv from "jsverify"
 
-import { Option, Some, Either, Try, DummyError, Failure, Success, Eval } from "../src/funfix"
-import { Left, Right } from "../src/core/either"
+import {
+  Option, Some,
+  Either, Left, Right,
+  Try, Failure, Success,
+  DummyError,
+  Eval
+} from "../src/funfix"
 
 export const arbAnyPrimitive: jv.Arbitrary<any> =
   jv.sum([jv.number, jv.string, jv.falsy])

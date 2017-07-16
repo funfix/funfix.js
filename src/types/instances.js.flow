@@ -18,9 +18,8 @@
 /* @flow */
 
 import { HK } from "./kinds"
-import { Option } from "../core/option"
-import { Try } from "../core/try"
-import { Either } from "../core/either"
+import { Option, Try, Either } from "../core/disjunctions"
+import { Eval } from "../effect/eval"
 
 export type OptionK<A> = HK<Option<any>, A>;
 
@@ -32,6 +31,12 @@ declare export class OptionInstances {
   map<A, B>(fa: OptionK<A>, f: (a: A) => B): Option<B>;
   map2<A, B, Z>(fa: OptionK<A>, fb: OptionK<B>, f: (a: A, b: B) => Z): Option<Z>;
   product<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<[A, B]>;
+  flatMap<A, B>(fa: OptionK<A>, f: (a: A) => OptionK<B>): Option<B>;
+  tailRecM<A, B>(a: A, f: (a: A) => OptionK<Either<A, B>>): Option<B>;
+  followedBy<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<B>;
+  followedByL<A, B>(fa: OptionK<A>, fb: () => OptionK<B>): Option<B>;
+  forEffect<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<A>;
+  forEffectL<A, B>(fa: OptionK<A>, fb: () => OptionK<B>): Option<A>;
 
   static global: OptionInstances;
 }
@@ -46,6 +51,12 @@ declare export class TryInstances {
   map<A, B>(fa: TryK<A>, f: (a: A) => B): Try<B>;
   map2<A, B, Z>(fa: TryK<A>, fb: TryK<B>, f: (a: A, b: B) => Z): Try<Z>;
   product<A, B>(fa: TryK<A>, fb: TryK<B>): Try<[A, B]>;
+  flatMap<A, B>(fa: TryK<A>, f: (a: A) => TryK<B>): Try<B>;
+  tailRecM<A, B>(a: A, f: (a: A) => TryK<Either<A, B>>): Try<B>;
+  followedBy<A, B>(fa: TryK<A>, fb: TryK<B>): Try<B>;
+  followedByL<A, B>(fa: TryK<A>, fb: () => TryK<B>): Try<B>;
+  forEffect<A, B>(fa: TryK<A>, fb: TryK<B>): Try<A>;
+  forEffectL<A, B>(fa: TryK<A>, fb: () => TryK<B>): Try<A>;
 
   static global: TryInstances;
 }
@@ -60,6 +71,31 @@ declare export class EitherInstances<L> {
   map<A, B>(fa: EitherK<L, A>, f: (a: A) => B): Either<L, B>;
   map2<A, B, Z>(fa: EitherK<L, A>, fb: EitherK<L, B>, f: (a: A, b: B) => Z): Either<L, Z>;
   product<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, [A, B]>;
+  flatMap<A, B>(fa: EitherK<L, A>, f: (a: A) => EitherK<L, B>): Either<L, B>;
+  tailRecM<A, B>(a: A, f: (a: A) => EitherK<L, Either<A, B>>): Either<L, B>;
+  followedBy<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, B>;
+  followedByL<A, B>(fa: EitherK<L, A>, fb: () => EitherK<L, B>): Either<L, B>;
+  forEffect<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, A>;
+  forEffectL<A, B>(fa: EitherK<L, A>, fb: () => EitherK<L, B>): Either<L, A>;
 
   static global: EitherInstances<any>;
+}
+
+export type EvalK<A> = HK<Eval<any>, A>;
+
+declare export class EvalInstances {
+  pure<A>(a: A): Eval<A>;
+  unit(): Eval<void>;
+  ap<A, B>(fa: EvalK<A>, ff: EvalK<(a: A) => B>): Eval<B>;
+  map<A, B>(fa: EvalK<A>, f: (a: A) => B): Eval<B>;
+  map2<A, B, Z>(fa: EvalK<A>, fb: EvalK<B>, f: (a: A, b: B) => Z): Eval<Z>;
+  product<A, B>(fa: EvalK<A>, fb: EvalK<B>): Eval<[A, B]>;
+  flatMap<A, B>(fa: EvalK<A>, f: (a: A) => EvalK<B>): Eval<B>;
+  tailRecM<A, B>(a: A, f: (a: A) => EvalK<Either<A, B>>): Eval<B>;
+  followedBy<A, B>(fa: EvalK<A>, fb: EvalK<B>): Eval<B>;
+  followedByL<A, B>(fa: EvalK<A>, fb: () => EvalK<B>): Eval<B>;
+  forEffect<A, B>(fa: EvalK<A>, fb: EvalK<B>): Eval<A>;
+  forEffectL<A, B>(fa: EvalK<A>, fb: () => EvalK<B>): Eval<A>;
+
+  static global: EvalInstances;
 }

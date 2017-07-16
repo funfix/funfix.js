@@ -17,7 +17,7 @@
 
 import * as jv from "jsverify"
 import * as laws from "../laws"
-import { Box, BoxInstances } from "./box"
+import { Box, BoxApplicative } from "./box"
 import {
   eqOf, Eq, Applicative, applicativeOf,
   getTypeClassInstance,
@@ -26,20 +26,28 @@ import {
 
 const arbBox = jv.number.smap(n => new Box(n), b => b.value)
 
-describe("Default Eq ops obey laws", () => {
+describe("Eq<Box> obeys laws", () => {
   laws.testEq(Box, arbBox)
 })
 
-describe("Default Functor ops obey laws", () => {
+describe("Functor<Box> obeys laws", () => {
   laws.testFunctor(Box, arbBox, eqOf(Box))
 })
 
-describe("Default Apply ops obey laws", () => {
+describe("Apply<Box> obeys laws", () => {
   laws.testApply(Box, arbBox, t => new Box(t), eqOf(Box))
 })
 
-describe("Default Applicative ops obey laws", () => {
+describe("Applicative<Box> obeys laws", () => {
   laws.testApplicative(Box, arbBox, eqOf(Box))
+})
+
+describe("FlatMap<Box> obeys laws", () => {
+  laws.testFlatMap(Box, jv.number, arbBox, x => new Box(x), eqOf(Box))
+})
+
+describe("Monad<Box> obeys laws", () => {
+  laws.testMonad(Box, jv.number, arbBox, eqOf(Box))
 })
 
 describe("Type class registration", () => {
@@ -50,7 +58,7 @@ describe("Type class registration", () => {
 
   it("should throw error if registering type class multiple times", () => {
     try {
-      registerTypeClassInstance(Applicative)(Box, new BoxInstances())
+      registerTypeClassInstance(Applicative)(Box, new BoxApplicative())
     } catch (e) {
       expect(e.name).toBe("IllegalArgumentError")
     }

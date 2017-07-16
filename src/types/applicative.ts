@@ -113,7 +113,7 @@ import { applyMixins } from "../core/std"
  * // but note that you can always provide your own definitions
  * applyMixins(BoxApply, [Apply])
  *
- * // Registering global instance for Box, needed in order
+ * // Registering global Apply instance for Box, needed in order
  * // for the `applyOf(Box)` calls to work
  * registerTypeClassInstance(Apply)(Box, new BoxApply())
  * ```
@@ -187,6 +187,19 @@ applyMixins(Apply, [Functor])
  * This is an abstract definition. In order to use it in unit testing,
  * the implementor must think of a strategy to evaluate the truthiness
  * of the returned `Equiv` values.
+ *
+ * Even though in TypeScript the Funfix library is using classes to
+ * express these laws, when implementing this class it is recommended
+ * that you implement it as a mixin using `implements`, instead of extending
+ * it directly with `extends`. See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * We are doing this in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these classes are defined with
+ * `interface`, as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
  */
 export abstract class ApplyLaws<F> implements FunctorLaws<F> {
   /**
@@ -308,7 +321,7 @@ export function applyLawsOf<F>(instance: Apply<F>): ApplyLaws<F> {
  *   readonly _funKindA: T
  * }
  *
- * class BoxFunctor implements Applicative<Box<any>> {
+ * class BoxApplicative implements Applicative<Box<any>> {
  *   pure<A>(a: A): Box<A> { return new Box(a) }
  *
  *   ap<A, B>(fa: BoxK<A>, ff: BoxK<(a: A) => B>): Box<B> {
@@ -329,9 +342,9 @@ export function applyLawsOf<F>(instance: Apply<F>): ApplyLaws<F> {
  * // we are using `implements` instead of `extends` above and
  * // because in this sample we want the default implementations,
  * // but note that you can always provide your own
- * applyMixins(BoxFunctor, [Applicative])
+ * applyMixins(BoxApplicative, [Applicative])
  *
- * // Registering global Functor instance for Box, needed in order
+ * // Registering global Applicative instance for Box, needed in order
  * // for the `functorOf(Box)`, `applyOf(Box)` and `applicativeOf(Box)`
  * // calls to work
  * registerTypeClassInstance(Applicative)(Box, new BoxFunctor())
@@ -395,6 +408,19 @@ applyMixins(Applicative, [Apply])
  * This is an abstract definition. In order to use it in unit testing,
  * the implementor must think of a strategy to evaluate the truthiness
  * of the returned `Equiv` values.
+ *
+ * Even though in TypeScript the Funfix library is using classes to
+ * express these laws, when implementing this class it is recommended
+ * that you implement it as a mixin using `implements`, instead of extending
+ * it directly with `extends`. See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * We are doing this in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these classes are defined with
+ * `interface`, as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
  */
 export abstract class ApplicativeLaws<F> implements ApplyLaws<F> {
   /**

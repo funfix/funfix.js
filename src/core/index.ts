@@ -21,12 +21,11 @@
  *
  * Exports sub-modules:
  *
- * - [core/either]{@link "core/either"} for the {@link Either} data type
+ * - [core/disjunctions]{@link "core/disjunctions"} for the
+ *   {@link Either}, {@link Option} and {@link Try} data types
  * - [core/errors]{@link "core/errors"} for reusable error types
- * - [core/option]{@link "core/option"} for the {@link Option} data type
  * - [core/std]{@link "core/std"} for universal equality and hash code
  *   (e.g. {@link IEquals}, {@link is} and {@link hashCode})
- * - [core/try]{@link "core/try"} for the {@link Try} data type
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:
@@ -49,6 +48,4 @@
 // Exporting everything
 export * from "./std"
 export * from "./errors"
-export * from "./option"
-export * from "./either"
-export * from "./try"
+export * from "./disjunctions"

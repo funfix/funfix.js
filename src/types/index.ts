@@ -26,6 +26,8 @@
  *   type class
  * - [types/applicative]{@link "types/applicative"}: exposes the
  *   {@link Apply} and {@link Applicative} type classes
+ * - [types/monad]{@link "types/monad"}: exposes the
+ *   {@link FlatMap} and {@link Monad} type classes
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:
@@ -48,4 +50,5 @@ export * from "./kinds"
 export * from "./eq"
 export * from "./functor"
 export * from "./applicative"
+export * from "./monad"
 export * from "./instances"

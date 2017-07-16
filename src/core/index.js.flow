@@ -19,6 +19,4 @@
 
 declare export * from "./errors";
 declare export * from "./std";
-declare export * from "./option";
-declare export * from "./either";
-declare export * from "./try";
+declare export * from "./disjunctions";

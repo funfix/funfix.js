@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Option, Some, None } from "../../src/funfix"
+import { Option, Some, None, Left, Right } from "../../src/funfix"
 import { NoSuchElementError } from "../../src/funfix"
 import { is, hashCode, eqOf } from "../../src/funfix"
 
@@ -74,6 +74,14 @@ describe("Option#getOrElse", () => {
     expect(effect).toBe(10)
     expect(r).toBe("hello")
   })
+
+  it("can fallback to unrelated type", () => {
+    const opt: Option<number> = Option.empty()
+    const r1: number | string = opt.getOrElse("fallback")
+    expect(r1).toBe("fallback")
+    const r2: number | string = opt.getOrElseL(() => "fallback")
+    expect(r2).toBe("fallback")
+  })
 })
 
 describe("Option#orNull", () => {
@@ -97,6 +105,12 @@ describe("Option#orElse", () => {
     const other = Option.of(1000)
     expect(Option.empty<number>().orElse(other)).toBe(other)
   })
+
+  it("can fallback to unrelated type", () => {
+    const opt: Option<number> = Option.empty()
+    const r: Option<number | string> = opt.orElse(Some("fallback"))
+    expect(r.get()).toBe("fallback")
+  })
 })
 
 describe("Option#orElseL", () => {
@@ -117,6 +131,12 @@ describe("Option#orElseL", () => {
       const received = opt.orElseL(() => { effect = true; return None })
       return received === opt
     })
+
+  it("can fallback to unrelated type", () => {
+    const opt: Option<number> = Option.empty()
+    const r: Option<number | string> = opt.orElseL(() => Some("fallback"))
+    expect(r.get()).toBe("fallback")
+  })
 })
 
 describe("Option#isEmpty, Option#nonEmpty", () => {
@@ -445,7 +465,19 @@ describe("Option.of", () => {
   })
 })
 
+describe("Option.tailRecM", () => {
+  it("is stack safe", () => {
+    const fa = Option.tailRecM(0, a => Some(a < 1000 ? Left(a + 1) : Right(a)))
+    expect(fa.get()).toBe(1000)
+  })
+
+  it("None interrupts the loop", () => {
+    const fa = Option.tailRecM(0, a => None)
+    expect(fa).toBe(None)
+  })
+})
+
 describe("Option obeys type class laws", () => {
   laws.testEq(Option, inst.arbOpt)
-  laws.testApplicative(Option, inst.arbOpt, eqOf(Option))
+  laws.testMonad(Option, jv.number, inst.arbOpt, eqOf(Option))
 })

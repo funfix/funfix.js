@@ -136,7 +136,7 @@ export abstract class Functor<F> {
  * of the returned `Equiv` values.
  *
  * Even though in TypeScript the Funfix library is using classes to
- * express type classes, when implementing this type class it is recommended
+ * express these laws, when implementing this class it is recommended
  * that you implement it as a mixin using `implements`, instead of extending
  * it directly with `extends`. See
  * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
@@ -144,7 +144,7 @@ export abstract class Functor<F> {
  *
  * We are doing this in order to support multiple inheritance and to
  * avoid inheriting any `static` members. In the Flow definitions (e.g.
- * `.js.flow` files) for Funfix these type classes are defined with
+ * `.js.flow` files) for Funfix these classes are defined with
  * `interface`, as they are meant to be interfaces that sometimes have
  * default implementations and not classes.
  */

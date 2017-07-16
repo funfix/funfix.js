@@ -21,7 +21,9 @@ import {
   Eq, EqLaws, eqLawsOf, eqOf,
   FunctorLaws, functorLawsOf, functorOf,
   ApplyLaws, applyLawsOf, applyOf,
-  ApplicativeLaws, applicativeLawsOf, applicativeOf
+  ApplicativeLaws, applicativeLawsOf, applicativeOf,
+  FlatMapLaws, flatMapLawsOf, flatMapOf,
+  MonadLaws, monadLawsOf, monadOf
 } from "../src/funfix"
 
 export function testEq<A>(
@@ -164,5 +166,75 @@ export function testApplicative<F, A, B>(
     test(`Applicative<${(type as any).name}>.${key}`, () => {
       jv.assert(tests[key])
     })
+  }
+}
+
+export function testFlatMap<F, A, B>(
+  type: Constructor<F>,
+  arbA: jv.Arbitrary<A>,
+  arbFA: jv.Arbitrary<HK<F, A>>,
+  lift: <T>(t: T) => HK<F, T>,
+  eqF: Eq<HK<F, any>>,
+  laws: FlatMapLaws<F> = flatMapLawsOf(flatMapOf(type)),
+  includeSupertypes: boolean = true): void {
+
+  // Tests functor first
+  if (includeSupertypes) {
+    testApply(type, arbFA, lift, eqF, laws)
+  }
+
+  const equivToBool = (ref: Equiv<HK<F, any>>) =>
+    eqF.eqv(ref.lh, ref.rh)
+
+  const tests = {
+    flatMapAssociativity: jv.forall(
+      arbFA, jv.fun(arbFA), jv.fun(arbFA),
+      (fa, f, g) => equivToBool(laws.flatMapAssociativity(fa, f, g))
+    ),
+    flatMapConsistentApply: jv.forall(
+      arbFA, jv.fun(arbFA),
+      (fa, f) => equivToBool(laws.flatMapConsistentApply(fa, lift(f)))
+    ),
+    followedByConsistency: jv.forall(
+      arbFA, arbFA,
+      (fa, fb) => equivToBool(laws.followedByConsistency(fa, fb))
+    ),
+    followedByLConsistency: jv.forall(
+      arbFA, arbFA,
+      (fa, fb) => equivToBool(laws.followedByLConsistency(fa, fb))
+    ),
+    forEffectConsistency: jv.forall(
+      arbFA, arbFA,
+      (fa, fb) => equivToBool(laws.forEffectConsistency(fa, fb))
+    ),
+    forEffectLConsistency: jv.forall(
+      arbFA, arbFA,
+      (fa, fb) => equivToBool(laws.forEffectLConsistency(fa, fb))
+    ),
+    tailRecMConsistentFlatMap: jv.forall(
+      arbA, jv.fun(arbFA),
+      (a, f) => equivToBool(laws.tailRecMConsistentFlatMap(a, f))
+    )
+  }
+
+  for (const key of Object.keys(tests)) {
+    test(`FlatMap<${(type as any).name}>.${key}`, () => {
+      jv.assert(tests[key])
+    })
+  }
+}
+
+export function testMonad<F, A, B>(
+  type: Constructor<F>,
+  arbA: jv.Arbitrary<A>,
+  arbFA: jv.Arbitrary<HK<F, A>>,
+  eqF: Eq<HK<F, any>>,
+  laws: MonadLaws<F> = monadLawsOf(monadOf(type)),
+  includeSupertypes: boolean = true): void {
+
+  // Tests functor first
+  if (includeSupertypes) {
+    testApplicative(type, arbFA, eqF, laws)
+    testFlatMap(type, arbA, arbFA, laws.F.pure, eqF, laws, false)
   }
 }
