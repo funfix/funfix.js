@@ -29,14 +29,14 @@ classes and functions are exported by the
 **["core"](https://funfix.org/api/modules/_core_index_.html)** 
 defines core data types and universal interfaces:
 
-- **[Option&lt;A&gt;](https://funfix.org/api/classes/_core_option_.option.html)**: 
+- **[Option&lt;A&gt;](https://funfix.org/api/classes/_core_disjunctions_.option.html)**: 
   data type for representing optional values, much like the "`Maybe`" 
   monadic type from Haskell or "`Option`" from Scala
-- **[Either&lt;L,R&gt;](https://funfix.org/api/classes/_core_either_.either.html)**: 
+- **[Either&lt;L,R&gt;](https://funfix.org/api/classes/_core_disjunctions_.either.html)**: 
   data type for representing disjoint unions, for working with values of 
   two possible types, inspired by the data type with the same name 
   from Haskell and Scala
-- **[Try&lt;A&gt;](https://funfix.org/api/classes/_core_try_.try.html)**: 
+- **[Try&lt;A&gt;](https://funfix.org/api/classes/_core_disjunctions_.try.html)**: 
   data type for capturing exceptional results and manipulating 
   them as values, being equivalent in spirit with `Either&lt;Throwable, A&gt;`,
   inspired by the data type with the same name from Scala
