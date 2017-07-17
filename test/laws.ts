@@ -237,4 +237,31 @@ export function testMonad<F, A, B>(
     testApplicative(type, arbFA, eqF, laws)
     testFlatMap(type, arbA, arbFA, laws.F.pure, eqF, laws, false)
   }
+
+  const equivToBool = (ref: Equiv<HK<F, any>>) =>
+    eqF.eqv(ref.lh, ref.rh)
+
+  const tests = {
+    monadLeftIdentity: jv.forall(
+      jv.number, jv.fun(arbFA),
+      (a, f) => equivToBool(laws.monadLeftIdentity(a, f))
+    ),
+    monadRightIdentity: jv.forall(
+      arbFA,
+      fa => equivToBool(laws.monadRightIdentity(fa))
+    ),
+    mapFlatMapCoherence: jv.forall(
+      arbFA, jv.fun(jv.string),
+      (fa, f) => equivToBool(laws.mapFlatMapCoherence(fa, f))
+    ),
+    tailRecMStackSafety: () => (
+      equivToBool(laws.tailRecMStackSafety())
+    )
+  }
+
+  for (const key of Object.keys(tests)) {
+    test(`Monad<${(type as any).name}>.${key}`, () => {
+      jv.assert(tests[key])
+    })
+  }
 }

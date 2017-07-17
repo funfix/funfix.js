@@ -581,6 +581,28 @@ export abstract class MonadLaws<F> implements ApplicativeLaws<F>, FlatMapLaws<F>
    */
   public readonly F: Monad<F>
 
+  monadLeftIdentity<A, B>(a: A, f: (a: A) => HK<F, B>): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(F.flatMap(F.pure(a), f), f(a))
+  }
+
+  monadRightIdentity<A, B>(fa: HK<F, A>): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(F.flatMap(fa, F.pure), fa)
+  }
+
+  mapFlatMapCoherence<A, B>(fa: HK<F, A>, f: (a: A) => B): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(F.flatMap(fa, a => F.pure(f(a))), F.map(fa, f))
+  }
+
+  tailRecMStackSafety(): Equiv<HK<F, number>> {
+    const F = this.F
+    const n = 10000
+    const res = F.tailRecM(0, i => F.pure(i < n ? Left(i + 1) : Right(i)))
+    return Equiv.of(res, F.pure(n))
+  }
+
   /** Mixed-in from {@link FunctorLaws.covariantIdentity}. */
   covariantIdentity: <A>(fa: HK<F, A>) => Equiv<HK<F, A>>
   /** Mixed-in from {@link FunctorLaws.covariantComposition}. */

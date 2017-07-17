@@ -60,6 +60,11 @@ export interface Monad<F> extends FlatMap<F>, Applicative<F> {
 
 export interface MonadLaws<F> extends ApplicativeLaws<F>, FlatMapLaws<F> {
   +F: Monad<F>;
+
+  monadLeftIdentity<A, B>(a: A, f: (a: A) => HK<F, B>): Equiv<HK<F, B>>;
+  monadRightIdentity<A, B>(fa: HK<F, A>): Equiv<HK<F, A>>;
+  mapFlatMapCoherence<A, B>(fa: HK<F, A>, f: (a: A) => B): Equiv<HK<F, B>>;
+  tailRecMStackSafety(): Equiv<HK<F, number>>;
 }
 
 declare export function monadOf<F>(c: Constructor<F>): Monad<F>;

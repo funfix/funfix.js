@@ -109,6 +109,11 @@ class MonadLawsForOption implements MonadLaws<Option<any>> {
   applicativeMap: <A, B>(fa: OptionK<A>, f: (a: A) => B) => Equiv<OptionK<B>>;
   applicativeComposition: <A, B, C>(fa: OptionK<A>, fab: OptionK<(a: A) => B>, fbc: OptionK<(b: B) => C>) => Equiv<OptionK<C>>;
   applicativeUnit: <A>(a: A) => Equiv<OptionK<A>>;
+  // Monad
+  monadLeftIdentity: <A, B>(a: A, f: (a: A) => OptionK<B>) => Equiv<OptionK<B>>;
+  monadRightIdentity: <A, B>(fa: OptionK<A>) => Equiv<OptionK<A>>;
+  mapFlatMapCoherence: <A, B>(fa: OptionK<A>, f: (a: A) => B) => Equiv<OptionK<B>>;
+  tailRecMStackSafety: () => Equiv<OptionK<number>>;
 }
 
 applyMixins(MonadLawsForOption, [MonadLaws])
