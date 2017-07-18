@@ -18,7 +18,7 @@
 /* @flow */
 
 import * as ff from "../../src/funfix"
-import { Try, Right } from "../../src/funfix"
+import { Try, Right, Either } from "../../src/funfix"
 import { Eval } from "../../src/effect"
 import {
   Functor,
@@ -86,6 +86,10 @@ const recover6: Eval<Object> = dogEval.recoverWith(_ => Eval.now(new Human()))
 const recoverE1: Eval<string> = dogEval.recoverWith(_ => Eval.now(new Human()))
 // $ExpectError
 const recoverE2: Eval<Dog> = dogEval.recover(_ => new Animal())
+
+const a1: Eval<Either<any, Dog>> = dogEval.attempt()
+// $ExpectError
+const a2: Eval<Either<any, Cat>> = dogEval.attempt()
 
 // Map and flatMap
 const r14: Eval<Cat> = dogEval.map(_ => new Cat())

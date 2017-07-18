@@ -348,7 +348,7 @@ export function applyLawsOf<F>(instance: Apply<F>): ApplyLaws<F> {
  * // Registering global Applicative instance for Box, needed in order
  * // for the `functorOf(Box)`, `applyOf(Box)` and `applicativeOf(Box)`
  * // calls to work
- * registerTypeClassInstance(Applicative)(Box, new BoxFunctor())
+ * registerTypeClassInstance(Applicative)(Box, new BoxApplicative())
  * ```
  *
  * We are using `implements` in order to support multiple inheritance and to
@@ -516,7 +516,6 @@ export function applicativeLawsOf<F>(instance: Applicative<F>): ApplicativeLaws<
   return new (class extends ApplicativeLaws<F> { public readonly F = instance })()
 }
 
-// ----
 /**
  * The `ApplicativeError` type class is a {@link Applicative} that
  * also allows you to raise and or handle an error value.
@@ -525,6 +524,90 @@ export function applicativeLawsOf<F>(instance: Applicative<F>): ApplicativeLaws<
  * applicative types.
  *
  * MUST follow the law defined in {@link ApplicativeErrorLaws}.
+ *
+ * ## Implementation notes
+ *
+ * Even though in TypeScript the Funfix library is using `abstract class` to
+ * express type classes, when implementing this type class it is recommended
+ * that you implement it as a mixin using "`implements`", instead of extending
+ * it directly with "`extends`". See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * Implementation example:
+ *
+ * ```typescript
+ * import {
+ *   HK,
+ *   ApplicativeError,
+ *   registerTypeClassInstance,
+ *   applyMixins,
+ *   Try
+ * } from "funfix"
+ *
+ * // Type alias defined for readability.
+ * // HK is our encoding for higher-kinded types.
+ * type BoxK<T> = HK<Box<any>, T>
+ *
+ * class Box<T> implements HK<Box<any>, T> {
+ *   constructor(public value: Try<T>) {}
+ *
+ *   // Implements HK<Box<any>, A>, not really needed, but useful in order
+ *   // to avoid type casts. Note they can and should be undefined:
+ *   readonly _funKindF: Box<any>
+ *   readonly _funKindA: T
+ * }
+ *
+ * class BoxApplicativeError implements ApplicativeError<Box<any>, any> {
+ *   pure<A>(a: A): Box<A> { return new Box(Try.success(a)) }
+ *
+ *   ap<A, B>(fa: BoxK<A>, ff: BoxK<(a: A) => B>): Box<B> {
+ *     const ta = (fa as Box<A>).value
+ *     const tf = (ff as Box<(a: A) => B>).value
+ *     return new Box(Try.map2(ta, tf, (a, f) => f(a)))
+ *   }
+ *
+ *   raise<A>(e: any): HK<Box<any>, A> {
+ *     return new Box(Try.failure(e))
+ *   }
+ *
+ *   recoverWith<A>(fa: BoxK<A>, f: (e: any) => BoxK<A>): HK<Box<any>, A> {
+ *     return new Box((fa as Box<A>).value.recoverWith(e => (f(e) as Box<A>).value))
+ *   }
+ *
+ *   // Mixed-in, as these have default implementations
+ *   map: <A, B>(fa: BoxK<A>, f: (a: A) => B) => Box<B>
+ *   map2: <A, B, Z>(fa: BoxK<A>, fb: BoxK<B>, f: (a: A, b: B) => Z) => Box<Z>
+ *   product: <A, B> (fa: BoxK<A>, fb: BoxK<B>) => Box<[A, B]>
+ *   unit: () => Box<void>
+ *   recover: <A>(fa: HK<Box<any>, A>, f: (e: any) => A) => HK<Box<any>, A>
+ *   attempt: <A>(fa: HK<Box<any>, A>) => HK<Box<any>, Either<any, A>>
+ * }
+ *
+ * // Call needed in order to implement `map`, `map2`, `product`, etc.
+ * // using the default implementations defined by `ApplicativeError`,
+ * // because we are using `implements` instead of `extends` above and
+ * // because in this sample we want the default implementations,
+ * // but note that you can always provide your own
+ * applyMixins(BoxApplicativeError, [ApplicativeError])
+ *
+ * // Registering global ApplicativeError instance for Box, needed in order
+ * // for the `functorOf(Box)`, `applyOf(Box)`, `applicativeOf(Box)`
+ * // and `applicativeErrorOf(Box)` calls to work
+ * registerTypeClassInstance(ApplicativeError)(Box, new BoxApplicativeError())
+ * ```
+ *
+ * We are using `implements` in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these type classes are defined with
+ * "`interface`", as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
+ *
+ * ## Credits
+ *
+ * This type class is inspired by the equivalent in Haskell's
+ * standard library and the implementation is inspired by the
+ * [Typelevel Cats]{@link http://typelevel.org/cats/} project.
  */
 export abstract class ApplicativeError<F, E> implements Applicative<F> {
   /**
@@ -547,12 +630,15 @@ export abstract class ApplicativeError<F, E> implements Applicative<F> {
    * @see {@link recoverWith} to map to an `F[A]` value instead of
    * simply an `A` value.
    */
-  abstract recover<A>(fa: HK<F, A>, f: (e: E) => A): HK<F, A>
+  recover<A>(fa: HK<F, A>, f: (e: E) => A): HK<F, A> {
+    const F = this
+    return F.recoverWith(fa, e => F.pure(f(e)))
+  }
 
   /**
    * Handle errors by turning them into {@link Either} values.
    *
-   * If there is no error, then `Right` value will be returned instead.
+   * If there is no error, then a `Right` value will be returned.
    * All non-fatal errors should be handled by this method.
    */
   attempt<A>(fa: HK<F, A>): HK<F, Either<E, A>> {
@@ -570,7 +656,7 @@ export abstract class ApplicativeError<F, E> implements Applicative<F> {
 
   /** Mixed-in from {@link Applicative.unit}. */
   unit: () => HK<F, void>
-  /** Mixed-in from {@link Functor.unit}. */
+  /** Mixed-in from {@link Applicative.map}. */
   map: <A, B>(fa: HK<F, A>, f: (a: A) => B) => HK<F, B>
   /** Mixed-in from {@link Apply.map2}. */
   map2: <A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z) => HK<F, Z>
@@ -587,6 +673,28 @@ export abstract class ApplicativeError<F, E> implements Applicative<F> {
   static readonly _funErasure: ApplicativeError<any, any>
 }
 
+applyMixins(ApplicativeError, [Applicative])
+
+/**
+ * Type class laws defined for {@link ApplicativeError}.
+ *
+ * This is an abstract definition. In order to use it in unit testing,
+ * the implementor must think of a strategy to evaluate the truthiness
+ * of the returned `Equiv` values.
+ *
+ * Even though in TypeScript the Funfix library is using classes to
+ * express these laws, when implementing this class it is recommended
+ * that you implement it as a mixin using `implements`, instead of extending
+ * it directly with `extends`. See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * We are doing this in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these classes are defined with
+ * `interface`, as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
+ */
 export abstract class ApplicativeErrorLaws<F, E> implements ApplicativeLaws<F> {
   /**
    * The {@link Applicative} designated instance for `F`,
@@ -596,12 +704,12 @@ export abstract class ApplicativeErrorLaws<F, E> implements ApplicativeLaws<F> {
 
   applicativeErrorRecoverWith<A>(e: E, f: (e: E) => HK<F, A>): Equiv<HK<F, A>> {
     const F = this.F
-    return Equiv.of(F.recoverWith(F.raise(e), f), f(e))
+    return Equiv.of(F.recoverWith(F.raise<A>(e), f), f(e))
   }
 
   applicativeErrorRecover<A>(e: E, f: (e: E) => A): Equiv<HK<F, A>> {
     const F = this.F
-    return Equiv.of(F.recover(F.raise(e), f), F.pure(f(e)))
+    return Equiv.of(F.recover(F.raise<A>(e), f), F.pure(f(e)))
   }
 
   recoverWithPure<A>(a: A, f: (e: E) => HK<F, A>): Equiv<HK<F, A>> {

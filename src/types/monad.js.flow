@@ -19,8 +19,12 @@
 
 import type { Constructor } from "./kinds"
 import { HK, Equiv } from "./kinds"
-import { Apply, ApplyLaws, Applicative, ApplicativeLaws } from "./applicative"
 import { Either } from "../core/disjunctions"
+import {
+  Apply, ApplyLaws,
+  Applicative, ApplicativeLaws,
+  ApplicativeError, ApplicativeErrorLaws
+} from "./applicative"
 
 export interface FlatMap<F> extends Apply<F>{
   flatMap<A, B>(fa: HK<F, A>, f: (a: A) => HK<F, B>): HK<F, B>;
@@ -69,3 +73,19 @@ export interface MonadLaws<F> extends ApplicativeLaws<F>, FlatMapLaws<F> {
 
 declare export function monadOf<F>(c: Constructor<F>): Monad<F>;
 declare export function monadLawsOf<F>(instance: Monad<F>): MonadLaws<F>;
+
+export interface MonadError<F, E> extends ApplicativeError<F, E>, Monad<F> {
+  // Implements TypeClass<F>
+  static +_funTypeId: string;
+  static +_funSupertypeIds: string[];
+  static +_funErasure: MonadError<any, any>;
+}
+
+export interface MonadErrorLaws<F, E> extends ApplicativeErrorLaws<F, E>, MonadLaws<F> {
+  +F: MonadError<F, E>;
+
+  monadErrorLeftZero<A, B>(e: E, f: (a: A) => HK<F, B>): Equiv<HK<F, B>>;
+}
+
+declare export function monadErrorOf<F, E>(c: Constructor<F>): MonadError<F, E>;
+declare export function monadErrorLawsOf<F, E>(instance: MonadError<F, E>): MonadErrorLaws<F, E>;

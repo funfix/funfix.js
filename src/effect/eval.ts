@@ -269,6 +269,18 @@ export class Eval<A> {
   }
 
   /**
+   * Handle errors by turning them into {@link Either} values.
+   *
+   * If there is no error, then a `Right` value will be returned instead.
+   * Errors can be handled by this method.
+   */
+  attempt(): Eval<Either<any, A>> {
+    return this.transform(
+      _ => Either.left<any, A>(_),
+      Either.right)
+  }
+
+  /**
    * Memoizes (caches) the result of the source on the first
    * evaluation and reuses it on subsequent invocations of `get()`.
    *

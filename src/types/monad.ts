@@ -38,9 +38,16 @@
 
 /***/
 import { HK, Equiv, Constructor, getTypeClassInstance } from "./kinds"
-import { Apply, ApplyLaws, Applicative, ApplicativeLaws } from "./applicative"
 import { Either, Right, Left } from "../core/disjunctions"
 import { applyMixins } from "../core/std"
+import {
+  Apply,
+  ApplyLaws,
+  Applicative,
+  ApplicativeLaws,
+  ApplicativeError,
+  ApplicativeErrorLaws
+} from "./applicative"
 
 /**
  * The `FlatMap` type class is a lightweight {@link Monad}.
@@ -668,4 +675,275 @@ export function monadLawsOf<F>(instance: Monad<F>): MonadLaws<F> {
   return new (class extends MonadLaws<F> { public readonly F = instance })()
 }
 
-//---
+/**
+ * The `MonadError` type class is a {@link Applicative} that
+ * also allows you to raise and or handle an error value.
+ *
+ * This type class allows one to abstract over error-handling
+ * applicative types.
+ *
+ * MUST follow the law defined in {@link MonadErrorLaws}.
+ *
+ * ## Implementation notes
+ *
+ * Even though in TypeScript the Funfix library is using `abstract class` to
+ * express type classes, when implementing this type class it is recommended
+ * that you implement it as a mixin using "`implements`", instead of extending
+ * it directly with "`extends`". See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * Implementation example:
+ *
+ * ```typescript
+ * import {
+ *   HK,
+ *   MonadError,
+ *   registerTypeClassInstance,
+ *   applyMixins,
+ *   Try
+ * } from "funfix"
+ *
+ * // Type alias defined for readability.
+ * // HK is our encoding for higher-kinded types.
+ * type BoxK<T> = HK<Box<any>, T>
+ *
+ * class Box<T> implements HK<Box<any>, T> {
+ *   constructor(public value: Try<T>) {}
+ *
+ *   // Implements HK<Box<any>, A>, not really needed, but useful in order
+ *   // to avoid type casts. Note they can and should be undefined:
+ *   readonly _funKindF: Box<any>
+ *   readonly _funKindA: T
+ * }
+ *
+ * class BoxMonadError implements MonadError<Box<any>, any> {
+ *   pure<A>(a: A): Box<A> { return new Box(Try.success(a)) }
+ *
+ *   flatMap<A, B>(fa: BoxK<A>, f: (a: A) => BoxK<B>): Box<B> {
+ *     throw new NotImplementedError("Provide implementation")
+ *   }
+ *
+ *   tailRecM<A, B>(a: A, f: (a: A) => BoxK<Either<A, B>>): Box<B> {
+ *     throw new NotImplementedError("Provide implementation")
+ *   }
+ *
+ *   raise<A>(e: any): HK<Box<any>, A> {
+ *     return new Box(Try.failure(e))
+ *   }
+ *
+ *   recoverWith<A>(fa: BoxK<A>, f: (e: any) => BoxK<A>): HK<Box<any>, A> {
+ *     return new Box((fa as Box<A>).value.recoverWith(e => (f(e) as Box<A>).value))
+ *   }
+ *
+ *   // Mixed in
+ *   map: <A, B>(fa: BoxK<A>, f: (a: A) => B) => Box<B>
+ *   map2: <A, B, Z>(fa: BoxK<A>, fb: BoxK<B>, f: (a: A, b: B) => Z) => Box<Z>
+ *   ap: <A, B>(fa: BoxK<A>, ff: BoxK<(a: A) => B>) => Box<B>
+ *   product: <A, B> (fa: BoxK<A>, fb: BoxK<B>) => Box<[A, B]>
+ *   unit: () => Box<void>
+ *   followedBy: <A, B>(fa: BoxK<A>, fb: BoxK<B>) => Box<B>
+ *   followedByL: <A, B>(fa: BoxK<A>, fb: () => BoxK<B>) => Box<B>
+ *   forEffect: <A, B>(fa: BoxK<A>, fb: BoxK<B>) => Box<A>
+ *   forEffectL: <A, B>(fa: BoxK<A>, fb: () => BoxK<B>) => Box<A>
+ *   recover: <A>(fa: HK<Box<any>, A>, f: (e: any) => A) => HK<Box<any>, A>
+ *   attempt: <A>(fa: HK<Box<any>, A>) => HK<Box<any>, Either<any, A>>
+ * }
+ *
+ * // Call needed in order to implement `map`, `map2`, `product`, etc.
+ * // using the default implementations defined by `MonadError`,
+ * // because we are using `implements` instead of `extends` above and
+ * // because in this sample we want the default implementations,
+ * // but note that you can always provide your own
+ * applyMixins(BoxMonadError, [MonadError])
+ *
+ * // Registering global MonadError instance for Box, needed in order
+ * // for the `functorOf(Box)`, `applyOf(Box)`, `applicativeOf(Box)`
+ * // and `monadErrorOf(Box)` calls to work
+ * registerTypeClassInstance(MonadError)(Box, new BoxMonadError())
+ * ```
+ *
+ * We are using `implements` in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these type classes are defined with
+ * "`interface`", as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
+ *
+ * ## Credits
+ *
+ * This type class is inspired by the equivalent in Haskell's
+ * standard library and the implementation is inspired by the
+ * [Typelevel Cats]{@link http://typelevel.org/cats/} project.
+ */
+export abstract class MonadError<F, E> implements ApplicativeError<F, E>, Monad<F> {
+  /** Inherited from {@link Applicative.pure}. */
+  abstract pure<A>(a: A): HK<F, A>
+
+  /** Inherited from {@link ApplicativeError.raise}. */
+  abstract raise<A>(e: E): HK<F, A>
+
+  /** Inherited from {@link FlatMap.flatMap}. */
+  abstract flatMap<A, B>(fa: HK<F, A>, f: (a: A) => HK<F, B>): HK<F, B>
+
+  /** Inherited from {@link FlatMap.tailRecM}. */
+  abstract tailRecM<A, B>(a: A, f: (a: A) => HK<F, Either<A, B>>): HK<F, B>
+
+  /** Inherited from {@link ApplicativeError.recoverWith}. */
+  abstract recoverWith<A>(fa: HK<F, A>, f: (e: E) => HK<F, A>): HK<F, A>
+
+  /** Mixed-in from {@link ApplicativeError.recover}. */
+  recover: <A>(fa: HK<F, A>, f: (e: E) => A) => HK<F, A>
+  /** Mixed-in from {@link ApplicativeError.attempt}. */
+  attempt: <A>(fa: HK<F, A>) => HK<F, Either<E, A>>
+
+  /** Mixed-in from {@link Applicative.unit}. */
+  unit: () => HK<F, void>
+  /** Mixed-in from {@link Applicative.map}. */
+  map: <A, B>(fa: HK<F, A>, f: (a: A) => B) => HK<F, B>
+  /** Mixed-in from {@link Apply.map2}. */
+  map2: <A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z) => HK<F, Z>
+  /** Mixed-in from {@link Apply.product}. */
+  product: <A, B>(fa: HK<F, A>, fb: HK<F, B>) => HK<F, [A, B]>
+  /** Mixed-in from {@link FlatMap.followedBy}. */
+  followedBy: <A, B>(fa: HK<F, A>, fb: HK<F, B>) => HK<F, B>
+  /** Mixed-in from {@link FlatMap.followedByL}. */
+  followedByL: <A, B>(fa: HK<F, A>, fb: () => HK<F, B>) => HK<F, B>
+  /** Mixed-in from {@link FlatMap.forEffect}. */
+  forEffect: <A, B>(fa: HK<F, A>, fb: HK<F, B>) => HK<F, A>
+  /** Mixed-in from {@link FlatMap.forEffectL}. */
+  forEffectL: <A, B>(fa: HK<F, A>, fb: () => HK<F, B>) => HK<F, A>
+  /** Mixed-in from {@link Monad.ap}. */
+  ap: <A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>) => HK<F, B>
+
+  // Implements TypeClass<F>
+
+  /** @hidden */
+  static readonly _funTypeId: string = "monadError"
+  /** @hidden */
+  static readonly _funSupertypeIds: string[] =
+    ["functor", "apply", "applicative", "monad", "applicativeError"]
+
+  /** @hidden */
+  static readonly _funErasure: MonadError<any, any>
+}
+
+applyMixins(MonadError, [Monad, ApplicativeError])
+
+/**
+ * Type class laws defined for {@link MonadError}.
+ *
+ * This is an abstract definition. In order to use it in unit testing,
+ * the implementor must think of a strategy to evaluate the truthiness
+ * of the returned `Equiv` values.
+ *
+ * Even though in TypeScript the Funfix library is using classes to
+ * express these laws, when implementing this class it is recommended
+ * that you implement it as a mixin using `implements`, instead of extending
+ * it directly with `extends`. See
+ * [TypeScript: Mixins]{@link https://www.typescriptlang.org/docs/handbook/mixins.html}
+ * for details and note that we already have {@link applyMixins} defined.
+ *
+ * We are doing this in order to support multiple inheritance and to
+ * avoid inheriting any `static` members. In the Flow definitions (e.g.
+ * `.js.flow` files) for Funfix these classes are defined with
+ * `interface`, as they are meant to be interfaces that sometimes have
+ * default implementations and not classes.
+ */
+export abstract class MonadErrorLaws<F, E> implements ApplicativeErrorLaws<F, E>, MonadLaws<F> {
+  /**
+   * The {@link MonadError} designated instance for `F`,
+   * to be tested.
+   */
+  public readonly F: MonadError<F, E>
+
+  monadErrorLeftZero<A, B>(e: E, f: (a: A) => HK<F, B>): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(F.flatMap(F.raise<A>(e), f), F.raise<B>(e))
+  }
+
+  /** Mixed-in from {@link ApplicativeErrorLaws.applicativeErrorRecoverWith}. */
+  applicativeErrorRecoverWith: <A>(e: E, f: (e: E) => HK<F, A>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link ApplicativeErrorLaws.applicativeErrorRecover}. */
+  applicativeErrorRecover: <A>(e: E, f: (e: E) => A) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link ApplicativeErrorLaws.recoverWithPure}. */
+  recoverWithPure: <A>(a: A, f: (e: E) => HK<F, A>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link ApplicativeErrorLaws.recoverPure}. */
+  recoverPure: <A>(a: A, f: (e: E) => A) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link ApplicativeErrorLaws.raiseErrorAttempt}. */
+  raiseErrorAttempt: (e: E) => Equiv<HK<F, Either<E, void>>>
+  /** Mixed-in from {@link ApplicativeErrorLaws.pureAttempt}. */
+  pureAttempt: <A>(a: A) => Equiv<HK<F, Either<E, A>>>
+
+  /** Mixed-in from {@link MonadLaws.monadLeftIdentity}. */
+  monadLeftIdentity: <A, B>(a: A, f: (a: A) => HK<F, B>) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link MonadLaws.monadRightIdentity}. */
+  monadRightIdentity: <A, B>(fa: HK<F, A>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link MonadLaws.mapFlatMapCoherence}. */
+  mapFlatMapCoherence: <A, B>(fa: HK<F, A>, f: (a: A) => B) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link MonadLaws.tailRecMStackSafety}. */
+  tailRecMStackSafety: () => Equiv<HK<F, number>>
+
+  /** Mixed-in from {@link FlatMapLaws.flatMapAssociativity}. */
+  flatMapAssociativity: <A, B, C>(fa: HK<F, A>, f: (a: A) => HK<F, B>, g: (b: B) => HK<F, C>) => Equiv<HK<F, C>>
+  /** Mixed-in from {@link FlatMapLaws.flatMapConsistentApply}. */
+  flatMapConsistentApply: <A, B>(fa: HK<F, A>, fab: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link FlatMapLaws.followedByConsistency}. */
+  followedByConsistency: <A, B>(fa: HK<F, A>, fb: HK<F, B>) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link FlatMapLaws.followedByLConsistency}. */
+  followedByLConsistency: <A, B>(fa: HK<F, A>, fb: HK<F, B>) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link FlatMapLaws.forEffectConsistency}. */
+  forEffectConsistency: <A, B>(fa: HK<F, A>, fb: HK<F, B>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link FlatMapLaws.forEffectLConsistency}. */
+  forEffectLConsistency: <A, B>(fa: HK<F, A>, fb: HK<F, B>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link FlatMapLaws.tailRecMConsistentFlatMap}. */
+  tailRecMConsistentFlatMap: <A>(a: A, f: (a: A) => HK<F, A>) => Equiv<HK<F, A>>
+
+  /** Mixed-in from {@link ApplicativeLaws.applicativeIdentity}. */
+  applicativeIdentity: <A>(fa: HK<F, A>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeHomomorphism}. */
+  applicativeHomomorphism: <A, B>(a: A, f: (a: A) => B) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeInterchange}. */
+  applicativeInterchange: <A, B>(a: A, ff: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeMap}. */
+  applicativeMap: <A, B>(fa: HK<F, A>, f: (a: A) => B) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeComposition}. */
+  applicativeComposition: <A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>) => Equiv<HK<F, C>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeUnit}. */
+  applicativeUnit: <A>(a: A) => Equiv<HK<F, A>>
+
+  /** Mixed-in from {@link FunctorLaws.covariantIdentity}. */
+  covariantIdentity: <A>(fa: HK<F, A>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link FunctorLaws.covariantComposition}. */
+  covariantComposition: <A, B, C>(fa: HK<F, A>, f: (a: A) => B, g: (b: B) => C) => Equiv<HK<F, C>>
+
+  /** Mixed-in from {@link ApplyLaws.applyComposition}. */
+  applyComposition: <A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>) => Equiv<HK<F, C>>
+  /** Mixed-in from {@link ApplyLaws.applyProductConsistency}. */
+  applyProductConsistency: <A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link ApplyLaws.applyMap2Consistency}. */
+  applyMap2Consistency: <A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
+}
+
+applyMixins(MonadErrorLaws, [MonadLaws, ApplicativeErrorLaws])
+
+/**
+ * Given a {@link Constructor} reference, returns its associated
+ * {@link MonadError} instance if it exists, or throws a {@link NotImplementedError}
+ * in case there's no such association.
+ *
+ * ```typescript
+ * import { Eval, MonadError, monadErrorOf } from "funfix"
+ *
+ * const F: MonadError<Option<any>> = monadErrorOf(Eval)
+ * ```
+ */
+export const monadErrorOf: <F, E>(c: Constructor<F>) => MonadError<F, E> =
+  getTypeClassInstance(MonadError)
+
+/**
+ * Given an {@link MonadError} instance, returns the
+ * {@link MonadErrorLaws} associated with it.
+ */
+export function monadErrorLawsOf<F,E>(instance: MonadError<F,E>): MonadErrorLaws<F,E> {
+  return new (class extends MonadErrorLaws<F,E> { public readonly F = instance })()
+}

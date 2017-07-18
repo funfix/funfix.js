@@ -552,5 +552,5 @@ describe("Eval obeys type class laws", () => {
       }
     })()
 
-  laws.testMonad(Eval, jv.number, inst.arbEval, eq)
+  laws.testMonadError(Eval, jv.number, inst.arbEval, jv.string, eq)
 })

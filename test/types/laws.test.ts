@@ -18,13 +18,14 @@
 import * as jv from "jsverify"
 import * as laws from "../laws"
 import { Box, BoxApplicative } from "./box"
+import { Success } from "../../src/core"
 import {
   eqOf, Eq, Applicative, applicativeOf,
   getTypeClassInstance,
   registerTypeClassInstance
 } from "../../src/types"
 
-const arbBox = jv.number.smap(n => new Box(n), b => b.value)
+const arbBox = jv.number.smap(n => new Box(Success(n)), b => b.value.get())
 
 describe("Eq<Box> obeys laws", () => {
   laws.testEq(Box, arbBox)
@@ -35,19 +36,27 @@ describe("Functor<Box> obeys laws", () => {
 })
 
 describe("Apply<Box> obeys laws", () => {
-  laws.testApply(Box, arbBox, t => new Box(t), eqOf(Box))
+  laws.testApply(Box, arbBox, t => new Box(Success(t)), eqOf(Box))
 })
 
 describe("Applicative<Box> obeys laws", () => {
   laws.testApplicative(Box, arbBox, eqOf(Box))
 })
 
+describe("ApplicativeError<Box> obeys laws", () => {
+  laws.testApplicativeError(Box, jv.number, arbBox, jv.string, eqOf(Box))
+})
+
 describe("FlatMap<Box> obeys laws", () => {
-  laws.testFlatMap(Box, jv.number, arbBox, x => new Box(x), eqOf(Box))
+  laws.testFlatMap(Box, jv.number, arbBox, x => new Box(Success(x)), eqOf(Box))
 })
 
 describe("Monad<Box> obeys laws", () => {
   laws.testMonad(Box, jv.number, arbBox, eqOf(Box))
+})
+
+describe("MonadError<Box> obeys laws", () => {
+  laws.testMonadError(Box, jv.number, arbBox, jv.string, eqOf(Box))
 })
 
 describe("Type class registration", () => {

@@ -498,5 +498,5 @@ describe("Try.tailRecM", () => {
 
 describe("Try obeys type class laws", () => {
   laws.testEq(Try, inst.arbTry)
-  laws.testMonad(Try, jv.number, inst.arbTry, eqOf(Try))
+  laws.testMonadError(Try, jv.number, inst.arbTry, jv.string, eqOf(Try))
 })

@@ -34,6 +34,7 @@ declare export class Eval<+A> {
 
   recover<AA>(f: (e: any) => AA): Eval<A | AA>;
   recoverWith<AA>(f: (e: any) => Eval<AA>): Eval<A | AA>;
+  attempt(): Eval<Either<any, A>>;
 
   memoize(): Eval<A>;
   memoizeOnSuccess(): Eval<A>;
