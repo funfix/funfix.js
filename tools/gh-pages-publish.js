@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-import { cd, exec, echo } from "shelljs"
-import { readFileSync, existsSync } from "fs"
-import * as url from "url"
-import * as path from "path"
+const { cd, exec, echo } = require("shelljs")
+const { readFileSync, existsSync } = require("fs")
+const url = require("url")
+const path = require("path")
 
 console.info(`CI=${process.env["CI"]}`)
 console.info(`TRAVIS_BRANCH=${process.env["TRAVIS_BRANCH"]}`)
