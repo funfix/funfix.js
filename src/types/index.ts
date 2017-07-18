@@ -25,9 +25,11 @@
  * - [types/functor]{@link "types/functor"}: exposes the {@link Functor}
  *   type class
  * - [types/applicative]{@link "types/applicative"}: exposes the
- *   {@link Apply} and {@link Applicative} type classes
+ *   {@link Apply}, {@link Applicative} and {@link ApplicativeError}
+ *   type classes
  * - [types/monad]{@link "types/monad"}: exposes the
- *   {@link FlatMap} and {@link Monad} type classes
+ *   {@link FlatMap}, {@link Monad} and {@link MonadError}
+ *   type classes
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:
