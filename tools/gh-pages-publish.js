@@ -46,7 +46,7 @@ if (typeof pkg.repository === "object") {
   repoUrl = pkg.repository
 }
 
-const parsedUrl: url.Url = url.parse(repoUrl)
+const parsedUrl = url.parse(repoUrl)
 const repository = (parsedUrl.host || "") + (parsedUrl.path || "")
 const ghToken = process.env.GH_TOKEN
 
