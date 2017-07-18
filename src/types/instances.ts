@@ -158,7 +158,7 @@ export class TryInstances implements MonadError<Try<any>, any>, Eq<Try<any>> {
   }
 
   raise<A>(e: any): Try<A> {
-    return Try.failure(e)
+    return Try.failure<A>(e)
   }
 
   attempt<A>(fa: TryK<A>): Try<Either<any, A>> {
