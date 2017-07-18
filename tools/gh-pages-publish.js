@@ -36,7 +36,7 @@ if (process.env["TRAVIS_BRANCH"] !== "master" || process.env["TRAVIS_PULL_REQUES
 }
 
 let repoUrl
-let pkg = JSON.parse(readFileSync("package.json", "utf-8") as any)
+let pkg = JSON.parse(readFileSync("package.json", "utf-8"))
 if (typeof pkg.repository === "object") {
   if (!pkg.repository.hasOwnProperty("url")) {
     throw new Error("URL does not exist in repository section")
