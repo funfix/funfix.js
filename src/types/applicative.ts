@@ -39,6 +39,7 @@
 /***/
 import { HK, Equiv, Constructor, getTypeClassInstance } from "./kinds"
 import { Functor, FunctorLaws } from "./functor"
+import { Either, Right, Left } from "../core/disjunctions"
 import { NotImplementedError } from "../core/errors"
 import { applyMixins } from "../core/std"
 
@@ -513,4 +514,162 @@ export const applicativeOf: <F>(c: Constructor<F>) => Applicative<F> =
  */
 export function applicativeLawsOf<F>(instance: Applicative<F>): ApplicativeLaws<F> {
   return new (class extends ApplicativeLaws<F> { public readonly F = instance })()
+}
+
+// ----
+/**
+ * The `ApplicativeError` type class is a {@link Applicative} that
+ * also allows you to raise and or handle an error value.
+ *
+ * This type class allows one to abstract over error-handling
+ * applicative types.
+ *
+ * MUST follow the law defined in {@link ApplicativeErrorLaws}.
+ */
+export abstract class ApplicativeError<F, E> implements Applicative<F> {
+  /**
+   * Lift an error into the `F` context.
+   */
+  abstract raise<A>(e: E): HK<F, A>
+
+  /**
+   * Handle any error, potentially recovering from it, by mapping it to an
+   * `F<A>` value.
+   *
+   * @see {@link recover} to handle any error by simply mapping it to an `A`
+   * value instead of an `F<A>`.
+   */
+  abstract recoverWith<A>(fa: HK<F, A>, f: (e: E) => HK<F, A>): HK<F, A>
+
+  /**
+   * Handle any error by mapping it to an `A` value.
+   *
+   * @see {@link recoverWith} to map to an `F[A]` value instead of
+   * simply an `A` value.
+   */
+  abstract recover<A>(fa: HK<F, A>, f: (e: E) => A): HK<F, A>
+
+  /**
+   * Handle errors by turning them into {@link Either} values.
+   *
+   * If there is no error, then `Right` value will be returned instead.
+   * All non-fatal errors should be handled by this method.
+   */
+  attempt<A>(fa: HK<F, A>): HK<F, Either<E, A>> {
+    const F = this
+    return F.recover(
+      F.map(fa, a => Either.right<E, A>(a)),
+      Left)
+  }
+
+  /** Inherited from {@link Applicative.pure}. */
+  abstract pure<A>(a: A): HK<F, A>
+
+  /** Inherited from {@link Applicative.ap}. */
+  abstract ap<A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>): HK<F, B>
+
+  /** Mixed-in from {@link Applicative.unit}. */
+  unit: () => HK<F, void>
+  /** Mixed-in from {@link Functor.unit}. */
+  map: <A, B>(fa: HK<F, A>, f: (a: A) => B) => HK<F, B>
+  /** Mixed-in from {@link Apply.map2}. */
+  map2: <A, B, Z>(fa: HK<F, A>, fb: HK<F, B>, f: (a: A, b: B) => Z) => HK<F, Z>
+  /** Mixed-in from {@link Apply.product}. */
+  product: <A, B>(fa: HK<F, A>, fb: HK<F, B>) => HK<F, [A, B]>
+
+  // Implements TypeClass<F>
+
+  /** @hidden */
+  static readonly _funTypeId: string = "applicativeError"
+  /** @hidden */
+  static readonly _funSupertypeIds: string[] = ["functor", "apply", "applicative"]
+  /** @hidden */
+  static readonly _funErasure: ApplicativeError<any, any>
+}
+
+export abstract class ApplicativeErrorLaws<F, E> implements ApplicativeLaws<F> {
+  /**
+   * The {@link Applicative} designated instance for `F`,
+   * to be tested.
+   */
+  public readonly F: ApplicativeError<F, E>
+
+  applicativeErrorRecoverWith<A>(e: E, f: (e: E) => HK<F, A>): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(F.recoverWith(F.raise(e), f), f(e))
+  }
+
+  applicativeErrorRecover<A>(e: E, f: (e: E) => A): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(F.recover(F.raise(e), f), F.pure(f(e)))
+  }
+
+  recoverWithPure<A>(a: A, f: (e: E) => HK<F, A>): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(F.recoverWith(F.pure(a), f), F.pure(a))
+  }
+
+  recoverPure<A>(a: A, f: (e: E) => A): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(F.recover(F.pure(a), f), F.pure(a))
+  }
+
+  raiseErrorAttempt(e: E): Equiv<HK<F, Either<E, void>>> {
+    const F = this.F
+    return Equiv.of(F.attempt(F.raise<void>(e)), F.pure(Left(e)))
+  }
+
+  pureAttempt<A>(a: A): Equiv<HK<F, Either<E, A>>> {
+    const F = this.F
+    return Equiv.of(F.attempt(F.pure(a)), F.pure(Right(a)))
+  }
+
+  /** Mixed-in from {@link ApplicativeLaws.applicativeIdentity}. */
+  applicativeIdentity: <A>(fa: HK<F, A>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeHomomorphism}. */
+  applicativeHomomorphism: <A, B>(a: A, f: (a: A) => B) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeInterchange}. */
+  applicativeInterchange: <A, B>(a: A, ff: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeMap}. */
+  applicativeMap: <A, B>(fa: HK<F, A>, f: (a: A) => B) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeComposition}. */
+  applicativeComposition: <A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>) => Equiv<HK<F, C>>
+  /** Mixed-in from {@link ApplicativeLaws.applicativeUnit}. */
+  applicativeUnit: <A>(a: A) => Equiv<HK<F, A>>
+
+  /** Mixed-in from {@link FunctorLaws.covariantIdentity}. */
+  covariantIdentity: <A>(fa: HK<F, A>) => Equiv<HK<F, A>>
+  /** Mixed-in from {@link FunctorLaws.covariantComposition}. */
+  covariantComposition: <A, B, C>(fa: HK<F, A>, f: (a: A) => B, g: (b: B) => C) => Equiv<HK<F, C>>
+
+  /** Mixed-in from {@link ApplyLaws.applyComposition}. */
+  applyComposition: <A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>) => Equiv<HK<F, C>>
+  /** Mixed-in from {@link ApplyLaws.applyProductConsistency}. */
+  applyProductConsistency: <A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
+  /** Mixed-in from {@link ApplyLaws.applyMap2Consistency}. */
+  applyMap2Consistency: <A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
+}
+
+applyMixins(ApplicativeErrorLaws, [ApplicativeLaws])
+
+/**
+ * Given a {@link Constructor} reference, returns its associated
+ * {@link ApplicativeError} instance if it exists, or throws a {@link NotImplementedError}
+ * in case there's no such association.
+ *
+ * ```typescript
+ * import { Eval, ApplicativeError, applicativeErrorOf } from "funfix"
+ *
+ * const F: ApplicativeError<Option<any>> = applicativeErrorOf(Eval)
+ * ```
+ */
+export const applicativeErrorOf: <F, E>(c: Constructor<F>) => ApplicativeError<F, E> =
+  getTypeClassInstance(ApplicativeError)
+
+/**
+ * Given an {@link ApplicativeError} instance, returns the
+ * {@link ApplicativeErrorLaws} associated with it.
+ */
+export function applicativeErrorLawsOf<F,E>(instance: ApplicativeError<F,E>): ApplicativeErrorLaws<F,E> {
+  return new (class extends ApplicativeErrorLaws<F,E> { public readonly F = instance })()
 }

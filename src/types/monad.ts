@@ -667,3 +667,5 @@ export const monadOf: <F>(c: Constructor<F>) => Monad<F> =
 export function monadLawsOf<F>(instance: Monad<F>): MonadLaws<F> {
   return new (class extends MonadLaws<F> { public readonly F = instance })()
 }
+
+//---

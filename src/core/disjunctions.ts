@@ -1117,7 +1117,7 @@ export const None: Option<never> =
  * value, wrapped in the [[Success]] type for it to be further operated upon
  * by the next combinator in the chain, or the exception wrapped in the
  * [[Failure]] type usually to be simply passed on down the chain.
- * Combinators such as `handleError` and `handleErrorWith` are designed to provide
+ * Combinators such as `recover` and `recoverWith` are designed to provide
  * some type of global behavior in the case of failure.
  *
  * NOTE: all `Try` combinators will catch exceptions and return failure
