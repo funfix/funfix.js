@@ -10,7 +10,11 @@
     "future",
     "promise",
     "io",
-    "task"
+    "task",
+    "monad",
+    "applicative",
+    "option",
+    "either"
   ],
   "main": "dist/funfix.umd.js",
   "module": "dist/funfix.es5.js",
