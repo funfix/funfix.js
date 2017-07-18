@@ -57,7 +57,9 @@ const version = exec("git fetch && git tag | grep '^v' | sort | tail -1")
   .replace(/^\s+|\s+$/g, "")
 
 echo("Deploying docs!!!")
-if (existsSync(process.env.TMPDIR)) cd(`${process.env.TMPDIR}`)
+if (process.env.TMPDIR && existsSync(process.env.TMPDIR)) {
+  cd(`${process.env.TMPDIR}`)
+}
 
 exec(`rm -rf "${destDir}"`)
 exec(`git clone "https://${ghToken}@${repository}" "${destDir}" -b gh-pages`)
