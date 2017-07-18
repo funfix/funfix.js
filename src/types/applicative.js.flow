@@ -20,6 +20,7 @@
 import type { Constructor } from "./kinds"
 import { HK, Equiv } from "./kinds"
 import { Functor, FunctorLaws } from "./functor"
+import { Either } from "../core/disjunctions"
 
 export interface Apply<F> extends Functor<F> {
   ap<A, B>(fa: HK<F, A>, ff: HK<F, (a: A) => B>): HK<F, B>;
@@ -66,3 +67,29 @@ export interface ApplicativeLaws<F> extends ApplyLaws<F> {
 
 declare export function applicativeOf<F>(c: Constructor<F>): Applicative<F>;
 declare export function applicativeLawsOf<F>(instance: Applicative<F>): ApplicativeLaws<F>;
+
+export interface ApplicativeError<F, E> extends Applicative<F> {
+  raise<A>(e: E): HK<F, A>;
+  recoverWith<A>(fa: HK<F, A>, f: (e: E) => HK<F, A>): HK<F, A>;
+  recover<A>(fa: HK<F, A>, f: (e: E) => A): HK<F, A>;
+  attempt<A>(fa: HK<F, A>): HK<F, Either<E, A>>;
+
+  // Implements TypeClass<F>
+  static +_funTypeId: string;
+  static +_funSupertypeIds: string[];
+  static +_funErasure: ApplicativeError<any, any>;
+}
+
+export interface ApplicativeErrorLaws<F, E> extends ApplicativeLaws<F> {
+  +F: ApplicativeError<F, E>;
+
+  applicativeErrorRecoverWith<A>(e: E, f: (e: E) => HK<F, A>): Equiv<HK<F, A>>;
+  applicativeErrorRecover<A>(e: E, f: (e: E) => A): Equiv<HK<F, A>>;
+  recoverWithPure<A>(a: A, f: (e: E) => HK<F, A>): Equiv<HK<F, A>>;
+  recoverPure<A>(a: A, f: (e: E) => A): Equiv<HK<F, A>>;
+  raiseErrorAttempt(e: E): Equiv<HK<F, Either<E, void>>>;
+  pureAttempt<A>(a: A): Equiv<HK<F, Either<E, A>>>;
+}
+
+declare export function applicativeErrorOf<F, E>(c: Constructor<F>): ApplicativeError<F, E>;
+declare export function applicativeErrorLawsOf<F, E>(instance: ApplicativeError<F, E>): ApplicativeErrorLaws<F, E>;

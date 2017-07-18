@@ -57,6 +57,10 @@ declare export class TryInstances {
   followedByL<A, B>(fa: TryK<A>, fb: () => TryK<B>): Try<B>;
   forEffect<A, B>(fa: TryK<A>, fb: TryK<B>): Try<A>;
   forEffectL<A, B>(fa: TryK<A>, fb: () => TryK<B>): Try<A>;
+  raise<A>(e: any): Eval<A>;
+  attempt<A>(fa: EvalK<A>): Eval<Either<any, A>>;
+  recoverWith<A>(fa: EvalK<A>, f: (e: any) => EvalK<A>): Eval<A>;
+  recover<A>(fa: EvalK<A>, f: (e: any) => A): Eval<A>;
 
   static global: TryInstances;
 }
@@ -96,6 +100,10 @@ declare export class EvalInstances {
   followedByL<A, B>(fa: EvalK<A>, fb: () => EvalK<B>): Eval<B>;
   forEffect<A, B>(fa: EvalK<A>, fb: EvalK<B>): Eval<A>;
   forEffectL<A, B>(fa: EvalK<A>, fb: () => EvalK<B>): Eval<A>;
+  raise<A>(e: any): Eval<A>;
+  attempt<A>(fa: EvalK<A>): Eval<Either<any, A>>;
+  recoverWith<A>(fa: EvalK<A>, f: (e: any) => EvalK<A>): Eval<A>;
+  recover<A>(fa: EvalK<A>, f: (e: any) => A): Eval<A>;
 
   static global: EvalInstances;
 }

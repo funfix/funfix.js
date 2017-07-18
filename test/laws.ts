@@ -22,8 +22,10 @@ import {
   FunctorLaws, functorLawsOf, functorOf,
   ApplyLaws, applyLawsOf, applyOf,
   ApplicativeLaws, applicativeLawsOf, applicativeOf,
+  ApplicativeErrorLaws, applicativeErrorLawsOf, applicativeErrorOf,
   FlatMapLaws, flatMapLawsOf, flatMapOf,
-  MonadLaws, monadLawsOf, monadOf
+  MonadLaws, monadLawsOf, monadOf,
+  MonadErrorLaws, monadErrorLawsOf, monadErrorOf
 } from "../src/funfix"
 
 export function testEq<A>(
@@ -169,6 +171,57 @@ export function testApplicative<F, A, B>(
   }
 }
 
+export function testApplicativeError<F, A, B, E>(
+  type: Constructor<F>,
+  arbA: jv.Arbitrary<A>,
+  arbFA: jv.Arbitrary<HK<F, A>>,
+  arbE: jv.Arbitrary<E>,
+  eqF: Eq<HK<F, any>>,
+  laws: ApplicativeErrorLaws<F, E> = applicativeErrorLawsOf(applicativeErrorOf(type)),
+  includeSupertypes: boolean = true): void {
+
+  // Tests Apply and Functor first
+  if (includeSupertypes) {
+    testApplicative(type, arbFA, eqF, laws)
+  }
+
+  const equivToBool = (ref: Equiv<HK<F, any>>) =>
+    eqF.eqv(ref.lh, ref.rh)
+
+  const tests = {
+    applicativeErrorRecoverWith: jv.forall(
+      arbE, jv.fun(arbFA),
+      (e, f) => equivToBool(laws.applicativeErrorRecoverWith(e, f))
+    ),
+    applicativeErrorRecover: jv.forall(
+      arbE, jv.fun(jv.number),
+      (e, f) => equivToBool(laws.applicativeErrorRecover(e, f))
+    ),
+    recoverWithPure: jv.forall(
+      arbA, jv.fun(arbFA),
+      (a, f) => equivToBool(laws.recoverWithPure(a, f))
+    ),
+    recoverPure: jv.forall(
+      arbA, jv.fun(arbA),
+      (a, f) => equivToBool(laws.recoverPure(a, f))
+    ),
+    raiseErrorAttempt: jv.forall(
+      arbE,
+      e => equivToBool(laws.raiseErrorAttempt(e))
+    ),
+    pureAttempt: jv.forall(
+      arbA,
+      a => equivToBool(laws.pureAttempt(a))
+    )
+  }
+
+  for (const key of Object.keys(tests)) {
+    test(`ApplicativeError<${(type as any).name}>.${key}`, () => {
+      jv.assert(tests[key])
+    })
+  }
+}
+
 export function testFlatMap<F, A, B>(
   type: Constructor<F>,
   arbA: jv.Arbitrary<A>,
@@ -261,6 +314,38 @@ export function testMonad<F, A, B>(
 
   for (const key of Object.keys(tests)) {
     test(`Monad<${(type as any).name}>.${key}`, () => {
+      jv.assert(tests[key])
+    })
+  }
+}
+
+export function testMonadError<F, A, B, E>(
+  type: Constructor<F>,
+  arbA: jv.Arbitrary<A>,
+  arbFA: jv.Arbitrary<HK<F, A>>,
+  arbE: jv.Arbitrary<E>,
+  eqF: Eq<HK<F, any>>,
+  laws: MonadErrorLaws<F, E> = monadErrorLawsOf(monadErrorOf(type)),
+  includeSupertypes: boolean = true): void {
+
+  // Tests functor first
+  if (includeSupertypes) {
+    testMonad(type, arbA, arbFA, eqF, laws, true)
+    testApplicativeError(type, arbA, arbFA, arbE, eqF, laws, false)
+  }
+
+  const equivToBool = (ref: Equiv<HK<F, any>>) =>
+    eqF.eqv(ref.lh, ref.rh)
+
+  const tests = {
+    monadErrorLeftZero: jv.forall(
+      arbE, jv.fun(arbFA),
+      (e, f) => equivToBool(laws.monadErrorLeftZero(e, f))
+    )
+  }
+
+  for (const key of Object.keys(tests)) {
+    test(`MonadError<${(type as any).name}>.${key}`, () => {
       jv.assert(tests[key])
     })
   }

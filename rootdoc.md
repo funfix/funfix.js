@@ -103,11 +103,17 @@ inspired by Haskell's standard library and by
 - **[[Applicative]]**: a type class that extends [[Functor]] and [[Apply]], 
   that exposes [pure]{@link Applicative.pure} and that obeys the laws 
   defined in [[ApplicativeLaws]]
+- **[[ApplicativeError]]**: a type class that extends [[Applicative]],
+  for applicative types that can raise errors or recover from them
+  and that obeys the laws defined in [[ApplicativeErrorLaws]]
 - **[[FlatMap]]**: a type class that extends [[Functor]] and [[Apply]], 
   that exposes [flatMap]{@link FlatMap.flatMap} and
   [tailRecM]{@link FlatMap.tailRecM} and that obeys the laws 
   defined in [[FlatMapLaws]]
 - **[[Monad]]**: a type class that extends [[Applicative]] and [[FlatMap]]
   and that obeys the laws defined in [[MonadLaws]]
+- **[[MonadError]]**: a type class that extends [[ApplicativeError]] 
+  and [[Monad]], for monads that can raise or recover from errors
+  and that obeys the laws defined in [[MonadErrorLaws]]
   
 More is coming 😉

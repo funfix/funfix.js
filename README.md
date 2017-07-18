@@ -73,6 +73,10 @@ inspired by Haskell's standard library and by
   a type class that extends `Functor` and `Apply`, exposing `pure` 
   and that obeys the laws defined in 
   [ApplicativeLaws](https://funfix.org/api/classes/_types_applicative_.applicativelaws.html)
+- **[ApplicativeError](https://funfix.org/api/classes/_types_applicative_.applicativeerror.html)**:
+  a type class that extends `Applicative`, for applicative types that can raise errors 
+  or recover from them and that obeys the laws defined in
+  [ApplicativeErrorLaws](https://funfix.org/api/classes/_types_applicative_.applicativeerrorlaws.html)
 - **[FlatMap](https://funfix.org/api/classes/_types_monad_.flatmap.html)**:
   a type class that extends `Functor` and `Apply`, exposing `flatMap` 
   and `tailRecM` and that obeys the laws defined in 
@@ -81,6 +85,10 @@ inspired by Haskell's standard library and by
   a type class that extends `Applicative` and `FlatMap`
   and that obeys the laws defined in 
   [MonadLaws](https://funfix.org/api/classes/_types_monad_.monadlaws.html)
+- **[MonadError](https://funfix.org/api/classes/_types_monad_.monaderror.html)**:
+  a type class that extends `ApplicativeError` and `Monad`, for monads that 
+  can raise or recover from errors and that obeys the laws defined in 
+  [MonadErrorLaws](https://funfix.org/api/classes/_types_monad_.monaderrorlaws.html)
     
 More is coming 😉
 
