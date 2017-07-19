@@ -47,3 +47,4 @@
 export * from "./cancelable"
 export * from "./time"
 export * from "./scheduler"
+export * from "./future"

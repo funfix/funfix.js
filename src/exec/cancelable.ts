@@ -41,7 +41,7 @@
 import { CompositeError, IllegalStateError } from "../core/errors"
 
 /**
- * `Cancelable` represents a one-time idempotent action that can be
+ * `ICancelable` represents a one-time idempotent action that can be
  * used to cancel async computations, or to release resources that
  * active data sources are holding.
  *
@@ -57,7 +57,7 @@ import { CompositeError, IllegalStateError } from "../core/errors"
  * task.cancel()
  * ```
  *
- * In case some API requires the return of a `Cancelable` reference,
+ * In case some API requires the return of an `ICancelable` reference,
  * but there isn't anything that can be canceled, then
  * [[Cancelable.empty]] can be used to return a reusable reference
  * that doesn't do anything when canceled.
@@ -68,15 +68,35 @@ import { CompositeError, IllegalStateError } from "../core/errors"
  * // It's a no-op, doesn't do anything
  * task.cancel()
  * ```
+ *
+ * Implementation sample:
+ *
+ * ```typescript
+ * class MyCancelable implements ICancelable {
+ *   // Idempotency guard
+ *   private _isCanceled: boolean = false
+ *
+ *   cancel() {
+ *     // We need an idempotency guarantee, any side-effects
+ *     // need to happen only once
+ *     if (!this._isCanceled) {
+ *       this._isCanceled = true
+ *       console.log("Was canceled!")
+ *     }
+ *   }
+ * }
+ * ```
  */
-export abstract class Cancelable {
-  /**
-   * Cancels the unit of work represented by this reference.
-   *
-   * Guaranteed idempotence - calling it multiple times should have
-   * the same side-effect as calling it only once.
-   */
-  public abstract cancel(): void
+export interface ICancelable {
+  cancel(): void
+}
+
+/**
+ * `Cancelable` is an {@link ICancelable} class providing useful
+ * builders for simple cancelable references.
+ */
+export abstract class Cancelable implements ICancelable {
+  abstract cancel(): void
 
   /**
    * Lifts any callback into a `Cancelable` reference.
@@ -94,7 +114,7 @@ export abstract class Cancelable {
    * calling it multiple times will trigger the given
    * callback only once.
    */
-  public static from(cb: () => void): Cancelable {
+  static from(cb: () => void): Cancelable {
     return new WrapFn(cb)
   }
 
@@ -102,7 +122,7 @@ export abstract class Cancelable {
    * Returns a reusable `Cancelable` reference that doesn't
    * do anything on `cancel`.
    */
-  public static empty(): Cancelable {
+  static empty(): Cancelable {
     return Empty
   }
 
@@ -127,7 +147,7 @@ export abstract class Cancelable {
    * @param refs is the array of references to cancel when
    *        cancellation is triggered
    */
-  public static collection(...refs: Array<Cancelable>): Cancelable {
+  static collection(...refs: Array<Cancelable>): Cancelable {
     return new CollectionCancelable(refs)
   }
 }
@@ -174,19 +194,36 @@ const Empty: Cancelable =
     })()
 
 /**
- * `BoolCancelable` represents a [[Cancelable]] that can be queried
+ * `IBoolCancelable` represents a {@link ICancelable} that can be queried
  * for the canceled status.
  */
-export abstract class BoolCancelable extends Cancelable {
+export interface IBoolCancelable extends ICancelable {
   /**
    * Return `true` in case this cancelable hasn't been canceled,
    * or `false` otherwise.
    *
    * ```typescript
    * const ref = BoolCancelable.from()
+   *
+   * ref.isCanceled() // false
+   * ref.cancel()
+   * ref.isCanceled() // true
    * ```
    */
-  public abstract isCanceled(): boolean
+  isCanceled(): boolean
+}
+
+/**
+ * `BoolCancelable` is an {@link IBoolCancelable} class providing useful
+ * builders for cancelable references that can be queried for their
+ * canceled status.
+ */
+export abstract class BoolCancelable implements IBoolCancelable {
+  /** Inherited from {@link IBoolCancelable.isCanceled}. */
+  abstract isCanceled(): boolean
+
+  /** Inherited from {@link ICancelable.cancel}. */
+  abstract cancel(): void
 
   /**
    * Lifts any callback into a `BoolCancelable` reference.
@@ -362,7 +399,7 @@ const AlreadyCanceled: BoolCancelable =
     })()
 
 /**
- * Represents a type of [[Cancelable]] that can hold
+ * Represents a type of [[ICancelable]] that can hold
  * an internal reference to another cancelable (and thus
  * has to support the `update` operation).
  *
@@ -370,7 +407,7 @@ const AlreadyCanceled: BoolCancelable =
  * canceled, then no assignment should happen and the update
  * reference should be canceled as well.
  */
-export abstract class AssignCancelable extends BoolCancelable {
+export interface IAssignCancelable extends IBoolCancelable {
   /**
    * Updates the internal reference of this assignable cancelable
    * to the given value.
@@ -378,7 +415,22 @@ export abstract class AssignCancelable extends BoolCancelable {
    * If this cancelable is already canceled, then `value` is
    * going to be canceled on assignment as well.
    */
-  public abstract update(value: Cancelable): this
+  update(value: Cancelable): this
+}
+
+/**
+ * `AssignCancelable` is an {@link IAssignCancelable} class providing
+ * useful builders for cancelable references that can be assigned.
+ */
+export abstract class AssignCancelable implements IAssignCancelable {
+  /** Inherited from {@link IAssignCancelable.update}. */
+  abstract update(value: Cancelable): this
+
+  /** Inherited from {@link IBoolCancelable.isCanceled}. */
+  abstract isCanceled(): boolean
+
+  /** Inherited from {@link ICancelable.cancel}. */
+  abstract cancel(): void
 
   /**
    * Returns an [[AssignableCancelable]] reference that is already
@@ -445,7 +497,7 @@ const AlreadyCanceledAssignable: AssignCancelable =
     })()
 
 /**
- * The `MultiAssignCancelable` is a [[Cancelable]] whose
+ * The `MultiAssignCancelable` is an {@link IAssignCancelable} whose
  * underlying cancelable reference can be swapped for another.
  *
  * Example:
@@ -462,12 +514,11 @@ const AlreadyCanceledAssignable: AssignCancelable =
  * Also see [[SerialCancelable]], which is similar, except that it
  * cancels the old cancelable upon assigning a new cancelable.
  */
-export class MultiAssignCancelable extends AssignCancelable {
+export class MultiAssignCancelable implements IAssignCancelable {
   private _underlying?: Cancelable
   private _canceled: boolean
 
   constructor(initial?: Cancelable) {
-    super()
     this._underlying = initial
     this._canceled = false
   }
@@ -523,7 +574,7 @@ export class MultiAssignCancelable extends AssignCancelable {
 }
 
 /**
- * The `SerialCancelable` is a [[Cancelable]] whose underlying
+ * The `SerialCancelable` is an {@link IAssignCancelable} whose underlying
  * cancelable reference can be swapped for another and on each
  * swap the previous reference gets canceled.
  *
@@ -541,17 +592,15 @@ export class MultiAssignCancelable extends AssignCancelable {
  * Also see [[SerialCancelable]], which is similar, except that it
  * cancels the old cancelable upon assigning a new cancelable.
  */
-export class SerialCancelable extends AssignCancelable {
+export class SerialCancelable implements IAssignCancelable {
   private _underlying?: Cancelable
   private _canceled: boolean
 
   constructor(initial?: Cancelable) {
-    super()
     this._underlying = initial
     this._canceled = false
   }
 
-  /** @inheritdoc */
   public update(value: Cancelable): this {
     if (this._canceled) value.cancel(); else {
       if (this._underlying) this._underlying.cancel()
@@ -560,10 +609,8 @@ export class SerialCancelable extends AssignCancelable {
     return this
   }
 
-  /** @inheritdoc */
   public isCanceled(): boolean { return this._canceled }
 
-  /** @inheritdoc */
   public cancel(): void {
     if (!this._canceled) {
       this._canceled = true
@@ -619,13 +666,12 @@ export class SerialCancelable extends AssignCancelable {
  * See [[MultiAssignCancelable]] for a similar type that can be
  * assigned multiple types.
  */
-export class SingleAssignCancelable extends AssignCancelable {
+export class SingleAssignCancelable implements IAssignCancelable {
   private _wasAssigned: boolean
   private _canceled: boolean
   private _underlying?: Cancelable
 
   constructor() {
-    super()
     this._canceled = false
     this._wasAssigned = false
   }

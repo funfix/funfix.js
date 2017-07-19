@@ -20,3 +20,4 @@
 declare export * from "./cancelable"
 declare export * from "./time"
 declare export * from "./scheduler"
+declare export * from "./future"

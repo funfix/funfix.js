@@ -17,12 +17,20 @@
 
 /* @flow */
 
+export interface ICancelable {
+  cancel(): void;
+}
+
 declare export class Cancelable {
   cancel(): void;
 
   static from(cb: () => void): Cancelable;
   static empty(): Cancelable;
   static collection(...refs: Array<Cancelable>): Cancelable;
+}
+
+export interface IBoolCancelable extends ICancelable {
+  isCanceled(): boolean;
 }
 
 declare export class BoolCancelable extends Cancelable {
@@ -32,6 +40,10 @@ declare export class BoolCancelable extends Cancelable {
   static empty(): BoolCancelable;
   static alreadyCanceled(): BoolCancelable;
   static collection(...refs: Array<Cancelable>): BoolCancelable;
+}
+
+export interface IAssignCancelable extends IBoolCancelable {
+  update(value: Cancelable): IAssignCancelable;
 }
 
 declare export class AssignCancelable extends BoolCancelable {

@@ -39,7 +39,7 @@
 /***/
 
 import { Duration } from "./time"
-import { Cancelable, AssignCancelable, MultiAssignCancelable } from "./cancelable"
+import { ICancelable, Cancelable, IAssignCancelable, MultiAssignCancelable } from "./cancelable"
 import { arrayBSearchInsertPos } from "./internals"
 
 /**
@@ -111,7 +111,7 @@ export abstract class Scheduler {
    * @return a [[Cancelable]] that can be used to cancel the created
    *         task before execution.
    */
-  public abstract scheduleOnce(delay: number | Duration, runnable: () => void): Cancelable
+  public abstract scheduleOnce(delay: number | Duration, runnable: () => void): ICancelable
 
   /**
    * Schedules for execution a periodic task that is first executed
@@ -139,8 +139,8 @@ export abstract class Scheduler {
    * @return a cancelable that can be used to cancel the execution of
    *         this repeated task at any time.
    */
-  public scheduleWithFixedDelay(initialDelay: number | Duration, delay: number | Duration, runnable: () => void): Cancelable {
-    const loop = (self: Scheduler, ref: AssignCancelable, delayNow: number | Duration) =>
+  public scheduleWithFixedDelay(initialDelay: number | Duration, delay: number | Duration, runnable: () => void): ICancelable {
+    const loop = (self: Scheduler, ref: IAssignCancelable, delayNow: number | Duration) =>
       ref.update(self.scheduleOnce(delayNow, () => {
         runnable()
         loop(self, ref, delay)
@@ -181,8 +181,8 @@ export abstract class Scheduler {
    * @return a cancelable that can be used to cancel the execution of
    *         this repeated task at any time.
    */
-  public scheduleAtFixedRate(initialDelay: number | Duration, period: number | Duration, runnable: () => void): Cancelable {
-    const loop = (self: Scheduler, ref: AssignCancelable, delayNowMs: number, periodMs: number) =>
+  public scheduleAtFixedRate(initialDelay: number | Duration, period: number | Duration, runnable: () => void): ICancelable {
+    const loop = (self: Scheduler, ref: IAssignCancelable, delayNowMs: number, periodMs: number) =>
       ref.update(self.scheduleOnce(delayNowMs, () => {
         // Benchmarking the duration of the runnable
         const startAt = self.currentTimeMillis()
@@ -247,7 +247,7 @@ export class GlobalScheduler extends Scheduler {
     return Date.now()
   }
 
-  scheduleOnce(delay: number | Duration, runnable: () => void): Cancelable {
+  scheduleOnce(delay: number | Duration, runnable: () => void): ICancelable {
     const r = safeRunnable(runnable, this.reportFailure)
     const ms = Math.max(0, Duration.of(delay).toMillis())
     const task = setTimeout(r, ms)
@@ -321,7 +321,7 @@ export class TestScheduler extends Scheduler {
     return this._clock
   }
 
-  public scheduleOnce(delay: number | Duration, runnable: () => void): Cancelable {
+  public scheduleOnce(delay: number | Duration, runnable: () => void): ICancelable {
     const d = Math.max(0, Duration.of(delay).toMillis())
     const scheduleAt = this._clock + d
     const insertAt = this._tasksSearch(-scheduleAt)
