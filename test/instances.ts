@@ -22,7 +22,16 @@ import {
   Either, Left, Right,
   Try, Failure, Success,
   DummyError,
-  Eval
+  Eval,
+  TimeUnit,
+  Duration,
+  NANOSECONDS,
+  MICROSECONDS,
+  MILLISECONDS,
+  SECONDS,
+  MINUTES,
+  HOURS,
+  DAYS
 } from "../src/funfix"
 
 export const arbAnyPrimitive: jv.Arbitrary<any> =
@@ -76,4 +85,26 @@ export const arbEval: jv.Arbitrary<Eval<number>> =
       }
     },
     u => [u.get(), u.get()]
+  )
+
+export const arbTimeUnit: jv.Arbitrary<TimeUnit> =
+  jv.int8.smap(
+    n => {
+      switch (n % 7) {
+        case 0: return NANOSECONDS
+        case 1: return MICROSECONDS
+        case 2: return MILLISECONDS
+        case 3: return SECONDS
+        case 4: return MINUTES
+        case 5: return HOURS
+        default: return DAYS
+      }
+    },
+    unit => unit.ord
+  )
+
+export const arbDuration: jv.Arbitrary<Duration> =
+  jv.pair(jv.number, arbTimeUnit).smap(
+    v => new Duration(v[0], v[1]),
+    d => [d.duration, d.unit]
   )

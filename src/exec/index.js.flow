@@ -17,7 +17,6 @@
 
 /* @flow */
 
-declare export * from "./core";
-declare export * from "./exec";
-declare export * from "./types";
-declare export * from "./effect";
+declare export * from "./cancelable"
+declare export * from "./time"
+declare export * from "./scheduler"

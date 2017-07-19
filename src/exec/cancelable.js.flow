@@ -1,0 +1,64 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+declare export class Cancelable {
+  cancel(): void;
+
+  static from(cb: () => void): Cancelable;
+  static empty(): Cancelable;
+  static collection(...refs: Array<Cancelable>): Cancelable;
+}
+
+declare export class BoolCancelable extends Cancelable {
+  isCanceled(): boolean;
+
+  static from(cb: () => void): BoolCancelable;
+  static empty(): BoolCancelable;
+  static alreadyCanceled(): BoolCancelable;
+  static collection(...refs: Array<Cancelable>): BoolCancelable;
+}
+
+declare export class AssignCancelable extends BoolCancelable {
+  update(value: Cancelable): this;
+
+  static from(cb: () => void): AssignCancelable;
+  static empty(): AssignCancelable;
+  static alreadyCanceled(): AssignCancelable;
+}
+
+declare export class MultiAssignCancelable extends AssignCancelable {
+  constructor(initial?: Cancelable): MultiAssignCancelable;
+  update(value: Cancelable): this;
+  static from(cb: () => void): MultiAssignCancelable;
+  static empty(): MultiAssignCancelable;
+}
+
+declare export class SerialCancelable extends AssignCancelable {
+  constructor(initial?: Cancelable): SerialCancelable;
+  update(value: Cancelable): this;
+  static from(cb: () => void): SerialCancelable;
+  static empty(): SerialCancelable;
+}
+
+declare export class SingleAssignCancelable extends AssignCancelable {
+  constructor(): SingleAssignCancelable;
+  update(value: Cancelable): this;
+  static from(cb: () => void): SingleAssignCancelable;
+  static empty(): SingleAssignCancelable;
+}
