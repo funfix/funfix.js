@@ -17,8 +17,11 @@
 
 /* @flow */
 
-declare export * from "./cancelable"
-declare export * from "./time"
-declare export * from "./ref"
-declare export * from "./scheduler"
-// declare export * from "./future"
+declare export class DynamicRef<A> {
+  get(): A;
+
+  bind<R>(value: A, thunk: () => R): R;
+  bindL<R>(value: () => A, thunk: () => R): R;
+
+  static of<A>(fn: () => A): DynamicRef<A>;
+}

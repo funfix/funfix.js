@@ -19,9 +19,12 @@
 
 import { Duration } from "./time"
 import { Cancelable } from "./cancelable"
+import { DynamicRef } from "./ref"
 
 declare export class Scheduler {
-  execute(runnable: () => void): void;
+  executeAsync(runnable: () => void): void;
+  trampoline(runnable: () => void): void;
+
   reportFailure(e: any): void;
   currentTimeMillis(): number;
 
@@ -29,10 +32,7 @@ declare export class Scheduler {
   scheduleWithFixedDelay(initialDelay: number | Duration, delay: number | Duration, runnable: () => void): Cancelable;
   scheduleAtFixedRate(initialDelay: number | Duration, period: number | Duration, runnable: () => void): Cancelable;
 
-  executionModel: ExecutionModel;
-  withExecutionModel(em: ExecutionModel): Scheduler;
-
-  static global(): GlobalScheduler;
+  static +global: DynamicRef<Scheduler>;
 }
 
 declare export class TestScheduler extends Scheduler {

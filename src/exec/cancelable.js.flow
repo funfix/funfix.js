@@ -39,15 +39,15 @@ declare export class BoolCancelable extends Cancelable {
   static from(cb: () => void): BoolCancelable;
   static empty(): BoolCancelable;
   static alreadyCanceled(): BoolCancelable;
-  static collection(...refs: Array<Cancelable>): BoolCancelable;
+  static collection(...refs: Array<ICancelable>): BoolCancelable;
 }
 
 export interface IAssignCancelable extends IBoolCancelable {
-  update(value: Cancelable): IAssignCancelable;
+  update(value: ICancelable): IAssignCancelable;
 }
 
 declare export class AssignCancelable extends BoolCancelable {
-  update(value: Cancelable): this;
+  update(value: ICancelable): this;
 
   static from(cb: () => void): AssignCancelable;
   static empty(): AssignCancelable;
@@ -55,22 +55,22 @@ declare export class AssignCancelable extends BoolCancelable {
 }
 
 declare export class MultiAssignCancelable extends AssignCancelable {
-  constructor(initial?: Cancelable): MultiAssignCancelable;
-  update(value: Cancelable): this;
+  constructor(initial?: ICancelable): MultiAssignCancelable;
+  update(value: ICancelable): this;
   static from(cb: () => void): MultiAssignCancelable;
   static empty(): MultiAssignCancelable;
 }
 
 declare export class SerialCancelable extends AssignCancelable {
-  constructor(initial?: Cancelable): SerialCancelable;
-  update(value: Cancelable): this;
+  constructor(initial?: ICancelable): SerialCancelable;
+  update(value: ICancelable): this;
   static from(cb: () => void): SerialCancelable;
   static empty(): SerialCancelable;
 }
 
 declare export class SingleAssignCancelable extends AssignCancelable {
   constructor(): SingleAssignCancelable;
-  update(value: Cancelable): this;
+  update(value: ICancelable): this;
   static from(cb: () => void): SingleAssignCancelable;
   static empty(): SingleAssignCancelable;
 }

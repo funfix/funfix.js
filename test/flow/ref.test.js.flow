@@ -17,8 +17,10 @@
 
 /* @flow */
 
-declare export * from "./cancelable"
-declare export * from "./time"
-declare export * from "./ref"
-declare export * from "./scheduler"
-// declare export * from "./future"
+import { DynamicRef } from "../../src/funfix"
+
+const ref: DynamicRef<string> = DynamicRef.of(() => "original")
+const value: string = ref.get()
+
+const int1: number = ref.bind("10", () => parseInt(ref.get()))
+const int2: number = ref.bindL(() => "10", () => parseInt(ref.get()))

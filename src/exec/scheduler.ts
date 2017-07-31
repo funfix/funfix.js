@@ -40,6 +40,7 @@
 
 import { Duration } from "./time"
 import { ICancelable, Cancelable, IAssignCancelable, MultiAssignCancelable } from "./cancelable"
+import { DynamicRef } from "./ref"
 import { arrayBSearchInsertPos } from "./internals"
 
 /**
@@ -55,10 +56,6 @@ export abstract class Scheduler {
   /**
    * Schedules the given `command` for async execution.
    *
-   * Actual execution might happen immediately, on the current call
-   * stack, depending on the `Scheduler` implementation, the only
-   * guarantee that this method makes is that execution is stack safe.
-   *
    * In [[GlobalScheduler]] this method uses
    * [setImmediate]{@link https://developer.mozilla.org/en/docs/Web/API/Window/setImmediate}
    * when available. But given that `setImmediate` is a very
@@ -69,7 +66,16 @@ export abstract class Scheduler {
    *
    * @param runnable is the thunk to execute asynchronously
    */
-  public abstract execute(runnable: () => void): void
+  public abstract executeAsync(runnable: () => void): void
+
+  /**
+   * Execute the given `runnable` on the current call stack by means
+   * of a "trampoline", preserving stack safety.
+   *
+   * This is an alternative to {@link executeAsync} for triggering
+   * light asynchronous boundaries.
+   */
+  public abstract trampoline(runnable: () => void): void
 
   /** Reports that an asynchronous computation failed. */
   public abstract reportFailure(e: any): void
@@ -201,10 +207,60 @@ export abstract class Scheduler {
   }
 
   /**
-   * Returns a reusable [[GlobalScheduler]] reference.
+   * Exposes a reusable [[GlobalScheduler]] reference by means of a
+   * {@link DynamicRef}, which allows for lexically scoped bindings to happen.
+   *
+   * ```typescript
+   * const myScheduler = new GlobalScheduler(false)
+   *
+   * Scheduler.global.bind(myScheduler, () => {
+   *   Scheduler.global.get() // myScheduler
+   * })
+   *
+   * Scheduler.global.get() // default instance
+   * ```
    */
-  static global(): GlobalScheduler {
-    return globalSchedulerRef
+  static readonly global: DynamicRef<Scheduler> =
+    DynamicRef.of(() => globalSchedulerRef)
+}
+
+/**
+ * Internal trampoline implementation used for implementing
+ * {@link Scheduler.trampoline}.
+ *
+ * @final
+ * @hidden
+ */
+class Trampoline {
+  private readonly _parent: Scheduler
+  private readonly _queue: (() => void)[]
+  private _isActive: boolean
+
+  constructor(parent: Scheduler) {
+    this._isActive = false
+    this._queue = []
+    this._parent = parent
+  }
+
+  execute(r: () => void) {
+    if (!this._isActive) {
+      this.runLoop(r)
+    } else {
+      this._queue.push(r)
+    }
+  }
+
+  private runLoop(r: () => void) {
+    this._isActive = true
+    try {
+      let cursor: (() => void) | undefined = r
+      while (cursor) {
+        try { cursor() } catch (e) { this._parent.reportFailure(e) }
+        cursor = this._queue.pop()
+      }
+    } finally {
+      this._isActive = false
+    }
   }
 }
 
@@ -221,22 +277,32 @@ export class GlobalScheduler extends Scheduler {
   private _useSetImmediate: boolean
 
   /**
+   * {@link Trampoline} used for immediate execution in
+   * {@link Scheduler.trampoline}.
+   */
+  private _trampoline: Trampoline
+
+  /**
    * @param canUseSetImmediate is a boolean informing the
    * `GlobalScheduler` implementation that it can use the nonstandard
    * `setImmediate` for scheduling asynchronous tasks without extra
    * delays.
    */
-  constructor(canUseSetImmediate?: boolean) {
+  constructor(canUseSetImmediate: boolean = false) {
     super()
+    this._trampoline = new Trampoline(this)
     // tslint:disable:strict-type-predicates
-    this._useSetImmediate = (canUseSetImmediate || false) &&
-    (typeof setImmediate === "function")
+    this._useSetImmediate = (canUseSetImmediate || false) && (typeof setImmediate === "function")
   }
 
-  execute(runnable: () => void): void {
+  executeAsync(runnable: () => void): void {
     const r = safeRunnable(runnable, this.reportFailure)
     if (this._useSetImmediate) setImmediate(r)
     else setTimeout(r)
+  }
+
+  trampoline(runnable: () => void): void {
+    this._trampoline.execute(runnable)
   }
 
   reportFailure(e: any): void {
@@ -287,12 +353,14 @@ export class TestScheduler extends Scheduler {
   private _triggeredFailures: Array<any>
   private _tasks: Array<[number, () => void]>
   private _tasksSearch: (search: number) => number
+  private _trampoline: Trampoline
 
   constructor(reporter?: (error: any) => void) {
     super()
     this._reporter = reporter || (_ => {})
     this._clock = 0
     this._triggeredFailures = []
+    this._trampoline = new Trampoline(this)
     this._updateTasks([])
   }
 
@@ -308,8 +376,12 @@ export class TestScheduler extends Scheduler {
    */
   public hasTasksLeft(): boolean { return this._tasks.length > 0 }
 
-  public execute(runnable: () => void): void {
+  public executeAsync(runnable: () => void): void {
     this._tasks.push([this._clock, runnable])
+  }
+
+  public trampoline(runnable: () => void): void {
+    this._trampoline.execute(runnable)
   }
 
   public reportFailure(e: any): void {

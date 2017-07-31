@@ -23,6 +23,8 @@ import {
   Try, Failure, Success,
   DummyError,
   Eval,
+  Future,
+  Scheduler,
   TimeUnit,
   Duration,
   NANOSECONDS,
@@ -108,3 +110,25 @@ export const arbDuration: jv.Arbitrary<Duration> =
     v => new Duration(v[0], v[1]),
     d => [d.duration, d.unit]
   )
+
+export function arbFuture(s: Scheduler): jv.Arbitrary<Future<number>> {
+  return jv.int32.smap(
+    i => {
+      switch (i % 5) {
+        case 0:
+          return Future.pure(i, s)
+        case 1:
+          return Future.raise(new DummyError(`dummy${i}`), s)
+        case 2:
+          return Future.of(() => i, s)
+        case 3:
+          return Future.of(() => { throw new DummyError(`dummy${i}`) })
+        default:
+          return Future.create(cb => {
+            s.trampoline(() => cb(Success(i)))
+          })
+      }
+    },
+    fa => fa.value().getOrElse(Success(0)).getOrElse(0)
+  )
+}

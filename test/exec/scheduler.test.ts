@@ -25,8 +25,8 @@ import {
 } from "../../src/funfix"
 
 describe("GlobalScheduler", () => {
-  test("Scheduler.global() instanceof GlobalScheduler", () => {
-    expect(Scheduler.global() instanceof GlobalScheduler).toBe(true)
+  test("Scheduler.global.get() instanceof GlobalScheduler", () => {
+    expect(Scheduler.global.get() instanceof GlobalScheduler).toBe(true)
   })
 
   test("executes stuff asynchronously with setImmediate", () => {
@@ -34,7 +34,7 @@ describe("GlobalScheduler", () => {
 
     let wasExecuted = false
     const p = new Promise(resolve => {
-      s.execute(() => {
+      s.executeAsync(() => {
         wasExecuted = true
         resolve(1)
       })
@@ -54,7 +54,7 @@ describe("GlobalScheduler", () => {
 
     let wasExecuted = false
     const p = new Promise(resolve => {
-      s.execute(() => {
+      s.executeAsync(() => {
         wasExecuted = true
         resolve(1)
       })
@@ -68,9 +68,22 @@ describe("GlobalScheduler", () => {
     })
   })
 
+  test("executes stuff trampolined", () => {
+    const s = new GlobalScheduler()
+    let count = 0
+
+    const loop = (n: number) => {
+      if (n > 0) s.trampoline(() => loop(n - 1))
+      count += 1
+    }
+
+    loop(5000)
+    expect(count).toBe(5001)
+  })
+
   test("currentTimeMillis", () => {
     const now = Date.now()
-    const time = Scheduler.global().currentTimeMillis()
+    const time = Scheduler.global.get().currentTimeMillis()
     expect(time).toBeGreaterThanOrEqual(now)
   })
 
@@ -90,7 +103,7 @@ describe("GlobalScheduler", () => {
     }
 
     const p = new Promise(resolve => {
-      Scheduler.global().execute(() => {
+      Scheduler.global.get().executeAsync(() => {
         resolve(1)
         throw dummy
       })
@@ -103,7 +116,7 @@ describe("GlobalScheduler", () => {
   })
 
   test("schedule with delay", () => {
-    const s = Scheduler.global()
+    const s = Scheduler.global.get()
     let finishedAt = 0
 
     const p = new Promise(resolve => {
@@ -121,7 +134,7 @@ describe("GlobalScheduler", () => {
   })
 
   test("schedule with delay should be cancelable", () => {
-    const s = Scheduler.global()
+    const s = Scheduler.global.get()
     let finishedAt = 0
 
     const ref = s.scheduleOnce(0, () => {
@@ -141,7 +154,7 @@ describe("GlobalScheduler", () => {
   })
 
   test("scheduleWithFixedDelay(number, number)", () => {
-    const s = Scheduler.global()
+    const s = Scheduler.global.get()
     let times = 0
 
     const ref = s.scheduleWithFixedDelay(0, 1, () => { times += 1 })
@@ -156,7 +169,7 @@ describe("GlobalScheduler", () => {
   })
 
   test("scheduleWithFixedDelay(Duration, Duration)", () => {
-    const s = Scheduler.global()
+    const s = Scheduler.global.get()
     let times = 0
 
     const ref = s.scheduleWithFixedDelay(
@@ -176,7 +189,7 @@ describe("GlobalScheduler", () => {
   })
 
   test("scheduleAtFixedRate(number, number)", () => {
-    const s = Scheduler.global()
+    const s = Scheduler.global.get()
     let times = 0
 
     const ref = s.scheduleAtFixedRate(0, 1, () => { times += 1 })
@@ -191,7 +204,7 @@ describe("GlobalScheduler", () => {
   })
 
   test("scheduleAtFixedRate(Duration, Duration)", () => {
-    const s = Scheduler.global()
+    const s = Scheduler.global.get()
     let times = 0
 
     const ref = s.scheduleAtFixedRate(
@@ -220,7 +233,7 @@ describe("TestScheduler", () => {
     for (let i = 0; i < count; i++) {
       const delay = Math.floor(Math.random() * 10) * 1000
       if (delay === 0 && Math.floor(Math.random() * 10) % 2 === 0) {
-        s.execute(() => { effect += 1 })
+        s.executeAsync(() => { effect += 1 })
       } else {
         s.scheduleOnce(delay, () => { effect += 1 })
       }
@@ -241,7 +254,7 @@ describe("TestScheduler", () => {
     for (let i = 0; i < count; i++) {
       const delay = Math.floor(Math.random() * 10) * 1000
       if (delay === 0 && Math.floor(Math.random() * 10) % 2 === 0) {
-        s.execute(() => { effect += 1 })
+        s.executeAsync(() => { effect += 1 })
       } else {
         s.scheduleOnce(delay, () => { effect += 1 })
       }
@@ -260,11 +273,11 @@ describe("TestScheduler", () => {
     const s = new TestScheduler()
     let effect = 0
 
-    s.execute(() => {
+    s.executeAsync(() => {
       effect += 1
 
-      s.execute(() => {
-        s.execute(() => { effect += 10 })
+      s.executeAsync(() => {
+        s.executeAsync(() => { effect += 10 })
         effect = effect * 2
       })
     })
@@ -311,11 +324,39 @@ describe("TestScheduler", () => {
     expect(s.hasTasksLeft()).toBe(false)
   })
 
+  test("executes stuff trampolined", () => {
+    const s = new TestScheduler()
+    let count = 0
+
+    const loop = (n: number) => {
+      if (n > 0) s.trampoline(() => loop(n - 1))
+      count += 1
+    }
+
+    loop(5000)
+    expect(count).toBe(5001)
+  })
+
+  test("trampoline reports errors", () => {
+    const s = new TestScheduler()
+    let errorThrown = null
+    let triggered = false
+
+    s.trampoline(() => {
+      s.trampoline(() => { triggered = true })
+      // tslint:disable-next-line:no-string-throw
+      throw "dummy"
+    })
+
+    expect(s.triggeredFailures().pop()).toBe("dummy")
+    expect(triggered).toBe(true)
+  })
+
   test("schedule with delay should be cancelable", () => {
     const s = new TestScheduler()
     let effect = 0
 
-    s.execute(() => { effect += 1 })
+    s.executeAsync(() => { effect += 1 })
     s.scheduleOnce(Duration.seconds(1), () => { effect += 1 })
     const ref = s.scheduleOnce(Duration.seconds(2), () => { effect += 1 })
     s.scheduleOnce(Duration.seconds(3), () => { effect += 1 })
@@ -432,8 +473,8 @@ test("scheduleAtFixedRate(number, number)", () => {
     const s = new TestScheduler(err => errors.push(err))
 
     const dummy = new DummyError("dummy")
-    s.execute(() => { throw dummy })
-    s.execute(() => { throw dummy })
+    s.executeAsync(() => { throw dummy })
+    s.executeAsync(() => { throw dummy })
 
     s.tick()
     expect(errors.length).toBe(2)

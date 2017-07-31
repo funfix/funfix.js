@@ -147,7 +147,7 @@ export abstract class Cancelable implements ICancelable {
    * @param refs is the array of references to cancel when
    *        cancellation is triggered
    */
-  static collection(...refs: Array<Cancelable>): Cancelable {
+  static collection(...refs: Array<ICancelable>): Cancelable {
     return new CollectionCancelable(refs)
   }
 }
@@ -311,7 +311,7 @@ export abstract class BoolCancelable implements IBoolCancelable {
    * @param refs is the array of references to cancel when
    *        cancellation is triggered
    */
-  public static collection(...refs: Array<Cancelable>): BoolCancelable {
+  public static collection(...refs: Array<ICancelable>): BoolCancelable {
     return new CollectionCancelable(refs)
   }
 }
@@ -326,10 +326,10 @@ export abstract class BoolCancelable implements IBoolCancelable {
  * @Hidden
  */
 class CollectionCancelable extends BoolCancelable {
-  private _refs: Cancelable[]
+  private _refs: ICancelable[]
   private _isCanceled: boolean
 
-  constructor(refs: Cancelable[]) {
+  constructor(refs: ICancelable[]) {
     super()
     this._refs = refs
     this._isCanceled = false
@@ -415,7 +415,7 @@ export interface IAssignCancelable extends IBoolCancelable {
    * If this cancelable is already canceled, then `value` is
    * going to be canceled on assignment as well.
    */
-  update(value: Cancelable): this
+  update(value: ICancelable): this
 }
 
 /**
@@ -424,7 +424,7 @@ export interface IAssignCancelable extends IBoolCancelable {
  */
 export abstract class AssignCancelable implements IAssignCancelable {
   /** Inherited from {@link IAssignCancelable.update}. */
-  abstract update(value: Cancelable): this
+  abstract update(value: ICancelable): this
 
   /** Inherited from {@link IBoolCancelable.isCanceled}. */
   abstract isCanceled(): boolean
@@ -493,7 +493,7 @@ const AlreadyCanceledAssignable: AssignCancelable =
     class AlreadyCanceledAssignable extends AssignCancelable {
       isCanceled() { return true }
       cancel() {}
-      update(value: Cancelable) { value.cancel(); return this }
+      update(value: ICancelable) { value.cancel(); return this }
     })()
 
 /**
@@ -515,16 +515,16 @@ const AlreadyCanceledAssignable: AssignCancelable =
  * cancels the old cancelable upon assigning a new cancelable.
  */
 export class MultiAssignCancelable implements IAssignCancelable {
-  private _underlying?: Cancelable
+  private _underlying?: ICancelable
   private _canceled: boolean
 
-  constructor(initial?: Cancelable) {
+  constructor(initial?: ICancelable) {
     this._underlying = initial
     this._canceled = false
   }
 
   /** @inheritdoc */
-  public update(value: Cancelable): this {
+  public update(value: ICancelable): this {
     if (this._canceled) value.cancel()
     else this._underlying = value
     return this
@@ -593,15 +593,15 @@ export class MultiAssignCancelable implements IAssignCancelable {
  * cancels the old cancelable upon assigning a new cancelable.
  */
 export class SerialCancelable implements IAssignCancelable {
-  private _underlying?: Cancelable
+  private _underlying?: ICancelable
   private _canceled: boolean
 
-  constructor(initial?: Cancelable) {
+  constructor(initial?: ICancelable) {
     this._underlying = initial
     this._canceled = false
   }
 
-  public update(value: Cancelable): this {
+  public update(value: ICancelable): this {
     if (this._canceled) value.cancel(); else {
       if (this._underlying) this._underlying.cancel()
       this._underlying = value
@@ -669,7 +669,7 @@ export class SerialCancelable implements IAssignCancelable {
 export class SingleAssignCancelable implements IAssignCancelable {
   private _wasAssigned: boolean
   private _canceled: boolean
-  private _underlying?: Cancelable
+  private _underlying?: ICancelable
 
   constructor() {
     this._canceled = false
@@ -677,7 +677,7 @@ export class SingleAssignCancelable implements IAssignCancelable {
   }
 
   /** @inheritdoc */
-  public update(value: Cancelable): this {
+  public update(value: ICancelable): this {
     if (this._wasAssigned)
       throw new IllegalStateError("SingleAssignCancelable#update multiple times")
 
