@@ -103,7 +103,7 @@
     "commitizen": "^2.9.6",
     "cross-env": "^5.0.0",
     "cz-conventional-changelog": "^2.0.0",
-    "flow-bin": "^0.50.0",
+    "flow-bin": "^0.51.0",
     "husky": "^0.14.0",
     "jest": "^20.0.4",
     "jsverify": "^0.8.2",
@@ -123,7 +123,7 @@
     "tslint": "^5.5.0",
     "tslint-config-standard": "^6.0.1",
     "tslint-eslint-rules": "^4.1.1",
-    "typedoc": "^0.7.1",
+    "typedoc": "^0.8.0",
     "typescript": "^2.4.1",
     "validate-commit-msg": "^2.12.1"
   }
