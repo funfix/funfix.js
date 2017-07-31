@@ -41,35 +41,56 @@ import { Scheduler } from "./scheduler"
 import { ICancelable, SingleAssignCancelable, MultiAssignCancelable } from "./cancelable"
 
 /**
- * Represents the completion of an asynchronous operation, as defined by
+ * `IThenable` represents objects that have a `then` method complying with
  * the [Promises/A+](https://promisesaplus.com/) specification.
+ *
+ * Represents a partial definition for {@link IPromise}.
  */
-export interface IPromise<T> {
+export interface IThenable<T> {
   /**
    * Attaches callbacks for the resolution and/or rejection of the promise.
    *
    * See [MDN: Promise.then]{@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then}.
    *
-   * @param onSuccess The callback to execute when the Promise is resolved.
-   * @param onFailure The callback to execute when the Promise is rejected.
-   * @returns A Promise for the completion of which ever callback is executed.
-   */
-  then<TResult1 = T, TResult2 = never>(
-    onSuccess?: (value: T) => TResult1 | IPromise<TResult1>,
-    onFailure?: (reason: any) => TResult2 | IPromise<TResult2>): IPromise<TResult1 | TResult2>
-
-  /**
-   * Attaches a callback for only the rejection of the Promise.
+   * @param onFulfilled The callback to execute when the promise is resolved.
+   * @param onRejected The callback to execute when the promise is rejected.
    *
-   * See [MDN: Promise.catch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch).
-   *
-   * @param onFailure The callback to execute when the Promise is rejected.
-   * @returns A Promise for the completion of the callback.
+   * @returns A promise for the completion of which ever callback is executed.
    */
-  catch<TResult = never>(onFailure?: (reason: any) => TResult | IPromise<TResult>): IPromise<T | TResult>
+  then(
+    onFulfilled?: ((value: T) => any) | undefined | null,
+    onRejected?: ((reason: any) => any) | undefined | null): IThenable<any>
 }
 
-export abstract class Future<A> implements ICancelable {
+/**
+ * Represents the completion of an asynchronous operation, as defined by
+ * the [Promises/A+](https://promisesaplus.com/) specification.
+ */
+export interface IPromise<T> extends IThenable<T> {
+  /**
+   * Attaches callbacks for the resolution and/or rejection of the promise.
+   *
+   * See [MDN: Promise.then]{@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then}.
+   *
+   * @param onFulfilled The callback to execute when the promise is resolved.
+   * @param onRejected The callback to execute when the promise is rejected.
+   *
+   * @returns A promise for the completion of which ever callback is executed.
+   */
+  then<TResult1 = T, TResult2 = never>(
+    onFulfilled?: ((value: T) => TResult1 | IThenable<TResult1>) | undefined | null,
+    onRejected?: ((reason: any) => TResult2 | IThenable<TResult2>) | undefined | null): IPromise<TResult1 | TResult2>
+
+  /**
+   * Attaches a callback for only the rejection of the prmoo.
+   *
+   * @param onRejected The callback to execute when the Promise is rejected.
+   * @returns A Promise for the completion of the callback.
+   */
+  catch<TResult = never>(onRejected?: ((reason: any) => TResult | IThenable<TResult>) | undefined | null): IPromise<T | TResult>
+}
+
+export abstract class Future<A> implements IPromise<A>, ICancelable {
   abstract value(): Option<Try<A>>
   abstract onComplete(f: (a: Try<A>) => void): void
   abstract cancel(): void
@@ -103,7 +124,21 @@ export abstract class Future<A> implements ICancelable {
     return this.transformWith<A | AA>(a => Future.pure(f(a)), Future.pure)
   }
 
-  // Implements HK<F, A>
+  then<TResult1, TResult2>(
+    onFulfilled?: ((value: A) => (IThenable<TResult1> | TResult1)) | undefined | null,
+    onRejected?: ((reason: any) => (IThenable<TResult2> | TResult2)) | undefined | null): Future<TResult2 | TResult1> {
+
+    if (!onFulfilled && !onRejected) return this as any
+    return this.transformWith(
+      promiseThen(this, onRejected, Future.raise),
+      promiseThen(this, onFulfilled, Future.pure))
+  }
+
+  catch<TResult>(onRejected?: ((reason: any) => (IThenable<TResult> | TResult)) | undefined | null): Future<TResult | A> {
+    return this.then<A, TResult>(null as any, onRejected)
+  }
+
+// Implements HK<F, A>
   readonly _funKindF: Future<any>
   readonly _funKindA: A
 
@@ -139,6 +174,15 @@ export abstract class Future<A> implements ICancelable {
       return Future.tailRecM(r.swap().get(), f)
     })
   }
+
+  static fromPromise<A>(ref: IThenable<A>, ec: Scheduler = Scheduler.global.get()): Future<A> {
+    if (ref instanceof Future)
+      return (ref as Future<A>).withScheduler(ec)
+    else
+      return Future.create(
+        cb => { ref.then(value => cb(Success(value)),err => cb(Failure(err))) },
+        ec)
+  }
 }
 
 class PureFuture<A> extends Future<A> {
@@ -148,6 +192,7 @@ class PureFuture<A> extends Future<A> {
   value(): Option<Try<A>> { return Some(this._value) }
 
   withScheduler(ec: Scheduler): Future<A> {
+    if (this._ec === ec) return this
     return new PureFuture(this._value, ec)
   }
 
@@ -231,6 +276,7 @@ class FutureBuilder<A> extends Future<A> {
   }
 
   withScheduler(ec: Scheduler): Future<A> {
+    if (this._ec === ec) return this
     return new FutureBuilder(
       cb => {
         this.onComplete(cb)
@@ -264,7 +310,28 @@ class FutureBuilder<A> extends Future<A> {
 /**
  * Reusable instance for `Future<void>`.
  *
- * @Hidden
+ * @hidden
  */
 const futureUnit: Future<void> =
   new PureFuture(Success(undefined), Scheduler.global.get())
+
+/**
+ * Internal, reusable function used in the implementation of {@link Future.then}.
+ *
+ * @hidden
+ */
+function promiseThen<T, R>(self: Future<T>, f: ((t: T) => IThenable<R> | R) | undefined | null, alt: (t: T) => Future<T>):
+  ((value: T) => Future<R | T>) {
+
+  return value => {
+    if (typeof f !== "function") return alt(value)
+
+    const fb = f(value)
+    if (!fb) return Future.pure(value)
+
+    if (typeof (fb as any).then === "function")
+      return Future.fromPromise(fb as IPromise<R>)
+    else
+      return Future.pure(fb as R)
+  }
+}

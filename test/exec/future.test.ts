@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import { is, Success, Failure, Some, None, DummyError, Left, Right, IllegalStateError } from "../../src/core"
-import { Future, TestScheduler, Scheduler, BoolCancelable } from "../../src/exec"
+import { is, Try, Success, Failure, Some, None, DummyError, Left, Right, IllegalStateError } from "../../src/core"
+import { Future, IPromise, TestScheduler, Scheduler, BoolCancelable } from "../../src/exec"
 import { Eq } from "../../src/types"
 
 import * as jv from "jsverify"
@@ -190,6 +190,15 @@ describe("PureFuture", () => {
     s2.tick()
 
     expect(is(f.value(), Some(Success(2)))).toBe(true)
+  })
+
+  test("pure(?, ec).withScheduler(ec) yields the same reference", () => {
+    const s1 = new TestScheduler()
+    const s2 = new TestScheduler()
+    const fa = Future.pure(1, s1)
+
+    expect(fa.withScheduler(s1)).toBe(fa)
+    expect(fa.withScheduler(s2) !== fa).toBeTruthy()
   })
 })
 
@@ -421,6 +430,15 @@ describe("FutureBuilder", () => {
     expect(is(f.value(), Some(Success(2)))).toBe(true)
   })
 
+  test("Future.of(?, ec).withScheduler(ec) yields the same reference", () => {
+    const s1 = new TestScheduler()
+    const s2 = new TestScheduler()
+    const fa = Future.of(() => 1, s1)
+
+    expect(fa.withScheduler(s1)).toBe(fa)
+    expect(fa.withScheduler(s2) !== fa).toBeTruthy()
+  })
+
   test("Future.create protects against contract violations", () => {
     let error: any = null
 
@@ -431,6 +449,73 @@ describe("FutureBuilder", () => {
 
     expect(is(f.value(), Some(Success(1)))).toBe(true)
     expect(error instanceof IllegalStateError).toBe(true)
+  })
+})
+
+describe("Future is a Promise", () => {
+  test("fa.then() === fa", () => {
+    const fa = Future.pure(10)
+    const f = fa.then()
+    expect(f).toBe(fa)
+  })
+
+  test("then(onSuccess) behaves like map", () => {
+    const s = new TestScheduler()
+
+    const f = Future.pure(10, s).then(x => x * 2)
+    expect(is(f.value(), Some(Success(20)))).toBe(true)
+  })
+
+  test("fa.then(null) <-> fa", () => {
+    const s = new TestScheduler()
+    const f = Future.pure(10, s).then(null, () => {})
+    expect(is(f.value(), Some(Success(10)))).toBe(true)
+  })
+
+  test("then(onSuccess) behaves like flatMap", () => {
+    const s = new TestScheduler()
+
+    const f = Future.pure(10, s).then(x => Future.pure(x * 2))
+    expect(is(f.value(), Some(Success(20)))).toBe(true)
+  })
+
+  test("catch() behaves like recover", () => {
+    const s = new TestScheduler()
+    const dummy = new DummyError()
+
+    const f = Future.raise(dummy, s).catch(_ => 100)
+    expect(is(f.value(), Some(Success(100)))).toBe(true)
+  })
+
+  test("catch() behaves like recoverWith", () => {
+    const s = new TestScheduler()
+    const dummy = new DummyError()
+
+    const f = Future.raise(dummy, s).catch(_ => Future.pure(100))
+    expect(is(f.value(), Some(Success(100)))).toBe(true)
+  })
+
+  test("Future.fromPromise(fa) === fa", () => {
+    const fa = Future.pure(10)
+    expect(Future.fromPromise(fa)).toBe(fa)
+  })
+
+  test("Future.fromPromise works for successful promises", () => {
+    const fa: Future<number> = Future.fromPromise(new PromiseBox(Success(100)))
+    expect(is(fa.value(), Some(Success(100))))
+  })
+
+  test("Future.fromPromise works for failed promises", () => {
+    const fa = Future.fromPromise(new PromiseBox(Failure("dummy")))
+    expect(is(fa.value(), Some(Failure("dummy"))))
+  })
+
+  test("actual async functions", () => {
+    const f: Future<number> = Future.fromPromise(asyncSample(100))
+
+    return f.then(num => {
+      expect(num).toBe(50 * 99)
+    })
   })
 })
 
@@ -447,3 +532,36 @@ describe("Future obeys type class laws", () => {
   const arbF = inst.arbFuture(s)
   laws.testMonadError(Future, jv.number, arbF, jv.string, eq)
 })
+
+class PromiseBox<A> implements IPromise<A> {
+  constructor(public readonly value: Try<A>) {}
+
+  then<TResult1, TResult2>(onSuccess?: (value: A) => (IPromise<TResult1> | TResult1), onFailure?: (reason: any) => (IPromise<TResult2> | TResult2)): IPromise<TResult2 | TResult1> {
+    return this.value.fold(
+      err => {
+        if (!onFailure) return this as any
+        const fb = onFailure(err)
+        if (fb && typeof (fb as any).then === "function") return fb
+        return new PromiseBox(Success(fb))
+      },
+      value => {
+        if (!onSuccess) return this as any
+        const fb = onSuccess(value)
+        if (fb && typeof (fb as any).then === "function") return fb
+        return new PromiseBox(Success(fb))
+      })
+  }
+
+  catch<TResult>(onFailure?: (reason: any) => (IPromise<TResult> | TResult)): IPromise<TResult | A> {
+    return this.then(undefined, onFailure) as any
+  }
+}
+
+async function asyncSample(n: number): Promise<number> {
+  let sum = 0
+  for (let i = 0; i < n; i++) {
+    const r = await Future.of(() => i)
+    sum += r
+  }
+  return sum
+}
