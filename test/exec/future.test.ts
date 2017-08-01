@@ -560,8 +560,7 @@ class PromiseBox<A> implements IPromise<A> {
 async function asyncSample(n: number): Promise<number> {
   let sum = 0
   for (let i = 0; i < n; i++) {
-    const r = await Future.of(() => i)
-    sum += r
+    sum += await Future.of(() => i)
   }
   return sum
 }

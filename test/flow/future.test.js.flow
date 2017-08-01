@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+// import type { IThenable } from "../../src/funfix"
+import { Future, Scheduler, ICancelable } from "../../src/funfix"
+
+const fa1: Future<number> = Future.pure(1)
+const fa2: Future<number> = Future.pure(1, Scheduler.global.get())
+// const fa3: Future<number> = Future.raise("error")
+// const fa4: Future<number> = Future.raise("error", Scheduler.global.get())
+
+const cRef: ICancelable = Future.pure(1)
+// const it1: Promise<number> = Future.pure(1)
+// const it2: IThenable<number> = Future.pure(1)
+
+// const t1: Future<number> = Future.pure(1).then()
+// const t2: Future<number> = Future.pure(1).then(x => x + 1)
+// const t3: Future<number> = Future.pure(1).then(undefined, _ => 100)
+

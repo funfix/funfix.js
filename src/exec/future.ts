@@ -57,9 +57,7 @@ export interface IThenable<T> {
    *
    * @returns A promise for the completion of which ever callback is executed.
    */
-  then(
-    onFulfilled?: ((value: T) => any) | undefined | null,
-    onRejected?: ((reason: any) => any) | undefined | null): IThenable<any>
+  then(onFulfilled?: (value: T) => any, onRejected?: (reason: any) => any): IThenable<any>
 }
 
 /**
@@ -130,15 +128,15 @@ export abstract class Future<A> implements IPromise<A>, ICancelable {
 
     if (!onFulfilled && !onRejected) return this as any
     return this.transformWith(
-      promiseThen(this, onRejected, Future.raise),
-      promiseThen(this, onFulfilled, Future.pure))
+      promiseThen(onRejected, Future.raise),
+      promiseThen(onFulfilled, Future.pure))
   }
 
   catch<TResult>(onRejected?: ((reason: any) => (IThenable<TResult> | TResult)) | undefined | null): Future<TResult | A> {
     return this.then<A, TResult>(null as any, onRejected)
   }
 
-// Implements HK<F, A>
+  // Implements HK<F, A>
   readonly _funKindF: Future<any>
   readonly _funKindA: A
 
@@ -181,7 +179,8 @@ export abstract class Future<A> implements IPromise<A>, ICancelable {
     else
       return Future.create(
         cb => { ref.then(value => cb(Success(value)),err => cb(Failure(err))) },
-        ec)
+        ec
+      )
   }
 }
 
@@ -320,7 +319,7 @@ const futureUnit: Future<void> =
  *
  * @hidden
  */
-function promiseThen<T, R>(self: Future<T>, f: ((t: T) => IThenable<R> | R) | undefined | null, alt: (t: T) => Future<T>):
+function promiseThen<T, R>(f: ((t: T) => IThenable<R> | R) | undefined | null, alt: (t: T) => Future<T>):
   ((value: T) => Future<R | T>) {
 
   return value => {
