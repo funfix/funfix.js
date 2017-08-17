@@ -294,6 +294,10 @@ class PureFuture<A> extends Future<A> {
       },
       this._ec)
   }
+
+  toPromise(): Promise<A> {
+    return this._value.fold(e => Promise.reject(e), a => Promise.resolve(a))
+  }
 }
 
 class FutureBuilder<A> extends Future<A> {

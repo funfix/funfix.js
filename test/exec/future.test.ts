@@ -31,6 +31,7 @@ describe("PureFuture", () => {
     expect(is(f.value(), Some(Success(10)))).toBe(true)
 
     let result = 0
+    f.cancel() // no-op
     f.onComplete(a => { result = a.get() })
     expect(result).toBe(10)
   })
@@ -531,6 +532,34 @@ describe("Future obeys type class laws", () => {
 
   const arbF = inst.arbFuture(s)
   laws.testMonadError(Future, jv.number, arbF, jv.string, eq)
+})
+
+describe("Future converts to Promise", () => {
+  it("should convert to Promise if async", () => {
+    const s = new TestScheduler()
+    const p = Future.of(() => 1 + 1).toPromise()
+    return p.then(num => expect(num).toBe(2))
+  })
+
+  it("should convert to Promise if async error", () => {
+    const s = new TestScheduler()
+    const dummy = new DummyError()
+    const p = Future.of(() => { throw dummy }).toPromise()
+    return p.then(null, err => expect(err).toBe(dummy))
+  })
+
+  it("should convert to Promise if pure", () => {
+    const s = new TestScheduler()
+    const p = Future.pure(2).toPromise()
+    return p.then(num => expect(num).toBe(2))
+  })
+
+  it("should convert to Promise if pure error", () => {
+    const s = new TestScheduler()
+    const dummy = new DummyError()
+    const p = Future.raise(dummy).toPromise()
+    return p.then(null, err => expect(err).toBe(dummy))
+  })
 })
 
 class PromiseBox<A> implements IPromise<A> {

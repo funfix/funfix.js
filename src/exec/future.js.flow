@@ -50,7 +50,8 @@ declare export class Future<+A> {
   map<B>(f: (a: A) => B): Future<B>;
   recoverWith<AA>(f: (e: any) => Future<AA>): Future<A | AA>;
   recover<AA>(f: (e: any) => AA): Future<A | AA>;
-
+  toPromise(): Promise<A>;
+  
   // From IPromise
   then(onFulfilled?: (value: A) => any, onRejected?: (error: any) => any): Future<any>;
   catch<U>(onReject?: (error: any) => any): Future<any>;
