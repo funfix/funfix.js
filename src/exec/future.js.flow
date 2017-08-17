@@ -21,25 +21,22 @@ import { Option, Try, Either } from "../core/disjunctions"
 import { Scheduler } from "./scheduler"
 import { ICancelable } from "./cancelable"
 
+// Sorry for the `any` usage in this definition, however at the time of writing 
+// Flow 0.53 does not support a type more specific than this. You can also blame 
+// the Promises/A+ spec for working with `Thenable<U> | U`.
 export interface IThenable<+T> {
-  then<U>(
-    onFulfill?: (value: T) => IThenable<U> | U,
-    onReject?: (error: any) => IThenable<U> | U
-  ): IThenable<U>;
+  then(onFulfilled?: (value: T) => any, onRejected?: (error: any) => any): IThenable<any>;
 }
 
+// Sorry for the `any` usage in this definition, however at the time of writing 
+// Flow 0.53 does not support a type more specific than this. You can also blame 
+// the Promises/A+ spec for working with `Thenable<U> | U`.
 export interface IPromise<+T> extends IThenable<T> {
-  then<U>(
-    onFulfill?: (value: T) => IThenable<U> | U,
-    onReject?: (error: any) => IThenable<U> | U
-  ): IPromise<U>;
-
-  catch<U>(
-    onReject?: (error: any) => IThenable<U> | U
-  ): IPromise<U>;
+  then(onFulfilled?: (value: T) => any, onRejected?: (error: any) => any): IPromise<any>;
+  catch<U>(onReject?: (error: any) => any): IPromise<any>;
 }
 
-declare export class Future<A> {
+declare export class Future<+A> {
   value(): Option<Try<A>>;
   onComplete(f: (a: Try<A>) => void): void;
   cancel(): void;
@@ -54,12 +51,9 @@ declare export class Future<A> {
   recoverWith<AA>(f: (e: any) => Future<AA>): Future<A | AA>;
   recover<AA>(f: (e: any) => AA): Future<A | AA>;
 
-  // From ICancelable
-  cancel(): void;
-
   // From IPromise
-  then<B>(onFulfill?: (value: A) => IThenable<B> | B, onReject?: (error: any) => IThenable<B> | B): Future<B>;
-  catch<B>(onReject?: (error: any) => IThenable<B> | B): Future<A | B>;
+  then(onFulfilled?: (value: A) => any, onRejected?: (error: any) => any): Future<any>;
+  catch<U>(onReject?: (error: any) => any): Future<any>;
 
   +_funKindF: Future<any>;
   +_funKindA: A;

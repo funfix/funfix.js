@@ -88,6 +88,66 @@ export interface IPromise<T> extends IThenable<T> {
   catch<TResult = never>(onRejected?: ((reason: any) => TResult | IThenable<TResult>) | undefined | null): IPromise<T | TResult>
 }
 
+/**
+ * A `Future` represents a value which may or may not *currently* be available, but will be
+ * available at some point, or an exception if the operation producing the result fails.
+ *
+ * `Future<A>` is a Promise-like alternative data type, that's cancelable and lawful,
+ * inspired by Scala's `Future[A]`.
+ *
+ * You can easily build futures out of functions, that will execute asynchronously
+ * (e.g. not on the current call stack) by means of `Future.of`:
+ *
+ * ```typescript
+ * Future.of(() => 1 + 1)
+ * ```
+ *
+ * Such computations use the [[Scheduler.global]] reference for execution, which
+ * can be overridden, many times in the function call, being an optional parameter
+ * (e.g. in `Future.of`), or in the local context, because it is exposed as a
+ * [[DynamicRef]].
+ *
+ * To create a `Future` out of an actual asynchronous computation, you can
+ * use `Future.create`. Here's an example that takes a function and executes
+ * it with an initial delay, returning a cancelable `Future`:
+ *
+ * ```typescript
+ * import { Scheduler, Future, Try, Duration, Cancelable } from "funfix"
+ * const ec = Scheduler.global.get()
+ *
+ * function delay<A>(
+ *   duration: number | Duration,
+ *   f: () => A,
+ *   ec: Scheduler = Scheduler.global.get()): Future<A> {
+ *
+ *   return Future.create(cb => {
+ *     const task = ec.scheduleOnce(100, () => { cb(Try.of(f)) })
+ *
+ *     Cancelable.of(() => {
+ *       console.warn("Delayed task was cancelled")
+ *       task.cancel()
+ *     })
+ *   }, ec)
+ * }
+ * ```
+ *
+ * Normally you can `await` on functions returning `Future<A>` values:
+ *
+ * ```typescript
+ * async function asyncSample(n: number): Promise<number> {
+ *   let sum = 0
+ *   for (let i = 0; i < n; i++) {
+ *     sum += await Future.of(() => i)
+ *   }
+ *   return sum
+ * }
+ * ```
+ *
+ * Such functions do need to return a `Promise`, because JavaScript
+ * generates code that uses `Promise`'s constructor. But a `Future`
+ * is "thenable", so you can await on functions returning `Future`
+ * just fine.
+ */
 export abstract class Future<A> implements IPromise<A>, ICancelable {
   abstract value(): Option<Try<A>>
   abstract onComplete(f: (a: Try<A>) => void): void
@@ -134,6 +194,21 @@ export abstract class Future<A> implements IPromise<A>, ICancelable {
 
   catch<TResult>(onRejected?: ((reason: any) => (IThenable<TResult> | TResult)) | undefined | null): Future<TResult | A> {
     return this.then<A, TResult>(null as any, onRejected)
+  }
+
+  /**
+   * Transforms this `Future<A>` reference into a standard JavaScript `Promise<A>`
+   * reference.
+   *
+   * Normally a `Future` is "thenable", so JavaScript should have no problem
+   * working with it, however in certain contexts this conversion is useful for
+   * working with typings that don't recognize the structural typing defined by
+   * the Promises/A+ specification.
+   */
+  toPromise(): Promise<A> {
+    return new Promise<A>((resolve, reject) => {
+      this.onComplete(_ => _.fold(reject, resolve))
+    })
   }
 
   // Implements HK<F, A>
