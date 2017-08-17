@@ -20,6 +20,7 @@
 import { HK } from "./kinds"
 import { Option, Try, Either } from "../core/disjunctions"
 import { Eval } from "../effect/eval"
+import { Future } from "../exec/future"
 
 export type OptionK<A> = HK<Option<any>, A>;
 
@@ -106,4 +107,27 @@ declare export class EvalInstances {
   recover<A>(fa: EvalK<A>, f: (e: any) => A): Eval<A>;
 
   static global: EvalInstances;
+}
+
+export type FutureK<A> = HK<Future<any>, A>;
+
+declare export class FutureInstances {
+  pure<A>(a: A): Future<A>;
+  flatMap<A, B>(fa: FutureK<A>, f: (a: A) => FutureK<B>): Future<B>;
+  tailRecM<A, B>(a: A, f: (a: A) => FutureK<Either<A, B>>): Future<B>;
+  ap<A, B>(fa: FutureK<A>, ff: FutureK<(a: A) => B>): Future<B>;
+  map<A, B>(fa: FutureK<A>, f: (a: A) => B): Future<B>;
+  unit(): Future<void>;
+  raise<A>(e: any): Future<A>;
+  attempt<A>(fa: FutureK<A>): Future<Either<any, A>>;
+  recoverWith<A>(fa: FutureK<A>, f: (e: any) => FutureK<A>): Future<A>;
+  recover<A>(fa: FutureK<A>, f: (e: any) => A): Future<A>;
+  map2: <A, B, Z>(fa: FutureK<A>, fb: FutureK<B>, f: (a: A, b: B) => Z) => Future<Z>;
+  product: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => FutureK<[A, B]>;
+  followedBy: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => Future<B>;
+  followedByL: <A, B>(fa: FutureK<A>, fb: () => FutureK<B>) => Future<B>;
+  forEffect: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => Future<A>;
+  forEffectL: <A, B>(fa: FutureK<A>, fb: () => FutureK<B>) => Future<A>;
+
+  static global: FutureInstances;
 }

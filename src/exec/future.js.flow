@@ -21,19 +21,11 @@ import { Option, Try, Either } from "../core/disjunctions"
 import { Scheduler } from "./scheduler"
 import { ICancelable } from "./cancelable"
 
-// Sorry for the `any` usage in this definition, however at the time of writing 
-// Flow 0.53 does not support a type more specific than this. You can also blame 
+// Sorry for the `any` usage in this definition, however at the time of writing
+// Flow 0.53 does not support a type more specific than this. You can also blame
 // the Promises/A+ spec for working with `Thenable<U> | U`.
-export interface IThenable<+T> {
-  then(onFulfilled?: (value: T) => any, onRejected?: (error: any) => any): IThenable<any>;
-}
-
-// Sorry for the `any` usage in this definition, however at the time of writing 
-// Flow 0.53 does not support a type more specific than this. You can also blame 
-// the Promises/A+ spec for working with `Thenable<U> | U`.
-export interface IPromise<+T> extends IThenable<T> {
-  then(onFulfilled?: (value: T) => any, onRejected?: (error: any) => any): IPromise<any>;
-  catch<U>(onReject?: (error: any) => any): IPromise<any>;
+export interface IPromiseLike<+T> {
+  then(onFulfilled?: (value: T) => any, onRejected?: (error: any) => any): IPromiseLike<any>;
 }
 
 declare export class Future<+A> {
@@ -51,10 +43,9 @@ declare export class Future<+A> {
   recoverWith<AA>(f: (e: any) => Future<AA>): Future<A | AA>;
   recover<AA>(f: (e: any) => AA): Future<A | AA>;
   toPromise(): Promise<A>;
-  
-  // From IPromise
+
+  // From IPromiseLike
   then(onFulfilled?: (value: A) => any, onRejected?: (error: any) => any): Future<any>;
-  catch<U>(onReject?: (error: any) => any): Future<any>;
 
   +_funKindF: Future<any>;
   +_funKindA: A;
@@ -68,5 +59,5 @@ declare export class Future<+A> {
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec?: Scheduler): Future<A>;
   static unit(): Future<void>;
   static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>): Future<B>;
-  static fromPromise<A>(ref: IThenable<A>, ec?: Scheduler): Future<A>;
+  static fromPromise<A>(ref: IPromiseLike<A>, ec?: Scheduler): Future<A>;
 }
