@@ -51,7 +51,7 @@ import { CompositeError, IllegalStateError } from "../core/errors"
  * ```typescript
  * // Scheduling execution with a 10 seconds delay
  * const ref = setTimeout(() => console.log("Hello1"), 10000)
- * const task = Cancelable.from(() => clearTimeout(ref))
+ * const task = Cancelable.of(() => clearTimeout(ref))
  *
  * // If we change our mind
  * task.cancel()
@@ -102,7 +102,7 @@ export abstract class Cancelable implements ICancelable {
    * Lifts any callback into a `Cancelable` reference.
    *
    * ```typescript
-   * const task = Cancelable.from(() => {
+   * const task = Cancelable.of(() => {
    *   console.log("I was canceled!")
    * })
    *
@@ -114,7 +114,7 @@ export abstract class Cancelable implements ICancelable {
    * calling it multiple times will trigger the given
    * callback only once.
    */
-  static from(cb: () => void): Cancelable {
+  static of(cb: () => void): Cancelable {
     return new WrapFn(cb)
   }
 
@@ -133,9 +133,9 @@ export abstract class Cancelable implements ICancelable {
    *
    * ```typescript
    * val list = Cancelable.collection(
-   *   Cancelable.from(() => console.log("Cancelled #1")),
-   *   Cancelable.from(() => console.log("Cancelled #2")),
-   *   Cancelable.from(() => console.log("Cancelled #3"))
+   *   Cancelable.of(() => console.log("Cancelled #1")),
+   *   Cancelable.of(() => console.log("Cancelled #2")),
+   *   Cancelable.of(() => console.log("Cancelled #3"))
    * )
    *
    * list.cancel()
@@ -155,7 +155,7 @@ export abstract class Cancelable implements ICancelable {
 /**
  * Concrete [[Cancelable]] implementation that wraps a callback.
  *
- * Implementation is package private, use [[Cancelable.from]]
+ * Implementation is package private, use {@link Cancelable.of}
  * to instantiate it.
  *
  * @Private
@@ -203,7 +203,7 @@ export interface IBoolCancelable extends ICancelable {
    * or `false` otherwise.
    *
    * ```typescript
-   * const ref = BoolCancelable.from()
+   * const ref = BoolCancelable.of()
    *
    * ref.isCanceled() // false
    * ref.cancel()
@@ -229,7 +229,7 @@ export abstract class BoolCancelable implements IBoolCancelable {
    * Lifts any callback into a `BoolCancelable` reference.
    *
    * ```typescript
-   * const task = BoolCancelable.from(() => {
+   * const task = BoolCancelable.of(() => {
    *   console.log("I was canceled!")
    * })
    *
@@ -247,7 +247,7 @@ export abstract class BoolCancelable implements IBoolCancelable {
    * calling it multiple times will trigger the given
    * callback only once.
    */
-  public static from(cb: () => void): BoolCancelable {
+  public static of(cb: () => void): BoolCancelable {
     return new BoolWrapFn(cb)
   }
 
@@ -297,9 +297,9 @@ export abstract class BoolCancelable implements IBoolCancelable {
    *
    * ```typescript
    * val list = BoolCancelable.collection(
-   *   Cancelable.from(() => console.log("Cancelled #1")),
-   *   Cancelable.from(() => console.log("Cancelled #2")),
-   *   Cancelable.from(() => console.log("Cancelled #3"))
+   *   Cancelable.of(() => console.log("Cancelled #1")),
+   *   Cancelable.of(() => console.log("Cancelled #2")),
+   *   Cancelable.of(() => console.log("Cancelled #3"))
    * )
    *
    * list.cancel()
@@ -357,7 +357,7 @@ class CollectionCancelable extends BoolCancelable {
 /**
  * Concrete [[BoolCancelable]] implementation that wraps a callback.
  *
- * Implementation is package private, use [[BoolCancelable.from]]
+ * Implementation is package private, use [[BoolCancelable.of]]
  * to instantiate it.
  *
  * @Hidden
@@ -469,18 +469,18 @@ export abstract class AssignCancelable implements IAssignCancelable {
    * So this code:
    *
    * ```typescript
-   * AssignCancelable.from(() => console.log("cancelled"))
+   * AssignCancelable.of(() => console.log("cancelled"))
    * ```
    *
    * Is equivalent to this:
    *
    * ```typescript
    * const ref = AssignCancelable.empty()
-   * ref.update(Cancelable.from(() => console.log("cancelled")))
+   * ref.update(Cancelable.of(() => console.log("cancelled")))
    * ```
    */
-  public static from(cb: () => void): AssignCancelable {
-    return MultiAssignCancelable.from(cb)
+  public static of(cb: () => void): AssignCancelable {
+    return MultiAssignCancelable.of(cb)
   }
 }
 
@@ -558,18 +558,18 @@ export class MultiAssignCancelable implements IAssignCancelable {
    * So this code:
    *
    * ```typescript
-   * MultiAssignCancelable.from(() => console.log("cancelled"))
+   * MultiAssignCancelable.of(() => console.log("cancelled"))
    * ```
    *
    * Is equivalent to this:
    *
    * ```typescript
    * const ref = MultiAssignCancelable.empty()
-   * ref.update(Cancelable.from(() => console.log("cancelled")))
+   * ref.update(Cancelable.of(() => console.log("cancelled")))
    * ```
    */
-  public static from(cb: () => void): MultiAssignCancelable {
-    return new MultiAssignCancelable(Cancelable.from(cb))
+  public static of(cb: () => void): MultiAssignCancelable {
+    return new MultiAssignCancelable(Cancelable.of(cb))
   }
 }
 
@@ -635,18 +635,18 @@ export class SerialCancelable implements IAssignCancelable {
    * So this code:
    *
    * ```typescript
-   * SerialCancelable.from(() => console.log("cancelled"))
+   * SerialCancelable.of(() => console.log("cancelled"))
    * ```
    *
    * Is equivalent to this:
    *
    * ```typescript
    * const ref = SerialCancelable.empty()
-   * ref.update(Cancelable.from(() => console.log("cancelled")))
+   * ref.update(Cancelable.of(() => console.log("cancelled")))
    * ```
    */
-  public static from(cb: () => void): SerialCancelable {
-    return new SerialCancelable(Cancelable.from(cb))
+  public static of(cb: () => void): SerialCancelable {
+    return new SerialCancelable(Cancelable.of(cb))
   }
 }
 
@@ -715,19 +715,19 @@ export class SingleAssignCancelable implements IAssignCancelable {
    * So this code:
    *
    * ```typescript
-   * SingleAssignCancelable.from(() => console.log("cancelled"))
+   * SingleAssignCancelable.of(() => console.log("cancelled"))
    * ```
    *
    * Is equivalent to this:
    *
    * ```typescript
    * const ref = SingleAssignCancelable.empty()
-   * ref.update(Cancelable.from(() => console.log("cancelled")))
+   * ref.update(Cancelable.of(() => console.log("cancelled")))
    * ```
    */
-  public static from(cb: () => void): SingleAssignCancelable {
+  public static of(cb: () => void): SingleAssignCancelable {
     const ref = new SingleAssignCancelable()
-    ref.update(Cancelable.from(cb))
+    ref.update(Cancelable.of(cb))
     return ref
   }
 }

@@ -75,7 +75,22 @@ export interface IPromiseLike<T> {
  * Such computations use the [[Scheduler.global]] reference for execution, which
  * can be overridden, many times in the function call, being an optional parameter
  * (e.g. in `Future.of`), or in the local context, because it is exposed as a
- * [[DynamicRef]].
+ * [[DynamicRef]], which allows for localised overrides:
+ *
+ * ```typescript
+ * import { Scheduler, GlobalScheduler, Future } from "funfix"
+ *
+ * // Custom Scheduler reference that we want to use
+ * const ec = new GlobalScheduler(false)
+ *
+ * Future.of(() => x + y, ec)
+ *
+ * // ... is equivalent with ...
+ *
+ * Scheduler.global.bind(ec, () => {
+ *   Future.of(() => x + y)
+ * })
+ * ```
  *
  * To create a `Future` out of an actual asynchronous computation, you can
  * use `Future.create`. Here's an example that takes a function and executes
@@ -83,22 +98,19 @@ export interface IPromiseLike<T> {
  *
  * ```typescript
  * import { Scheduler, Future, Try, Duration, Cancelable } from "funfix"
- * const ec = Scheduler.global.get()
  *
- * function delay<A>(
- *   duration: number | Duration,
- *   f: () => A,
- *   ec: Scheduler = Scheduler.global.get()): Future<A> {
+ * const delay = <A>(d: Duration, f: () => A, ec: Scheduler = Scheduler.global.get()) =>
+ *   Future.create<A>(
+ *     cb => {
+ *       const task = ec.scheduleOnce(d, () => cb(Try.of(f)))
  *
- *   return Future.create(cb => {
- *     const task = ec.scheduleOnce(100, () => { cb(Try.of(f)) })
- *
- *     Cancelable.of(() => {
- *       console.warn("Delayed task was cancelled")
- *       task.cancel()
- *     })
- *   }, ec)
- * }
+ *       return Cancelable.of(() => {
+ *         console.warn("Delayed task was cancelled")
+ *         task.cancel()
+ *       })
+ *     },
+ *     ec
+ *   )
  * ```
  *
  * Normally you can `await` on functions returning `Future<A>` values:
@@ -413,8 +425,15 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * and returns a `Future` that will complete when the result is ready.
    *
    * ```typescript
-   * 
+   * const sum = (x: number, y: number) =>
+   *   Future.of(() => x + y)
    * ```
+   *
+   * @param thunk is the function to execute asynchronously
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
    */
   static of<A>(thunk: () => A, ec: Scheduler = Scheduler.global.get()): Future<A> {
     return new FutureBuilder(
@@ -422,22 +441,156 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
       ec)
   }
 
+  /**
+   * Lifts a pure value into the `Future` context, returning a `Future`
+   * reference that's already complete with the given value.
+   *
+   * This is the equivalent of `Promise.resolve(a)`.
+   *
+   * ```typescript
+   * const f: Future<number> = Future.pure(10)
+   *
+   * // Prints Success(10)
+   * f.onComplete(r => console.info(r))
+   * ```
+   *
+   * @param a is the value to lift in the `Future` context and that will
+   *        get signaled in `onComplete` callbacks
+   *
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
+   */
   static pure<A>(a: A, ec: Scheduler = Scheduler.global.get()): Future<A> {
     return new PureFuture(Success(a), ec)
   }
 
+  /**
+   * Lifts an error in the `Future` context, returning a `Future` reference
+   * that's already failed with the given error.
+   *
+   * This is the equivalent of `Promise.reject`.
+   *
+   * ```typescript
+   * const f: Future<number> = Future.raise("Oops!")
+   *
+   * // Prints Failure("Oops!")
+   * f.onComplete(r => console.info(r))
+   * ```
+   *
+   * @param e is the error to lift in the `Future` context and that will
+   *        get signaled as a failure in `onComplete` callbacks
+   *
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
+   */
   static raise(e: any, ec: Scheduler = Scheduler.global.get()): Future<never> {
     return new PureFuture(Failure(e), ec)
   }
 
+  /**
+   * Given a side-effectful function that triggers an asynchronous computation,
+   * execute it and return a `Future` reference.
+   *
+   * The given `register` function will be invoked immediately to "schedule"
+   * the asynchronous callback, where the callback is the parameter injected in
+   * that function.
+   *
+   * The `register` function can optionally return a {@link ICancelable}
+   * reference that can get used to cancel the running asynchronous
+   * computation.
+   *
+   * Example:
+   *
+   * ```typescript
+   * import { Scheduler, Future, Try, Duration, Cancelable } from "funfix"
+   *
+   * const delay = <A>(d: Duration, f: () => A, ec: Scheduler = Scheduler.global.get()) =>
+   *   Future.create<A>(
+   *     cb => {
+   *       const task = ec.scheduleOnce(d, () => cb(Try.of(f)))
+   *
+   *       return Cancelable.of(() => {
+   *         console.warn("Delayed task was cancelled")
+   *         task.cancel()
+   *       })
+   *     },
+   *     ec
+   *   )
+   * ```
+   *
+   * Note that by not returning a cancelable, the returned `Future` reference
+   * will NOT BE cancelable.
+   *
+   * ```typescript
+   * // This future is not cancelable, because we are not
+   * // returning a cancelable reference
+   * Future.create<number>(cb => {
+   *   setTimeout(1000, () => cb(Success(10)))
+   * })
+   * ```
+   *
+   * @param register is the side-effectful function that will get invoked
+   *        to build our `Future`, receiving a callback that's supposed to
+   *        get invoked (only once) when the asynchronous computation completes,
+   *        and that can optionally return a cancelable reference that can
+   *        get used to cancel the running computation
+   *
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
+   */
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec: Scheduler = Scheduler.global.get()): Future<A> {
     return new FutureBuilder(register, ec)
   }
 
+  /**
+   * Returns a `Future` reference that's already completed with a `void` value.
+   *
+   * Alias for:
+   *
+   * ```typescript
+   * Future.pure(undefined)
+   * ```
+   *
+   * Note that the same reference is always returned, so this property holds:
+   *
+   * ```typescript
+   * Future.unit() === Future.unit()
+   * ```
+   */
   static unit(): Future<void> {
     return futureUnit
   }
 
+  /**
+   * Keeps calling `f` until it returns a `Right` value.
+   *
+   * Based on Phil Freeman's
+   * [[http://functorial.com/stack-safety-for-free/index.pdf Stack Safety for Free]].
+   *
+   * ```typescript
+   * const generate = () => {
+   *   const n = Math.random() * 1000
+   *   return n & n
+   * }
+   *
+   * // Keeps looping until an odd number is returned
+   * Future.tailRecM(0, a => Future.of(() => {
+   *   return a % 2 == 0 ? Left(generate()) : Right(a)
+   * })
+   * ```
+   *
+   * @param a is the initial seed
+   * @param f is the function that keeps being invoked with the previous
+   *          `Left(a)` value, until a `Right(b)` value is returned,
+   *          which will be the `onComplete` result of the `Future`
+   *          reference
+   */
   static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>): Future<B> {
     // Recursive loop based on flatMap
     return f(a).flatMap(r => {
@@ -446,6 +599,22 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
     })
   }
 
+  /**
+   * Transforms any `Promise`-like data type into a `Future`.
+   *
+   * ```typescript
+   * const p: Promise<number> = Promise.resolve(10)
+   *
+   * const f: Future<number> = Future.fromPromise(p)
+   * ```
+   *
+   * @param ref is the promise reference that we want to convert into a `Future`
+   *
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
+   */
   static fromPromise<A>(ref: IPromiseLike<A>, ec: Scheduler = Scheduler.global.get()): Future<A> {
     if (ref instanceof Future)
       return (ref as Future<A>).withScheduler(ec)

@@ -317,7 +317,7 @@ export class GlobalScheduler extends Scheduler {
     const r = safeRunnable(runnable, this.reportFailure)
     const ms = Math.max(0, Duration.of(delay).toMillis())
     const task = setTimeout(r, ms)
-    return Cancelable.from(() => clearTimeout(task))
+    return Cancelable.of(() => clearTimeout(task))
   }
 }
 
@@ -400,7 +400,7 @@ export class TestScheduler extends Scheduler {
     const ref: [number, () => void] = [scheduleAt, runnable]
     this._tasks.splice(insertAt, 0, ref)
 
-    return Cancelable.from(() => {
+    return Cancelable.of(() => {
       const filtered: Array<[number, () => void]> = []
       for (const e of this._tasks) {
         if (e !== ref) filtered.push(e)

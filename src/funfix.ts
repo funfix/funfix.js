@@ -22,6 +22,8 @@
  *
  * - [core]{@link "core/index"} for core data types and utilities that belong in
  *   a standard library
+ * - [exec]{@link "exec/index"} low level primitives for dealing with asynchrony
+ *   and concurrency
  * - [types]{@link "types/index"} for type class definitions inspired by
  *   Haskell's standard library and Typelevel Cats
  * - [effect]{@link "effect/index"} for dealing with side effects

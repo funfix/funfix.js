@@ -25,6 +25,8 @@
  * - [exec/scheduler](./exec_scheduler.html) for the {@link Scheduler} type
  * - [exec/time](./exec_time.html) for expressing time durations with
  *   {@link TimeUnit} and {@link Duration}
+ * - [exec/future](./exec_future.html) exposes a {@link Future} data type that
+ *   is lawful and cancelable, as an alternative to JavaScript's `Promise`
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:

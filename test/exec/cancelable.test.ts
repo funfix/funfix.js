@@ -43,7 +43,7 @@ class TestCancelable extends BoolCancelable {
 describe("Cancelable.from", () => {
   it("converts any callback", () => {
     let effect = false
-    const c = Cancelable.from(() => { effect = true })
+    const c = Cancelable.of(() => { effect = true })
     expect(effect).toBeFalsy()
 
     c.cancel()
@@ -52,7 +52,7 @@ describe("Cancelable.from", () => {
 
   it("is idempotent", () => {
     let effect = 0
-    const c = Cancelable.from(() => { effect += 1 })
+    const c = Cancelable.of(() => { effect += 1 })
 
     c.cancel()
     expect(effect).toBe(1)
@@ -62,7 +62,7 @@ describe("Cancelable.from", () => {
 
   it("is idempotent even if it throws", () => {
     const dummy = new DummyError("dummy")
-    const ref = Cancelable.from(() => { throw dummy })
+    const ref = Cancelable.of(() => { throw dummy })
 
     try {
       ref.cancel()
@@ -100,7 +100,7 @@ describe("Cancelable.collection", () => {
     const dummy = new DummyError("dummy")
     const refs = [
       BoolCancelable.empty(),
-      BoolCancelable.from(() => { throw dummy }),
+      BoolCancelable.of(() => { throw dummy }),
       BoolCancelable.empty()]
 
     const main = Cancelable.collection(...refs)
@@ -116,7 +116,7 @@ describe("Cancelable.collection", () => {
 
   it("throws multiple errors as a composite", () => {
     const dummy = new DummyError("dummy")
-    function ref() { return Cancelable.from(() => { throw dummy }) }
+    function ref() { return Cancelable.of(() => { throw dummy }) }
     const refs = [ref(), ref(), ref()]
     const main = Cancelable.collection(...refs)
 
@@ -133,9 +133,9 @@ describe("Cancelable.collection", () => {
   it("works with anything being thrown", () => {
     const dummy = "dummy"
     const refs = [
-      Cancelable.from(() => { throw dummy }),
-      Cancelable.from(() => { throw dummy }),
-      Cancelable.from(() => { throw dummy })]
+      Cancelable.of(() => { throw dummy }),
+      Cancelable.of(() => { throw dummy }),
+      Cancelable.of(() => { throw dummy })]
 
     const main = Cancelable.collection(...refs)
     try {
@@ -167,7 +167,7 @@ describe("Cancelable.collection", () => {
 describe("BoolCancelable.from", () => {
   it("converts any callback", () => {
     let effect = false
-    const c = BoolCancelable.from(() => { effect = true })
+    const c = BoolCancelable.of(() => { effect = true })
 
     expect(effect).toBeFalsy()
     expect(c.isCanceled()).toBeFalsy()
@@ -179,7 +179,7 @@ describe("BoolCancelable.from", () => {
 
   it("is idempotent", () => {
     let effect = 0
-    const c = BoolCancelable.from(() => { effect += 1 })
+    const c = BoolCancelable.of(() => { effect += 1 })
     expect(c.isCanceled()).toBeFalsy()
 
     c.cancel()
@@ -193,7 +193,7 @@ describe("BoolCancelable.from", () => {
 
   it("is idempotent even if it throws", () => {
     const dummy = new DummyError("dummy")
-    const ref = BoolCancelable.from(() => { throw dummy })
+    const ref = BoolCancelable.of(() => { throw dummy })
     expect(ref.isCanceled()).toBe(false)
 
     try {
@@ -254,7 +254,7 @@ describe("AssignCancelable", () => {
 
   test("from", () => {
     let effect = 0
-    const ref = AssignCancelable.from(() => { effect += 1 })
+    const ref = AssignCancelable.of(() => { effect += 1 })
 
     expect(ref instanceof MultiAssignCancelable).toBe(true)
     ref.cancel()
@@ -309,7 +309,7 @@ describe("MultiAssignmentCancelable", () => {
 
   test("from callback", () => {
     const ref: MultiAssignCancelable =
-      MultiAssignCancelable.from(() => { effect += 1 })
+      MultiAssignCancelable.of(() => { effect += 1 })
 
     let effect = 0
     ref.cancel()
@@ -321,7 +321,7 @@ describe("MultiAssignmentCancelable", () => {
   test("from callback, update", () => {
     let effect = 0
     const ref: MultiAssignCancelable =
-      MultiAssignCancelable.from(() => { effect += 1 })
+      MultiAssignCancelable.of(() => { effect += 1 })
 
     const c = new TestCancelable()
     ref.update(c)
@@ -382,7 +382,7 @@ describe("SerialAssignmentCancelable", () => {
   test("from callback", () => {
     let effect = 0
     const ref: SerialCancelable =
-      SerialCancelable.from(() => { effect += 1 })
+      SerialCancelable.of(() => { effect += 1 })
 
     ref.cancel()
     expect(effect).toBe(1)
@@ -391,7 +391,7 @@ describe("SerialAssignmentCancelable", () => {
 
   test("from callback, update", () => {
     let effect = 0
-    const ref = SerialCancelable.from(() => { effect += 1 })
+    const ref = SerialCancelable.of(() => { effect += 1 })
 
     const c = new TestCancelable()
     ref.update(c)
@@ -457,7 +457,7 @@ describe("SingleAssignmentCancelable", () => {
 
   test("from callback", () => {
     const ref: SingleAssignCancelable =
-      SingleAssignCancelable.from(() => { effect += 1 })
+      SingleAssignCancelable.of(() => { effect += 1 })
 
     let effect = 0
     ref.cancel()
@@ -469,7 +469,7 @@ describe("SingleAssignmentCancelable", () => {
   test("from callback, update", () => {
     let effect = 0
     const ref: SingleAssignCancelable =
-      SingleAssignCancelable.from(() => { effect += 1 })
+      SingleAssignCancelable.of(() => { effect += 1 })
 
     const c = BoolCancelable.empty()
     expect(() => ref.update(c)).toThrowError()
