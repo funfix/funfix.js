@@ -17,7 +17,11 @@
 
 /* @flow */
 
-declare export * from "./core";
-declare export * from "./exec";
-declare export * from "./types";
-declare export * from "./effect";
+declare export class DynamicRef<A> {
+  get(): A;
+
+  bind<R>(value: A, thunk: () => R): R;
+  bindL<R>(value: () => A, thunk: () => R): R;
+
+  static of<A>(fn: () => A): DynamicRef<A>;
+}

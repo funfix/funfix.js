@@ -82,6 +82,21 @@ data types and universal interfaces:
 - **[core/std]{@link "core/std"}**: sub-module that defines the 
   [[IEquals]] interface for structural equality in [[is]] along with
   other utilities
+  
+**["exec"]{@link "exec/index"}** defines low level primitives for dealing
+with asynchrony and concurrency:
+
+- **[Future&lt;A&gt;]{@link Future}**: a lawful and cancelable alternative 
+  to JavaScript's `Promise`
+- **[DynamicRef&lt;A&gt;]{@link DynamicRef}**: binding mechanism for global variables 
+- **[exec/cancelable]{@link "exec/cancelable"}**: sub-module that defines
+  {@link ICancelable} and derived interfaces, classes and utilities for
+  dealing with cancellation
+- **[exec/scheduler]{@link "exec/scheduler"}**: sub-module that defines
+  {@link Scheduler}, for scheduling asynchronous execution, as an alternative 
+  to working straight with `setTimeout`
+- **[exec/time]{@link "exec/time"}**: sub-module that defines {@link TimeUnit}
+  and {@link Duration} for specifying timespans
 
 **["effect"]{@link "effect/index"}** defines data types
 for dealing with side effects:

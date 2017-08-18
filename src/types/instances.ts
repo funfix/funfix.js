@@ -38,6 +38,7 @@
 import { applyMixins } from "../core/std"
 import { Try, Success, Option, Some, Either, Right } from "../core/disjunctions"
 import { Eval } from "../effect/eval"
+import { Future } from "../exec/future"
 import { HK, registerTypeClassInstance } from "./kinds"
 import { Monad, MonadError } from "./monad"
 import { Eq } from "./eq"
@@ -331,3 +332,72 @@ export class EvalInstances implements MonadError<Eval<any>, any> {
 applyMixins(EvalInstances, [MonadError])
 // Registering `EvalInstances` as global instances for `Eval`
 registerTypeClassInstance(MonadError)(Eval, EvalInstances.global)
+
+/**
+ * Alias used for encoding higher-kinded types when implementing
+ * type class instances.
+ */
+export type FutureK<A> = HK<Future<any>, A>
+
+/**
+ * Type class instances provided by default for {@link Future}.
+ */
+export class FutureInstances implements MonadError<Future<any>, any> {
+  pure<A>(a: A): Future<A> {
+    return Future.pure(a)
+  }
+
+  flatMap<A, B>(fa: FutureK<A>, f: (a: A) => FutureK<B>): Future<B> {
+    return (fa as any).flatMap(f)
+  }
+
+  tailRecM<A, B>(a: A, f: (a: A) => FutureK<Either<A, B>>): Future<B> {
+    return Future.tailRecM(a, f as any) as any
+  }
+
+  ap<A, B>(fa: FutureK<A>, ff: FutureK<(a: A) => B>): Future<B> {
+    return (fa as Future<A>).flatMap(a =>
+      (ff as Future<(a: A) => B>).map(f => f(a))
+    )
+  }
+
+  map<A, B>(fa: FutureK<A>, f: (a: A) => B): Future<B> {
+    return (fa as Future<A>).map(f)
+  }
+
+  unit(): Future<void> {
+    return Future.unit()
+  }
+
+  raise<A>(e: any): Future<A> {
+    return Future.raise(e)
+  }
+
+  attempt<A>(fa: FutureK<A>): Future<Either<any, A>> {
+    return (fa as Future<A>).attempt()
+  }
+
+  recoverWith<A>(fa: FutureK<A>, f: (e: any) => FutureK<A>): Future<A> {
+    return (fa as Future<A>).recoverWith(f as ((e: any) => Future<A>))
+  }
+
+  recover<A>(fa: FutureK<A>, f: (e: any) => A): Future<A> {
+    return (fa as Future<A>).recover(f as ((e: any) => A))
+  }
+
+  // Mixed-in
+  map2: <A, B, Z>(fa: FutureK<A>, fb: FutureK<B>, f: (a: A, b: B) => Z) => Future<Z>
+  product: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => FutureK<[A, B]>
+  followedBy: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => Future<B>
+  followedByL: <A, B>(fa: FutureK<A>, fb: () => FutureK<B>) => Future<B>
+  forEffect: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => Future<A>
+  forEffectL: <A, B>(fa: FutureK<A>, fb: () => FutureK<B>) => Future<A>
+
+  static global: FutureInstances =
+    new FutureInstances()
+}
+
+// Mixins the default implementations
+applyMixins(FutureInstances, [MonadError])
+// Registering `FutureInstances` as global instances for `Future`
+registerTypeClassInstance(MonadError)(Future, FutureInstances.global)

@@ -16,42 +16,38 @@
  */
 
 /**
- * The `funfix` root module.
+ * The `exec` package contains low level utilities and data types, providing a
+ * standard library that is needed for building higher level concurrency tools.
  *
  * Exports sub-modules:
  *
- * - [core]{@link "core/index"} for core data types and utilities that belong in
- *   a standard library
- * - [exec]{@link "exec/index"} low level primitives for dealing with asynchrony
- *   and concurrency
- * - [types]{@link "types/index"} for type class definitions inspired by
- *   Haskell's standard library and Typelevel Cats
- * - [effect]{@link "effect/index"} for dealing with side effects
+ * - [exec/cancelable](./exec_cancelable.html) for the {@link Cancelable} data type
+ * - [exec/scheduler](./exec_scheduler.html) for the {@link Scheduler} type
+ * - [exec/time](./exec_time.html) for expressing time durations with
+ *   {@link TimeUnit} and {@link Duration}
+ * - [exec/future](./exec_future.html) exposes a {@link Future} data type that
+ *   is lawful and cancelable, as an alternative to JavaScript's `Promise`
  *
  * À la carte imports work, assuming an ECMAScript 2015 compatible environment,
  * including ES2015 modules and `import` syntax:
  *
  * ```typescript
- * import { Try } from "funfix/dist/core/try"
+ * import { Cancelable } from "funfix/dist/exec"
  * // ... or ...
- * import { Try } from "funfix/dist/core"
- * // ... or ...
- * import { Try } from "funfix/dist"
- * // ... or ...
- * import { Try } from "funfix"
+ * import { Cancelable } from "funfix"
  * ```
  *
  * In absence of ES2015 compatibility, you can still rely on working with the
  * packaged (`pkg.main`) universal distribution that works within all browsers
  * and environments.
  *
- * @module funfix
+ * @module exec
  */
 
 /***/
 
-// Exporting everything
-export * from "./core"
-export * from "./exec"
-export * from "./types"
-export * from "./effect"
+export * from "./cancelable"
+export * from "./time"
+export * from "./scheduler"
+export * from "./ref"
+export * from "./future"

@@ -17,7 +17,10 @@
 
 /* @flow */
 
-declare export * from "./core";
-declare export * from "./exec";
-declare export * from "./types";
-declare export * from "./effect";
+import { DynamicRef } from "../../src/funfix"
+
+const ref: DynamicRef<string> = DynamicRef.of(() => "original")
+const value: string = ref.get()
+
+const int1: number = ref.bind("10", () => parseInt(ref.get()))
+const int2: number = ref.bindL(() => "10", () => parseInt(ref.get()))

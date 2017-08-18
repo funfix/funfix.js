@@ -45,6 +45,23 @@ defines core data types and universal interfaces:
 - **[core/std](https://funfix.org/api/modules/_core_std_.html)**:
   sub-module that defines the `IEquals` interface for structural equality,
   along with other utilities
+  
+**["exec"](https://funfix.org/api/modules/_exec_index_.html)** defines low 
+level primitives for dealing with asynchrony and concurrency:
+
+- **[Future&lt;A&gt;](https://funfix.org/api/classes/_exec_future_.future.html)**: 
+  a lawful and cancelable alternative to JavaScript's `Promise`
+- **[DynamicRef&lt;A&gt;](https://funfix.org/api/classes/_exec_ref_.dynamicref.html)**: 
+  binding mechanism for global variables 
+- **[exec/cancelable](https://funfix.org/api/modules/_exec_cancelable_.html)**: 
+  sub-module that defines `ICancelable` and derived interfaces, classes 
+  and utilities for dealing with cancellation
+- **[exec/scheduler](https://funfix.org/api/modules/_exec_scheduler_.html)**: 
+  sub-module that defines `Scheduler`, for scheduling asynchronous 
+  execution, as an alternative to working straight with `setTimeout`
+- **[exec/time](https://funfix.org/api/modules/_exec_time_.html)**: 
+  sub-module that defines `TimeUnit` and `Duration` for specifying 
+  timespans  
 
 **["effect"](https://funfix.org/api/modules/_effect_index_.html)**
 defines data types for dealing with side effects:

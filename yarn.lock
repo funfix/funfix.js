@@ -66,9 +66,9 @@
   dependencies:
     "@types/babel-types" "*"
 
-"@types/fs-extra@^3.0.0":
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/@types/fs-extra/-/fs-extra-3.0.3.tgz#1d66eb670ebf657e57c0fda014df340c19d8aa0c"
+"@types/fs-extra@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@types/fs-extra/-/fs-extra-4.0.0.tgz#1dd742ad5c9bce308f7a52d02ebc01421bc9102f"
   dependencies:
     "@types/node" "*"
 
@@ -1494,9 +1494,9 @@ findup@0.1.5:
     colors "~0.6.0-1"
     commander "~2.1.0"
 
-flow-bin@^0.50.0:
-  version "0.50.0"
-  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.50.0.tgz#d4cdb2430dee1a3599f0eb6fe551146e3027256a"
+flow-bin@^0.51.0:
+  version "0.51.1"
+  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.51.1.tgz#7929c6f0a94e765429fcb2ee6e468278faa9c732"
 
 follow-redirects@0.0.7:
   version "0.0.7"
@@ -1558,6 +1558,14 @@ fs-extra@^1.0.0:
 fs-extra@^3.0.0, fs-extra@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/fs-extra/-/fs-extra-3.0.1.tgz#3794f378c58b342ea7dbbb23095109c4b3b62291"
+  dependencies:
+    graceful-fs "^4.1.2"
+    jsonfile "^3.0.0"
+    universalify "^0.1.0"
+
+fs-extra@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/fs-extra/-/fs-extra-4.0.0.tgz#414fb4ca2d2170ba0014159d3a8aec3303418d9e"
   dependencies:
     graceful-fs "^4.1.2"
     jsonfile "^3.0.0"
@@ -3958,18 +3966,18 @@ typedoc-default-themes@^0.5.0:
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/typedoc-default-themes/-/typedoc-default-themes-0.5.0.tgz#6dc2433e78ed8bea8e887a3acde2f31785bd6227"
 
-typedoc@^0.7.1:
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.7.1.tgz#b441bffe246bb3e0e598d9ae474e743594bda769"
+typedoc@^0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/typedoc/-/typedoc-0.8.0.tgz#d7172bc6a29964f451b7609c005beadadefe2361"
   dependencies:
-    "@types/fs-extra" "^3.0.0"
+    "@types/fs-extra" "^4.0.0"
     "@types/handlebars" "^4.0.31"
     "@types/highlight.js" "^9.1.8"
     "@types/lodash" "^4.14.37"
     "@types/marked" "0.0.28"
     "@types/minimatch" "^2.0.29"
     "@types/shelljs" "^0.7.0"
-    fs-extra "^3.0.0"
+    fs-extra "^4.0.0"
     handlebars "^4.0.6"
     highlight.js "^9.0.0"
     lodash "^4.13.1"
@@ -3978,15 +3986,11 @@ typedoc@^0.7.1:
     progress "^2.0.0"
     shelljs "^0.7.0"
     typedoc-default-themes "^0.5.0"
-    typescript "2.3.2"
+    typescript "2.4.1"
 
-typescript@*, typescript@^2.3.4, typescript@^2.4.1:
+typescript@*, typescript@2.4.1, typescript@^2.3.4, typescript@^2.4.1:
   version "2.4.1"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.4.1.tgz#c3ccb16ddaa0b2314de031e7e6fee89e5ba346bc"
-
-typescript@2.3.2:
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.3.2.tgz#f0f045e196f69a72f06b25fd3bd39d01c3ce9984"
 
 typify-parser@^1.1.0:
   version "1.1.0"
