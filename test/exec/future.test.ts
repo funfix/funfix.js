@@ -376,7 +376,10 @@ describe("FutureBuilder", () => {
       const never = Future.create(_ => c)
 
       let effect = 0
-      const f = Future.of(() => { effect += 1 }).flatMap(_ => never)
+      const f = Future.of(() => { effect += 1 })
+        .flatMap(_ => Future.pure(_))
+        .flatMap(_ => Future.pure(_))
+        .flatMap(_ => never)
 
       expect(effect).toBe(0); s.tick()
       expect(effect).toBe(1)
