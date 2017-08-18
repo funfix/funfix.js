@@ -38,7 +38,7 @@
 import { Try, Success, Failure, Option, Some, None, Either, Left, Right } from "../core/disjunctions"
 import { IllegalStateError } from "../core/errors"
 import { Scheduler } from "./scheduler"
-import { ICancelable, SingleAssignCancelable, MultiAssignCancelable } from "./cancelable"
+import { ICancelable, Cancelable, SingleAssignCancelable, MultiAssignCancelable } from "./cancelable"
 
 /**
  * `IPromiseLike` represents objects that have a `then` method complying with
@@ -642,24 +642,7 @@ class PureFuture<A> extends Future<A> {
   }
 
   transformWith<B>(failure: (e: any) => Future<B>, success: (a: A) => Future<B>): Future<B> {
-    return new FutureBuilder(
-      cb => {
-        const cRef = SingleAssignCancelable.empty()
-        this.onComplete(tryA => {
-          let fb: Future<B>
-          try {
-            fb = tryA.fold(failure, success)
-          } catch (e) {
-            fb = Future.raise(e)
-          }
-
-          cRef.update((fb as any)._cancelable || fb)
-          fb.onComplete(cb)
-        })
-
-        return cRef
-      },
-      this._ec)
+    return genericTransformWith(this, failure, success, this._ec)
   }
 
   toPromise(): Promise<A> {
@@ -731,25 +714,58 @@ class FutureBuilder<A> extends Future<A> {
   }
 
   transformWith<B>(failure: (e: any) => Future<B>, success: (a: A) => Future<B>): Future<B> {
-    return new FutureBuilder(
-      cb => {
-        const cRef = new MultiAssignCancelable(this._cancelable)
-        this.onComplete(tryA => {
-          let fb: Future<B>
-          try {
-            fb = tryA.fold(failure, success)
-          } catch (e) {
-            fb = Future.raise(e)
-          }
-
-          cRef.update((fb as any)._cancelable || fb)
-          fb.onComplete(cb)
-        })
-
-        return cRef
-      },
-      this._ec)
+    return genericTransformWith(this, failure, success, this._ec, this._cancelable)
   }
+}
+
+/**
+ * Internal, reusable `transformWith` implementation for {@link PureFuture}
+ * and {@link FutureBuilder}.
+ *
+ * @Hidden
+ */
+function genericTransformWith<A, B>(
+  self: Future<A>,
+  failure: (e: any) => Future<B>,
+  success: (a: A) => Future<B>,
+  scheduler: Scheduler,
+  cancelable?: ICancelable): Future<B> {
+
+  return new FutureBuilder(
+    cb => {
+      const cRef = new MultiAssignCancelable(cancelable)
+
+      self.onComplete(tryA => {
+        let fb: Future<B>
+        try {
+          fb = tryA.fold(failure, success)
+        } catch (e) {
+          fb = Future.raise(e)
+        }
+
+        // If the resulting Future is already completed, there's no point
+        // in treating it as being cancelable
+        if (fb.value().isEmpty()) {
+          const fbb = fb as any
+          if (fbb._cancelable && fbb._cancelable instanceof MultiAssignCancelable) {
+            // Trick we are doing to get rid of extraneous memory
+            // allocations, otherwise we can leak memory
+            cRef.update(fbb._cancelable).collapse()
+            fbb._cancelable = cRef
+          } else {
+            /* istanbul ignore next */
+            cRef.update((fb as any)._cancelable || fb)
+          }
+        } else {
+          cRef.update(Cancelable.empty())
+        }
+
+        fb.onComplete(cb)
+      })
+
+      return cRef
+    },
+    scheduler)
 }
 
 /**

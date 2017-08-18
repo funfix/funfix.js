@@ -545,6 +545,32 @@ export class MultiAssignCancelable implements IAssignCancelable {
   }
 
   /**
+   * In case the underlying reference is also a `MultiAssignCancelable`, then
+   * collapse its state into this one.
+   *
+   * ```typescript
+   * const c = Cancelable.of(() => console.info("Cancelled!"))
+   *
+   * const mc1 = new MultiAssignCancelable()
+   * mc1.update(c)
+   *
+   * const mc2 = new MultiAssignCancelable()
+   * mc2.update(mc1)
+   *
+   * // After this the underlying reference of `mc2` becomes `c`
+   * mc2.collapse()
+   * ```
+   */
+  public collapse(): this {
+    if (this._underlying && this._underlying instanceof MultiAssignCancelable) {
+      const ref = this._underlying
+      this._underlying = ref._underlying
+      this._canceled = ref._canceled
+    }
+    return this
+  }
+
+  /**
    * Returns a new [[MultiAssignCancelable]] that's empty.
    */
   public static empty(): MultiAssignCancelable {
