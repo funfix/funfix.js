@@ -16,9 +16,9 @@
     "option",
     "either"
   ],
-  "main": "dist/funfix.umd.js",
-  "module": "dist/funfix.es5.js",
-  "typings": "dist/types/funfix.d.ts",
+  "main": "dist/index.umd.js",
+  "module": "dist/index.js",
+  "typings": "dist/types/index.d.ts",
   "files": [
     "dist",
     "src",
@@ -36,7 +36,7 @@
   "scripts": {
     "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "prebuild": "rimraf dist",
-    "copy-flow": "ts-node tools/copy-flow.ts",
+    "copy-flow": "node tools/copy-flow.js",
     "doc": "typedoc --mode modules --theme minimal --listInvalidSymbolLinks --excludeNotExported --excludePrivate --out dist/docs --target es6 --name Funfix --readme rootdoc.md src",
     "build": "tsc && rollup -c && npm run doc && yarn run copy-flow",
     "start": "tsc-watch --onSuccess 'rollup -c'",

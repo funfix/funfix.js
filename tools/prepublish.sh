@@ -26,5 +26,5 @@ cat > ./index.js.flow <<EOF
  * in the root to work out of the box.
  */
 
-export * from "./dist/funfix";
+export * from "./dist/index";
 EOF

@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-import babel from "rollup-plugin-babel"
-import resolve from "rollup-plugin-node-resolve"
-import commonjs from "rollup-plugin-commonjs"
+const babel = require("rollup-plugin-babel")
+const resolve = require("rollup-plugin-node-resolve")
+const commonjs = require("rollup-plugin-commonjs")
 
 const pkg = require("./package.json")
 const { camelCase } = require("lodash")
 const typescript = require("rollup-plugin-typescript2")
 
-const libraryName = "funfix"
-
 export default {
-  entry: `src/${libraryName}.ts`,
+  entry: `src/index.ts`,
   targets: [
-		{ dest: pkg.main, moduleName: camelCase(libraryName), format: "umd" },
-		{ dest: pkg.module, format: "es" }
+		{ dest: pkg.main, moduleName: "funfix", format: "umd" }
   ],
   sourceMap: true,
   // Indicate here external modules you don't wanna include in your bundle (i.e.: 'lodash')

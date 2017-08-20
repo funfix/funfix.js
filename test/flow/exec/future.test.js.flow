@@ -1,0 +1,116 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import {
+  Future,
+  FutureInstances,
+  Scheduler,
+  ICancelable,
+  IPromiseLike,
+  Try,
+  Option,
+  Either,
+  Functor,
+  functorOf,
+  Apply,
+  applyOf,
+  Applicative,
+  applicativeOf,
+  FlatMap,
+  flatMapOf,
+  Monad,
+  monadOf,
+  MonadError,
+  monadErrorOf
+} from "../../../src/"
+
+const fa1: Future<number> = Future.pure(1)
+const fa2: Future<number> = Future.pure(1, Scheduler.global.get())
+const fa3: Future<number> = Future.raise("error")
+const fa4: Future<number> = Future.raise("error", Scheduler.global.get())
+
+const p1: Promise<number> = fa1.toPromise()
+const p2: Promise<number> = Future.raise("error").toPromise()
+
+const cRef: ICancelable = Future.pure(1)
+const it1: IPromiseLike<number> = Future.pure(1)
+const it2: IPromiseLike<number> = Future.pure(1)
+
+const t1: Future<number> = Future.pure(1).then()
+const t2: Future<number> = Future.pure(1).then(x => x + 1)
+const t3: Future<number> = Future.pure(1).then(undefined, _ => 100)
+
+const then1: Future<string> = fa1.then(a => String(a))
+const then2: Future<number> = fa1.then(a => Future.pure(a))
+// $ExpectError
+const then3: number = fa1.then(a => Future.pure(a))
+
+const opt1: Option<Try<number>> = then2.value()
+then2.onComplete((a: Try<number>) => { console.info(a) })
+// $ExpectError
+then2.onComplete((a: Try<string>) => { console.info(a) })
+then2.cancel()
+
+const tr1: Future<string> = fa1.transform(e => String(e), a => String(a))
+const tr2: Future<string> = fa1.transformWith(Future.raise, a => Future.pure(String(a)))
+const tr3: Future<Either<any, number>> = fa1.attempt()
+
+const fl1: Future<string> = fa1.map(n => String(n))
+const fl2: Future<string> = fa1.flatMap(n => Future.pure(String(n)))
+
+// Variance
+class Human { isHuman: boolean }
+class Animal { isAnimal: boolean }
+class Dog extends Animal { isDog: boolean }
+class Cat extends Animal { isCat: boolean }
+
+const cv1: Future<Animal> = Future.pure(new Dog)
+const cv2: Future<Animal> = Future.pure(new Dog).recover(e => new Cat)
+const cv3: Future<Animal> = Future.pure(new Dog).recoverWith(e => Future.pure(new Cat))
+
+// $ExpectError
+const cve1: Future<Dog> = Future.pure(new Animal)
+// $ExpectError
+const cve2: Future<Cat> = Future.pure(new Dog)
+// $ExpectError
+const cve3: Future<Dog> = Future.pure(new Dog).recover(_ => new Cat)
+// $ExpectError
+const cve4: Future<Dog> = Future.pure(new Dog).recoverWith(_ => Future.pure(new Cat))
+
+// Type classes
+
+// Option.__types
+
+const functor1: Functor<Future<any>> = functorOf(Future)
+const functor2: Functor<Future<any>> = FutureInstances.global
+
+const ap1: Apply<Future<any>> = applyOf(Future)
+const ap2: Apply<Future<any>> = FutureInstances.global
+
+const applicative1: Applicative<Future<any>> = applicativeOf(Future)
+const applicative2: Applicative<Future<any>> = FutureInstances.global
+
+const flatMap1: FlatMap<Future<any>> = flatMapOf(Future)
+const flatMap2: FlatMap<Future<any>> = FutureInstances.global
+
+const monad1: Monad<Future<any>> = monadOf(Future)
+const monad2: Monad<Future<any>> = FutureInstances.global
+
+const monadError1: MonadError<any, Future<any>> = monadErrorOf(Future)
+const monadError2: MonadError<any, Future<any>> = FutureInstances.global
