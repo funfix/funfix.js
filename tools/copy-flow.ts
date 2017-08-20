@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 /*
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
@@ -16,15 +16,15 @@
  * limitations under the License.
  */
 
-const { exec } = require("shelljs")
-const fs = require("fs")
-const path = require("path")
+import { exec } from "shelljs"
+import * as fs from "fs"
+import * as path from "path"
 
 const currentDir = path.resolve(path.join(path.dirname(process.argv[1]), ".."))
 const srcDir = path.join(currentDir, "src")
 const destDir = path.join(currentDir, "dist")
 
-function listDir(dir) {
+function listDir(dir: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
     fs. readdir(dir, function (err, items) {
       if (err) reject(err); else {
@@ -62,7 +62,7 @@ async function main() {
     exec(`cp -f "${file}" "${dPath}"`)
   }
 
-  const pkg = JSON.parse(fs.readFileSync(path.join(currentDir, "package.json")))
+  const pkg = JSON.parse(fs.readFileSync(path.join(currentDir, "package.json")) as any)
   exec(`cp -f "${destDir}/index.js.flow" "${currentDir}/${pkg.main}.flow"`)
 }
 

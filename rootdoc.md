@@ -63,7 +63,7 @@ const email: string | null =
 ## Features Overview
 
 The code is organized in ES2015 modules, but all types, classes and
-functions are exported by the [root module]{@link "funfix"}.
+functions are exported by the [root module]{@link "index"}.
 
 **["core"]{@link "core/index"}** defines core
 data types and universal interfaces:
