@@ -385,8 +385,11 @@ export class FutureInstances implements MonadError<Future<any>, any> {
     return (fa as Future<A>).recover(f as ((e: any) => A))
   }
 
+  map2<A, B, Z>(fa: FutureK<A>, fb: FutureK<B>, f: (a: A, b: B) => Z): Future<Z> {
+    return Future.map2(fa as any, fb as any, f as any)
+  }
+
   // Mixed-in
-  map2: <A, B, Z>(fa: FutureK<A>, fb: FutureK<B>, f: (a: A, b: B) => Z) => Future<Z>
   product: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => FutureK<[A, B]>
   followedBy: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => Future<B>
   followedByL: <A, B>(fa: FutureK<A>, fb: () => FutureK<B>) => Future<B>

@@ -20,6 +20,7 @@
 import { Option, Try, Either } from "../core/disjunctions"
 import { Scheduler } from "./scheduler"
 import { ICancelable } from "./cancelable"
+import { Duration } from "./time"
 
 // Sorry for the `any` usage in this definition, however at the time of writing
 // Flow 0.53 does not support a type more specific than this. You can also blame
@@ -44,6 +45,8 @@ declare export class Future<+A> {
   recover<AA>(f: (e: any) => AA): Future<A | AA>;
   toPromise(): Promise<A>;
 
+  delayResult(delay: number | Duration): Future<A>;
+
   // From IPromiseLike
   then(onFulfilled?: (value: A) => any, onRejected?: (error: any) => any): Future<any>;
 
@@ -58,6 +61,29 @@ declare export class Future<+A> {
   static raise(e: any, ec?: Scheduler): Future<empty>;
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec?: Scheduler): Future<A>;
   static unit(): Future<void>;
+  static delayedTick<A>(delay: number | Duration, ec?: Scheduler): Future<void>;
   static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>): Future<B>;
   static fromPromise<A>(ref: IPromiseLike<A>, ec?: Scheduler): Future<A>;
+
+  static sequence<A>(values: Future<A>[] | Iterable<Future<A>>, ec?: Scheduler): Future<A[]>;
+
+  static map2<A1, A2, R>(
+    fa1: Future<A1>, fa2: Future<A2>, f: (a1: A1, a2: A2) => R,
+    ec?: Scheduler): Future<R>;
+  static map3<A1, A2, A3, R>(
+    fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>,
+    f: (a1: A1, a2: A2, a3: A3) => R,
+    ec?: Scheduler): Future<R>;
+  static map4<A1, A2, A3, A4, R>(
+    fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>, fa4: Future<A4>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4) => R,
+    ec?: Scheduler): Future<R>;
+  static map5<A1, A2, A3, A4, A5, R>(
+    fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>, fa4: Future<A4>, fa5: Future<A5>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R,
+    ec?: Scheduler): Future<R>;
+  static map6<A1, A2, A3, A4, A5, A6, R>(
+    fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>, fa4: Future<A4>, fa5: Future<A5>, fa6: Future<A6>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R,
+    ec?: Scheduler): Future<R>;
 }
