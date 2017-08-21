@@ -57,6 +57,8 @@ declare export class AssignCancelable extends BoolCancelable {
 declare export class MultiAssignCancelable extends AssignCancelable {
   constructor(initial?: ICancelable): MultiAssignCancelable;
   update(value: ICancelable): this;
+  collapse(): this;
+  clear(): this;
   static of(cb: () => void): MultiAssignCancelable;
   static empty(): MultiAssignCancelable;
 }

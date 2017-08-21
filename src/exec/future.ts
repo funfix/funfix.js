@@ -38,7 +38,7 @@
 import { Try, Success, Failure, Option, Some, None, Either, Left, Right } from "../core/disjunctions"
 import { IllegalStateError } from "../core/errors"
 import { Scheduler } from "./scheduler"
-import { ICancelable, Cancelable, SingleAssignCancelable, MultiAssignCancelable } from "./cancelable"
+import { ICancelable, SingleAssignCancelable, MultiAssignCancelable } from "./cancelable"
 
 /**
  * `IPromiseLike` represents objects that have a `then` method complying with
@@ -757,7 +757,8 @@ function genericTransformWith<A, B>(
             cRef.update((fb as any)._cancelable || fb)
           }
         } else {
-          cRef.update(Cancelable.empty())
+          // GC purposes
+          cRef.clear()
         }
 
         fb.onComplete(cb)

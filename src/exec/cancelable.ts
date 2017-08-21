@@ -571,6 +571,15 @@ export class MultiAssignCancelable implements IAssignCancelable {
   }
 
   /**
+   * Sets the underlying cancelable reference to `undefined`,
+   * useful for garbage-collecting purposes.
+   */
+  public clear(): this {
+    if (!this._canceled) this._underlying = undefined
+    return this
+  }
+
+  /**
    * Returns a new [[MultiAssignCancelable]] that's empty.
    */
   public static empty(): MultiAssignCancelable {

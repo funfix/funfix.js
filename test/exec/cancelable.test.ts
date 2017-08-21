@@ -351,6 +351,20 @@ describe("MultiAssignmentCancelable", () => {
     mc1.update(mc2).collapse()
     expect(mc1.isCanceled()).toBe(true)
   })
+
+  test("clear to undefined", () => {
+    const mc = new MultiAssignCancelable()
+
+    let effect = 0
+    const c1 = Cancelable.of(() => { effect += 1 })
+
+    mc.update(c1)
+    mc.clear()
+
+    mc.cancel()
+    expect(effect).toBe(0)
+    mc.clear() // no-op
+  })
 })
 
 describe("SerialAssignmentCancelable", () => {
