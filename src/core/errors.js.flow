@@ -41,3 +41,7 @@ declare export class IllegalStateError extends Error {
 declare export class IllegalArgumentError extends Error {
   constructor(message?: string): IllegalArgumentError;
 }
+
+declare export class TimeoutError extends Error {
+  constructor(message?: string): TimeoutError;
+}

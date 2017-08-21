@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import { is, Try, Success, Failure, Some, None, DummyError, Left, Right, IllegalStateError } from "../../../src/core"
-import { Future, IPromiseLike, TestScheduler, Scheduler, BoolCancelable } from "../../../src/exec"
+import { is, Try, Success, Failure, Some, None, DummyError, Left, Right, IllegalStateError, TimeoutError, IllegalArgumentError } from "../../../src/core"
+import { Future, IPromiseLike, TestScheduler, Scheduler, BoolCancelable, Cancelable, Duration } from "../../../src/exec"
 import { Eq } from "../../../src/types"
 
 import * as jv from "jsverify"
@@ -538,6 +538,544 @@ describe("Future is Promise-like", () => {
     const dummy = new DummyError()
     const p = Future.raise(dummy).toPromise()
     return p.then(null, err => expect(err).toBe(dummy))
+  })
+})
+
+describe("Future delayTick + delayResult", () => {
+  test("delayResult works for successful values", () => {
+    const s = new TestScheduler()
+
+    const f = Future.pure(1, s).delayResult(1000)
+    expect(f.value()).toBe(None)
+
+    s.tick(1000)
+    expect(is(f.value(), Some(Success(1)))).toBe(true)
+  })
+
+  test("delayResult works for failures", () => {
+    const s = new TestScheduler()
+
+    const dummy = new DummyError("dummy")
+    const f = Future.raise(dummy, s).delayResult(1000)
+    expect(f.value()).toBe(None)
+
+    s.tick(1000)
+    expect(is(f.value(), Some(Failure(dummy)))).toBe(true)
+  })
+
+  test("delayResult with global scheduler", () => {
+    const f = Future.pure(1).delayResult(10)
+
+    return f.map(x => {
+      expect(x).toBe(1)
+    })
+  })
+
+  test("delayedTick with global scheduler", () => {
+    const f = Future.delayedTick(10)
+
+    return f.map(x => {
+      expect(x).toBe(undefined)
+    })
+  })
+})
+
+describe("Future.sequence", () => {
+  test("happy path", () => {
+    const s = new TestScheduler()
+
+    const f1 = Future.of(() => 1, s)
+    const f2 = Future.of(() => 2, s)
+    const f3 = Future.of(() => 3, s)
+
+    const fl = Future.sequence([f1, f2, f3], s).map(_ => _.toString())
+    expect(fl.value()).toBe(None)
+
+    s.tick()
+    expect(is(fl.value(), Some(Success("1,2,3")))).toBe(true)
+  })
+
+  test("happy path with delayed results", () => {
+    const s = new TestScheduler()
+    let effect = 0
+
+    const f1 = Future.of(() => 1, s).delayResult(1000).map(x => { effect += 1; return x })
+    const f2 = Future.of(() => 2, s).delayResult(3000).map(x => { effect += 1; return x })
+    const f3 = Future.of(() => 3, s).delayResult(2000).map(x => { effect += 1; return x })
+
+    const fl = Future.sequence([f1, f2, f3], s).map(_ => _.toString())
+    expect(fl.value()).toBe(None)
+
+    s.tick()
+    expect(effect).toBe(0)
+    expect(fl.value()).toBe(None)
+
+    s.tick(1000)
+    expect(effect).toBe(1)
+    expect(fl.value()).toBe(None)
+
+    s.tick(1000)
+    expect(effect).toBe(2)
+    expect(fl.value()).toBe(None)
+
+    s.tick(1000)
+    expect(effect).toBe(3)
+    expect(is(fl.value(), Some(Success("1,2,3")))).toBe(true)
+  })
+
+  test("sequence of empty list", () => {
+    const list: Future<number>[] = []
+    const all = Future.sequence(list).map(_ => _.toString())
+    expect(is(all.value(), Some(Success("")))).toBe(true)
+  })
+
+  test("sequence of null list", () => {
+    const all = Future.sequence(null as any[]).map(_ => _.toString())
+    expect(is(all.value(), Some(Success("")))).toBe(true)
+  })
+
+  test("on failure of a future, cancels all", () => {
+    const s = new TestScheduler()
+    let effect = 0
+    const create = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), s)
+
+    const dummy = new DummyError("dummy")
+    const fail = Future.raise(dummy, s).delayResult(2000)
+    const all = Future.sequence([create(), create(), fail, create(), create()], s)
+
+    s.tick()
+    expect(all.value()).toBe(None)
+    expect(effect).toBe(0)
+
+    s.tick(2000)
+    expect(is(all.value(), Some(Failure(dummy)))).toBe(true)
+    expect(effect).toBe(4)
+  })
+
+  test("works with actual Iterable", () => {
+    let effect = 0
+
+    const iter = {
+      [Symbol.iterator]: () => {
+        let index = 0
+        return {
+          next: () => {
+            if (index++ < 3) return { value: Future.pure(index), done: false }
+            else return { done: true }
+          }
+        }
+      }
+    }
+
+    const f = Future.sequence(iter as Iterable<Future<number>>).map(arr => {
+      let sum = 0
+      for (const e of arr) sum += e
+      return sum
+    })
+
+    expect(is(f.value(), Some(Success(6)))).toBe(true)
+  })
+
+  test("protects against broken Iterable", () => {
+    const ec = new TestScheduler()
+    const dummy = new DummyError("dummy")
+    let effect = 0
+
+    const never = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+
+    const iter = {
+      [Symbol.iterator]: () => {
+        let index = 0
+        return {
+          next: () => {
+            if (index++ < 3) return { value: never(), done: false }
+            else throw dummy
+          }
+        }
+      }
+    }
+
+    const all = Future.sequence(iter as any, ec)
+    ec.tick()
+    expect(is(all.value(), Some(Failure(dummy)))).toBe(true)
+    expect(effect).toBe(3)
+  })
+
+  test("map2", () => {
+    const f = Future.map2(
+      Future.pure(1), Future.pure(2),
+      (a, b) => a + b
+    )
+
+    expect(is(f.value(), Some(Success(3)))).toBe(true)
+  })
+
+  test("map3", () => {
+    const f = Future.map3(
+      Future.pure(1), Future.pure(2), Future.pure(3),
+      (a, b, c) => a + b + c
+    )
+
+    expect(is(f.value(), Some(Success(6)))).toBe(true)
+  })
+
+  test("map4", () => {
+    const f = Future.map4(
+      Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4),
+      (a, b, c, d) => a + b + c + d
+    )
+
+    expect(is(f.value(), Some(Success(10)))).toBe(true)
+  })
+
+  test("map5", () => {
+    const f = Future.map5(
+      Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4), Future.pure(5),
+      (a, b, c, d, e) => a + b + c + d + e
+    )
+
+    expect(is(f.value(), Some(Success(15)))).toBe(true)
+  })
+
+  test("map6", () => {
+    const f = Future.map6(
+      Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4), Future.pure(5), Future.pure(6),
+      (a, b, c, d, e, f) => a + b + c + d + e + f
+    )
+
+    expect(is(f.value(), Some(Success(21)))).toBe(true)
+  })
+
+  test("protect against broken cancelable", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+    const never = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+
+    const dummy = new DummyError("dummy")
+    const fail = Future.create(_ => Cancelable.of(() => { throw dummy }), ec)
+
+    const all = Future.sequence([never(), never(), fail, never(), never()], ec)
+    all.cancel()
+
+    expect(effect).toBe(4)
+    const errs = ec.triggeredFailures()
+    expect(errs.length).toBe(1)
+    expect(errs[0]).toBe(dummy)
+  })
+
+  test("on failure signaling result is blocked", () => {
+    const ec = new TestScheduler()
+    const dummy1 = new DummyError("dummy1")
+    const dummy2 = new DummyError("dummy1")
+
+    const all = Future.sequence([
+      Future.raise(dummy1, ec),
+      Future.of(() => 1, ec),
+      Future.of(() => null, ec).flatMap(_ => Future.raise(dummy2, ec))
+    ], ec)
+
+    ec.tick()
+    expect(is(all.value(), Some(Failure(dummy1))))
+    expect(ec.triggeredFailures().length).toBe(1)
+  })
+})
+
+describe("Future.firstCompletedOf", () => {
+  test("happy path", () => {
+    const f = Future.firstCompletedOf([Future.pure(1), Future.pure(2)])
+    expect(is(f.value(), Some(Success(1)))).toBe(true)
+  })
+
+  test("timeout", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+    const never = Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+
+    const fa = never.timeout(Duration.of(1000))
+    ec.tick()
+    expect(fa.value()).toBe(None)
+
+    ec.tick(1000)
+    const v = fa.value()
+
+    expect(!v.isEmpty()).toBeTruthy()
+    expect(v.get().isFailure()).toBeTruthy()
+    expect(v.get().failed().get() instanceof TimeoutError).toBeTruthy()
+    expect((v.get().failed().get() as TimeoutError).message).toBe("1000 milliseconds")
+    expect(effect).toBe(1)
+  })
+
+  test("timeoutTo", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+    const never = Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+
+    const fa = never.timeoutTo(1000, () => Future.pure(1000))
+    ec.tick()
+    expect(fa.value()).toBe(None)
+
+    ec.tick(1000)
+    const v = fa.value()
+
+    expect(is(fa.value(), Some(Success(1000))))
+    expect(effect).toBe(1)
+  })
+
+  test("report success, cancel the losers", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+
+    const create = (delay: number, inc: number) => Future.create(
+      cb => {
+        const t = ec.scheduleOnce(delay, () => cb(Success(inc)))
+        return Cancelable.of(() => { effect += inc; t.cancel() })
+      }, ec)
+
+    const first = Future.firstCompletedOf(
+      [create(3000, 1), create(2000, 2), create(3000, 3)],
+      ec)
+
+    ec.tick(2000)
+    expect(is(first.value(), Some(Success(2)))).toBe(true)
+    expect(effect).toBe(1 + 3)
+  })
+
+  test("report failure, cancel the losers", () => {
+    const ec = new TestScheduler()
+    const dummy = new DummyError("dummy")
+    let effect = 0
+
+    const create = (delay: number, inc: number, fail: boolean) => Future.create(
+      cb => {
+        const t = ec.scheduleOnce(delay, () => {
+          if (!fail) cb(Success(inc))
+          else cb(Failure(dummy))
+        })
+
+        return Cancelable.of(() => { effect += inc; t.cancel() })
+      }, ec)
+
+    const first = Future.firstCompletedOf(
+      [create(3000, 1, false), create(2000, 2, true), create(3000, 3, false)],
+      ec)
+
+    ec.tick(2000)
+    expect(is(first.value(), Some(Failure(dummy)))).toBe(true)
+    expect(effect).toBe(1 + 3)
+  })
+
+  test("works with actual Iterable", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+
+    const iter = {
+      [Symbol.iterator]: () => {
+        let index = 0
+        return {
+          next: () => {
+            if (index++ < 3)
+              return { value: Future.pure(index, ec).delayResult(4000 - index * 1000), done: false }
+            else
+              return { done: true }
+          }
+        }
+      }
+    }
+
+    const f = Future.firstCompletedOf(iter as Iterable<Future<number>>, ec)
+    expect(f.value()).toBe(None)
+
+    ec.tick(1000)
+    expect(is(f.value(), Some(Success(1))))
+  })
+
+  test("protects against broken Iterable", () => {
+    const ec = new TestScheduler()
+    const dummy = new DummyError("dummy")
+    let effect = 0
+
+    const never = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+
+    const iter = {
+      [Symbol.iterator]: () => {
+        let index = 0
+        return {
+          next: () => {
+            if (index++ < 3) return { value: never(), done: false }
+            else throw dummy
+          }
+        }
+      }
+    }
+
+    const all = Future.firstCompletedOf(iter as any, ec)
+    ec.tick()
+    expect(is(all.value(), Some(Failure(dummy)))).toBe(true)
+    expect(effect).toBe(3)
+  })
+
+  test("signaling result is blocked after first", () => {
+    const ec = new TestScheduler()
+    const dummy1 = new DummyError("dummy1")
+    const dummy2 = new DummyError("dummy1")
+
+    const all = Future.firstCompletedOf([
+      Future.raise(dummy1, ec),
+      Future.of(() => 1, ec),
+      Future.of(() => null, ec).flatMap(_ => Future.raise(dummy2, ec))
+    ], ec)
+
+    ec.tick()
+    expect(is(all.value(), Some(Failure(dummy1))))
+    expect(ec.triggeredFailures().length).toBe(1)
+  })
+
+  test("protect against broken cancelable", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+    const never = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+
+    const dummy = new DummyError("dummy")
+    const fail = Future.create(_ => Cancelable.of(() => { throw dummy }), ec)
+
+    const all = Future.firstCompletedOf([never(), never(), fail, never(), never()], ec)
+    all.cancel()
+
+    expect(effect).toBe(4)
+    const errs = ec.triggeredFailures()
+    expect(errs.length).toBe(1)
+    expect(errs[0]).toBe(dummy)
+  })
+
+  test("empty list is illegal", () => {
+    const f = Future.firstCompletedOf([])
+    expect(!f.value().isEmpty()).toBeTruthy()
+    expect(f.value().get().isFailure()).toBeTruthy()
+    expect(f.value().get().failed().get() instanceof IllegalArgumentError).toBeTruthy()
+  })
+})
+
+describe("Future.traverse", () => {
+  test("happy path for parallelism = 1, 2, 4, Infinity", () => {
+    const ec = new TestScheduler()
+    const list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    const parallelism = [1, 2, 4, Infinity]
+    const f = (n: number) => Future.pure(n * 2, ec)
+
+    for (const p of parallelism) {
+      const all = Future.traverse(list, p, ec)(f).map(x => {
+        let sum = 0
+        for (let i = 0; i < x.length; i++) sum += x[i]
+        return sum
+      })
+
+      ec.tick()
+      expect(all.value().isEmpty()).toBeFalsy()
+      expect(all.value().get().get()).toBe(110)
+    }
+  })
+
+  test("parallelism <= 0 throws", () => {
+    expect(() => Future.traverse([], -1)(Future.pure)).toThrow()
+  })
+
+  test("empty list is empty", () => {
+    const ec = new TestScheduler()
+    const f = Future.traverse([], Infinity, ec)(Future.pure).map(_ => _.toString())
+
+    ec.tick()
+    expect(is(f.value(), Some(Success("")))).toBeTruthy()
+  })
+
+  test("protect against user errors in generator", () => {
+    const ec = new TestScheduler()
+    const list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    const dummy = new DummyError("dummy")
+
+    let effect = 0
+    const never = (n: number) => Future.create(_ => Cancelable.of(() => { effect += n }), ec)
+
+    const f = Future.traverse(list, Infinity, ec)(a => {
+      if (a === 6) throw dummy
+      return never(a)
+    })
+
+    ec.tick()
+    expect(is(f.value(), Some(Failure(dummy)))).toBeTruthy()
+    expect(effect).toBe(1 + 2 + 3 + 4 + 5)
+  })
+
+  test("handles null list", () => {
+    const ec = new TestScheduler()
+    const f = Future.traverse(null as any, Infinity, ec)(Future.pure).map(_ => _.toString())
+
+    ec.tick()
+    expect(is(f.value(), Some(Success("")))).toBeTruthy()
+  })
+
+  test("works with actual Iterable", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+
+    const iter = {
+      [Symbol.iterator]: () => {
+        let index = 0
+        return {
+          next: () => {
+            index += 1
+            if (index === 1) return { value: null, done: false }
+            else if (index <= 4) return { value: index - 1, done: false }
+            else return { done: true }
+          }
+        }
+      }
+    }
+
+    const f = Future.traverse(iter as Iterable<number>, Infinity, ec)(Future.pure)
+      .map(arr => {
+        let sum = 0
+        for (const e of arr) sum += e
+        return sum
+      })
+
+    ec.tick()
+    expect(is(f.value(), Some(Success(6)))).toBe(true)
+  })
+
+  test("protects against broken Iterable", () => {
+    const ec = new TestScheduler()
+    const dummy = new DummyError("dummy")
+    let effect = 0
+
+    const iter = {
+      [Symbol.iterator]: () => {
+        let index = 0
+        return {
+          next: () => {
+            if (index++ < 3) return { value: index, done: false }
+            else throw dummy
+          }
+        }
+      }
+    }
+
+    const all = Future.traverse(iter as any, Infinity, ec)(Future.pure)
+    ec.tick()
+    expect(is(all.value(), Some(Failure(dummy)))).toBe(true)
+  })
+
+  test("actual execution", () => {
+    const list = [1, 2, 3]
+    const fa = Future.traverse(list)(Future.pure)
+      .map(arr => {
+        let sum = 0
+        for (const e of arr) sum += e
+        return sum
+      })
+
+    return fa.toPromise().then(x => {
+      expect(x).toBe(6)
+    })
   })
 })
 

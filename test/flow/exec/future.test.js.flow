@@ -37,7 +37,8 @@ import {
   Monad,
   monadOf,
   MonadError,
-  monadErrorOf
+  monadErrorOf,
+  Duration
 } from "../../../src/"
 
 const fa1: Future<number> = Future.pure(1)
@@ -93,8 +94,69 @@ const cve3: Future<Dog> = Future.pure(new Dog).recover(_ => new Cat)
 // $ExpectError
 const cve4: Future<Dog> = Future.pure(new Dog).recoverWith(_ => Future.pure(new Cat))
 
-// Type classes
+const tick1: Future<void> = Future.delayedTick(1000)
+const tick2: Future<void> = Future.delayedTick(1000, Scheduler.global.get())
+const tick3: Future<void> = Future.delayedTick(Duration.of(1000))
+const tick4: Future<void> = Future.delayedTick(Duration.of(1000), Scheduler.global.get())
 
+const delay1: Future<number> = Future.pure(1).delayResult(1000)
+const delay2: Future<number> = Future.pure(1).delayResult(Duration.of(1000))
+
+const arr: Future<number>[] = [delay1, delay2]
+const all1: Future<number[]> = Future.sequence(arr)
+const all2: Future<number[]> = Future.sequence(arr, Scheduler.global.get())
+
+const m2: Future<number> = Future.map2(
+  Future.pure(1), Future.pure(2),
+  (a, b) => a + b)
+const m3: Future<number> = Future.map3(
+  Future.pure(1), Future.pure(2), Future.pure(3),
+  (a, b, c) => a + b + c)
+const m4: Future<number> = Future.map4(
+  Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4),
+  (a, b, c, d) => a + b + c + d)
+const m5: Future<number> = Future.map5(
+  Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4), Future.pure(5),
+  (a, b, c, d, e) => a + b + c + d + e)
+const m6: Future<number> = Future.map6(
+  Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4), Future.pure(5), Future.pure(6),
+  (a, b, c, d, e, f) => a + b + c + d + e + f)
+
+const me2: Future<number> = Future.map2(
+  Future.pure(1), Future.pure(2),
+  (a, b) => a + b,
+  Scheduler.global.get())
+const me3: Future<number> = Future.map3(
+  Future.pure(1), Future.pure(2), Future.pure(3),
+  (a, b, c) => a + b + c,
+  Scheduler.global.get())
+const me4: Future<number> = Future.map4(
+  Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4),
+  (a, b, c, d) => a + b + c + d,
+  Scheduler.global.get())
+const me5: Future<number> = Future.map5(
+  Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4), Future.pure(5),
+  (a, b, c, d, e) => a + b + c + d + e,
+  Scheduler.global.get())
+const me6: Future<number> = Future.map6(
+  Future.pure(1), Future.pure(2), Future.pure(3), Future.pure(4), Future.pure(5), Future.pure(6),
+  (a, b, c, d, e, f) => a + b + c + d + e + f,
+  Scheduler.global.get())
+
+const ft1: Future<number> = Future.pure(1).timeout(1000)
+const ft2: Future<number> = Future.pure(1).timeout(Duration.of(1000))
+const ft3: Future<number | string> = Future.pure.timeoutTo(1000, () => Future.pure("Hello!"))
+const ft4: Future<number | string> = Future.pure.timeoutTo(Duration.of(1000), () => Future.pure("Hello!"))
+const ft5: Future<number> = Future.firstCompletedOf(arr)
+const ft6: Future<number> = Future.firstCompletedOf(arr, Scheduler.global.get())
+
+const arr2 = [1, 2, 3]
+const tAll1: Future<number[]> = Future.traverse(arr2)(Future.pure)
+const tAll2: Future<number[]> = Future.traverse(arr2, 2)(Future.pure)
+const tAll3: Future<number[]> = Future.traverse(arr2, 2, Scheduler.global.get())(Future.pure)
+const tAll4: Future<string[]> = Future.traverse(arr2)(x => Future.pure(x.toString()))
+
+// Type classes
 // Option.__types
 
 const functor1: Functor<Future<any>> = functorOf(Future)

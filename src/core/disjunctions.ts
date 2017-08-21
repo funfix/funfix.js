@@ -1521,8 +1521,9 @@ export class Try<A> implements std.IEquals<Try<A>> {
    *
    * This operation is the `Applicative.map2`.
    */
-  static map2<A1,A2,R>(fa1: Try<A1>, fa2: Try<A2>,
-                       f: (a1: A1, a2: A2) => R): Try<R> {
+  static map2<A1,A2,R>(
+    fa1: Try<A1>, fa2: Try<A2>,
+    f: (a1: A1, a2: A2) => R): Try<R> {
 
     if (fa1.isFailure()) return ((fa1 as any) as Try<R>)
     if (fa2.isFailure()) return ((fa2 as any) as Try<R>)

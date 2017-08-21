@@ -136,3 +136,13 @@ export class NotImplementedError extends Error {
     this.name = "NotImplementedError"
   }
 }
+
+/**
+ * Signals that completion of a procedure took longer than anticipated.
+ */
+export class TimeoutError extends Error {
+  constructor(message?: string) {
+    super(message)
+    this.name = "TimeoutError"
+  }
+}

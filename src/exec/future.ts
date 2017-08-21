@@ -36,9 +36,11 @@
 
 /***/
 import { Try, Success, Failure, Option, Some, None, Either, Left, Right } from "../core/disjunctions"
-import { IllegalStateError } from "../core/errors"
+import { IllegalStateError, IllegalArgumentError, TimeoutError } from "../core/errors"
 import { Scheduler } from "./scheduler"
+import { Duration } from "./time"
 import { ICancelable, Cancelable, MultiAssignCancelable } from "./cancelable"
+import { iterableToArray } from "./internals"
 
 /**
  * `IPromiseLike` represents objects that have a `then` method complying with
@@ -131,6 +133,18 @@ export interface IPromiseLike<T> {
  * just fine.
  */
 export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
+  /**
+   * Reference to the current {@link Scheduler} available for subsequent
+   * data transformations. Can be set in `Future`'s constructors, or by
+   * transforming the source by {@link withScheduler}.
+   *
+   * Protected, because it shouldn't be public API, being meant for
+   * `Future` implementations.
+   *
+   * @protected
+   */
+  protected readonly _scheduler: Scheduler
+
   /**
    * Extracts the completed value for this `Future`, returning `Some(result)`
    * if this `Future` is already complete or `None` in case the `Future` wasn't
@@ -413,6 +427,76 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
     })
   }
 
+  /**
+   * Delays signaling the result of this `Future` by the specified duration.
+   *
+   * It works for successful results:
+   *
+   * ```typescript
+   * const fa = Future.of(() => "Alex")
+   *
+   * // Delays the signaling by 1 second
+   * fa.delayResult(1000).flatMap
+   * ```
+   *
+   * And for failures as well:
+   *
+   * ```typescript
+   * Future.raise(new TimeoutError()).delayResult(1000)
+   * ```
+   *
+   * @param delay is the duration to wait before signaling the final result
+   */
+  delayResult(delay: number | Duration): Future<A> {
+    return this.transformWith(
+      err => Future.delayedTick(delay, this._scheduler).flatMap(_ => Future.raise(err, this._scheduler)),
+      a => Future.delayedTick(delay, this._scheduler).map(_ => a)
+    )
+  }
+
+  /**
+   * Returns a future that mirrors the source in case the result of the source
+   * is signaled within the required `after` duration, otherwise it
+   * fails with a {@link TimeoutError}, cancelling the source.
+   *
+   * ```typescript
+   * const fa = Future.of(() => 1).delayResult(10000)
+   *
+   * // Will fail with a TimeoutError
+   * fa.timeout(1000)
+   * ```
+   *
+   * @param after is the duration to wait until it triggers the timeout error
+   */
+  timeout(after: number | Duration): Future<A> {
+    // Creating the exception immediately, to get a good stack trace
+    const fb = Future.raise(new TimeoutError(Duration.of(after).toString()), this._scheduler)
+    return this.timeoutTo(after, () => fb)
+  }
+
+  /**
+   * Returns a future that mirrors the source in case the result of the source
+   * is signaled within the required `after` duration, otherwise it
+   * triggers the execution of the given `fallback` after the duration has
+   * passed, cancelling the source.
+   *
+   * This is literally the implementation of {@link Future.timeout}:
+   *
+   * ```typescript
+   * const fa = Future.of(() => 1).delayResult(10000)
+   *
+   * fa.timeoutTo(1000, () => Future.raise(new TimeoutError()))
+   * ```
+   *
+   * @param after is the duration to wait until it triggers the `fallback`
+   * @param fallback is a thunk generating a fallback `Future` to timeout to
+   */
+  timeoutTo<AA>(after: number | Duration, fallback: () => Future<AA>): Future<A | AA> {
+    const other = Future.delayedTick(after, this._scheduler).flatMap(_ => fallback())
+    const lst: Future<A | AA>[] = [this, other]
+    return Future.firstCompletedOf(lst, this._scheduler)
+  }
+
   // Implements HK<F, A>
   readonly _funKindF: Future<any>
   readonly _funKindA: A
@@ -568,6 +652,24 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
   }
 
   /**
+   * Returns a `Future` that will complete after the given `delay`.
+   *
+   * This can be used to do delayed execution. For example:
+   *
+   * ```typescript
+   * Future.delayedTick(1000).flatMap(_ =>
+   *   Future.of(() => console.info("Hello!"))
+   * )
+   * ```
+   *
+   * @param delay is the duration to wait before signaling the tick
+   * @param ec is the scheduler that will actually schedule the tick's execution
+   */
+  static delayedTick<A>(delay: number | Duration, ec: Scheduler = Scheduler.global.get()): Future<void> {
+    return Future.create(cb => ec.scheduleOnce(delay, () => cb(Success(undefined))), ec)
+  }
+
+  /**
    * Keeps calling `f` until it returns a `Right` value.
    *
    * Based on Phil Freeman's
@@ -624,25 +726,321 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
         ec
       )
   }
+
+  /**
+   * Creates a race condition between multiple futures, returning the result
+   * of the first one that completes, cancelling the rest.
+   *
+   * ```typescript
+   * const failure = Future.raise(new TimeoutError()).delayResult(2000)
+   *
+   * // Will yield 1
+   * const fa1 = Future.of(() => 1).delayResult(1000)
+   * Future.firstCompletedOf([fa1, failure])
+   *
+   * // Will yield a TimeoutError
+   * const fa2 = Future.of(() => 1).delayResult(10000)
+   * Future.firstCompletedOf([fa2, failure])
+   * ```
+   *
+   * @param list is the list of futures for which the race is started
+   * @param ec is the scheduler doing the needed scheduling and error reporting
+   *
+   * @return a future that will complete with the result of the first
+   *         future form the list to complete, the rest being cancelled
+   */
+  static firstCompletedOf<A>(list: Future<A>[] | Iterable<Future<A>>, ec: Scheduler = Scheduler.global.get()): Future<A> {
+    return futureFirstCompletedOf(list, ec)
+  }
+
+  /**
+   * Given a list of items, builds future results out of it with the specified
+   * mapping function and returns a new future that's going to be completed
+   * with the list of all generated results.
+   *
+   * This is the generic version of {@link Future.sequence}. Useful for
+   * processing futures in parallel, with the `parallelism` factor being
+   * configurable.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const list = [1, 2, 3, 4]
+   *
+   * // Yields [2, 4, 6, 8]
+   * Future.traverse(list)(a => Future.pure(a * 2))
+   * // ... is equivalent to:
+   * Future.sequence(list.map(_ => _ * 2))
+   * ```
+   *
+   * Note that the given `list` is strictly processed, so no lazy behavior
+   * should be expected if an `Iterable` is given.
+   *
+   * But in comparison with {@link Future.sequence}, this builder has lazy
+   * behavior in applying the given mapping function. Coupled with the
+   * `parallelism` factor, this can be used to do batched processing:
+   *
+   * ```typescript
+   * const userIDs = [1, 2, 3, 4]
+   *
+   * // Make at most 2 requests in parallel:
+   * Future.traverse(userIDs, 2)(fetchUserDetails)
+   * ```
+   *
+   * @param list are the values that get fed in the generator function for
+   *        building a list of future results
+   *
+   * @param parallelism is the maximum number of futures that are going to
+   *        be processed in parallel, defaults to `Infinity`
+   *
+   * @param ec is an optional scheduler that's going to be used for scheduling
+   *        the needed asynchronous boundaries
+   *
+   * @return a function that takes as parameter a the generator function that's
+   *         going to map the given `list`, transforming it into a list of
+   *         futures, finally returning a future that's going to complete
+   *         with the list of all asynchronously generated results
+   */
+  static traverse<A>(list: A[] | Iterable<A>, parallelism: number = Infinity, ec: Scheduler = Scheduler.global.get()):
+    <B>(f: (a: A) => Future<B>) => Future<B[]> {
+
+    return f => futureTraverse(list, f, parallelism, ec)
+  }
+
+  /**
+   * Asynchronously transforms a list of futures into a future of a list.
+   *
+   * The equivalent of `Promise.all`, this is the specialized version of
+   * {@link Future.traverse}.
+   *
+   * Contract:
+   *
+   * - the given `Iterable<Future<A>>` list is eagerly evaluated, transformed
+   *   from the start into an `Array<Future<A>>`, so don't expect laziness in
+   *   evaluating it
+   * - In case one of the future fails, then all other futures that are still
+   *   pending get cancelled
+   * - In case the returned future gets cancelled, then all in-progress futures
+   *   from that list get cancelled
+   *
+   * Sample:
+   *
+   * ```typescript
+   * const f1 = Future.of(() => 1)
+   * const f2 = Future.of(() => 2)
+   * const f3 = Future.of(() => 3)
+   *
+   * // Yields [1, 2, 3]
+   * const all: Future<number[]> = Future.sequence([f1, f2, f3])
+   * ```
+   */
+  static sequence<A>(list: Future<A>[] | Iterable<Future<A>>, ec: Scheduler = Scheduler.global.get()): Future<A[]> {
+    return futureSequence(list, ec)
+  }
+
+  /**
+   * Maps 2 `Future` values by the mapping function, returning a new
+   * `Future` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Future.sequence} operation and as such
+   * on cancellation or failure all future values get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Future.of(() => 1)
+   * const fa2 = Future.of(() => 2)
+   *
+   *
+   * // Yields Success(3)
+   * Future.map2(fa1, fa2, (a, b) => a + b)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * Future.map2(fa1, Future.raise("error"),
+   *   (a, b) => a + b
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map2`.
+   */
+  static map2<A1, A2, R>(
+    fa1: Future<A1>, fa2: Future<A2>, f: (a1: A1, a2: A2) => R,
+    ec: Scheduler = Scheduler.global.get()): Future<R> {
+
+    const fl: Future<any[]> = Future.sequence([fa1, fa2] as any[], ec)
+    return fl.map(lst => f(lst[0], lst[1]))
+  }
+
+  /**
+   * Maps 3 `Future` values by the mapping function, returning a new
+   * `Future` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Future.sequence} operation and as such
+   * on cancellation or failure all future values get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Future.of(() => 1)
+   * const fa2 = Future.of(() => 2)
+   * const fa3 = Future.of(() => 3)
+   *
+   *
+   * // Yields Success(6)
+   * Future.map3(fa1, fa2, fa3, (a, b, c) => a + b + c)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * Future.map3(
+   *   fa1, fa2, Future.raise("error"),
+   *   (a, b, c) => a + b + c
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map3`.
+   */
+  static map3<A1, A2, A3, R>(
+    fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>,
+    f: (a1: A1, a2: A2, a3: A3) => R,
+    ec: Scheduler = Scheduler.global.get()): Future<R> {
+
+    const fl: Future<any[]> = Future.sequence([fa1, fa2, fa3] as any[], ec)
+    return fl.map(lst => f(lst[0], lst[1], lst[2]))
+  }
+
+  /**
+   * Maps 4 `Future` values by the mapping function, returning a new
+   * `Future` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Future.sequence} operation and as such
+   * on cancellation or failure all future values get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Future.of(() => 1)
+   * const fa2 = Future.of(() => 2)
+   * const fa3 = Future.of(() => 3)
+   * const fa4 = Future.of(() => 4)
+   *
+   * // Yields Success(10)
+   * Future.map4(fa1, fa2, fa3, fa4, (a, b, c, d) => a + b + c + d)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * Future.map4(
+   *   fa1, fa2, fa3, Future.raise("error"),
+   *   (a, b, c, d) => a + b + c + d
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map4`.
+   */
+  static map4<A1, A2, A3, A4, R>(
+    fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>, fa4: Future<A4>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4) => R,
+    ec: Scheduler = Scheduler.global.get()): Future<R> {
+
+    const fl: Future<any[]> = Future.sequence([fa1, fa2, fa3, fa4] as any[], ec)
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3]))
+  }
+
+  /**
+   * Maps 5 `Future` values by the mapping function, returning a new
+   * `Future` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Future.sequence} operation and as such
+   * on cancellation or failure all future values get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Future.of(() => 1)
+   * const fa2 = Future.of(() => 2)
+   * const fa3 = Future.of(() => 3)
+   * const fa4 = Future.of(() => 4)
+   * const fa5 = Future.of(() => 5)
+   *
+   * // Yields Success(15)
+   * Future.map5(fa1, fa2, fa3, fa4, fa5,
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * Future.map5(
+   *   fa1, fa2, fa3, fa4, Future.raise("error"),
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map5`.
+   */
+  static map5<A1, A2, A3, A4, A5, R>(
+    fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>, fa4: Future<A4>, fa5: Future<A5>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R,
+    ec: Scheduler = Scheduler.global.get()): Future<R> {
+
+    const fl: Future<any[]> = Future.sequence([fa1, fa2, fa3, fa4, fa5] as any[], ec)
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3], lst[4]))
+  }
+
+  /**
+   * Maps 6 `Future` values by the mapping function, returning a new
+   * `Future` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Future.sequence} operation and as such
+   * on cancellation or failure all future values get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Future.of(() => 1)
+   * const fa2 = Future.of(() => 2)
+   * const fa3 = Future.of(() => 3)
+   * const fa4 = Future.of(() => 4)
+   * const fa5 = Future.of(() => 5)
+   * const fa6 = Future.of(() => 6)
+   *
+   * // Yields Success(21)
+   * Future.map6(
+   *   fa1, fa2, fa3, fa4, fa5, fa6,
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * Future.map6(
+   *   fa1, fa2, fa3, fa4, fa5, Future.raise("error"),
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map6`.
+   */
+  static map6<A1, A2, A3, A4, A5, A6, R>(
+    fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>, fa4: Future<A4>, fa5: Future<A5>, fa6: Future<A6>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R,
+    ec: Scheduler = Scheduler.global.get()): Future<R> {
+
+    const fl: Future<any[]> = Future.sequence([fa1, fa2, fa3, fa4, fa5, fa6] as any[], ec)
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3], lst[4], lst[5]))
+  }
 }
 
 class PureFuture<A> extends Future<A> {
-  constructor(private readonly _value: Try<A>, private readonly _ec: Scheduler) { super() }
+  constructor(private readonly _value: Try<A>, protected readonly _scheduler: Scheduler) { super() }
 
   cancel(): void {}
   value(): Option<Try<A>> { return Some(this._value) }
 
   withScheduler(ec: Scheduler): Future<A> {
-    if (this._ec === ec) return this
+    if (this._scheduler === ec) return this
     return new PureFuture(this._value, ec)
   }
 
   onComplete(f: (a: Try<A>) => void): void {
-    this._ec.trampoline(() => f(this._value))
+    this._scheduler.trampoline(() => f(this._value))
   }
 
   transformWith<B>(failure: (e: any) => Future<B>, success: (a: A) => Future<B>): Future<B> {
-    return genericTransformWith(this, failure, success, this._ec)
+    return genericTransformWith(this, failure, success, this._scheduler)
   }
 
   toPromise(): Promise<A> {
@@ -654,13 +1052,13 @@ class FutureBuilder<A> extends Future<A> {
   private _result: Option<Try<A>>
   private _listeners: ((a: Try<A>) => void)[]
   private _cancelable: ICancelable
-  private _ec: Scheduler
+  protected readonly _scheduler: Scheduler
 
   constructor(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec: Scheduler) {
     super()
     this._result = None
     this._listeners = []
-    this._ec = ec
+    this._scheduler = ec
 
     const complete = (result: Try<A>) => {
       if (this._result !== None) {
@@ -685,7 +1083,7 @@ class FutureBuilder<A> extends Future<A> {
   onComplete(f: (a: Try<A>) => void): void {
     if (this._result !== None) {
       // Forced async boundary
-      this._ec.trampoline(() => f(this._result.get()))
+      this._scheduler.trampoline(() => f(this._result.get()))
     } else {
       this._listeners.push(f)
     }
@@ -704,7 +1102,7 @@ class FutureBuilder<A> extends Future<A> {
   }
 
   withScheduler(ec: Scheduler): Future<A> {
-    if (this._ec === ec) return this
+    if (this._scheduler === ec) return this
     return new FutureBuilder(
       cb => {
         this.onComplete(cb)
@@ -714,7 +1112,7 @@ class FutureBuilder<A> extends Future<A> {
   }
 
   transformWith<B>(failure: (e: any) => Future<B>, success: (a: A) => Future<B>): Future<B> {
-    return genericTransformWith(this, failure, success, this._ec, this._cancelable)
+    return genericTransformWith(this, failure, success, this._scheduler, this._cancelable)
   }
 }
 
@@ -780,7 +1178,7 @@ const futureUnit: Future<void> =
 /**
  * Internal, reusable function used in the implementation of {@link Future.then}.
  *
- * @hidden
+ * @Hidden
  */
 function promiseThen<T, R>(f: ((t: T) => IPromiseLike<R> | R) | undefined | null, alt: (t: T) => Future<T>):
   ((value: T) => Future<R | T>) {
@@ -795,5 +1193,191 @@ function promiseThen<T, R>(f: ((t: T) => IPromiseLike<R> | R) | undefined | null
       return Future.fromPromise(fb as IPromiseLike<R>)
     else
       return Future.pure(fb as R)
+  }
+}
+
+/** @Hidden */
+function futureCancelAll<A>(list: Future<A>[], ec: Scheduler, skip: number = -1): void {
+  const errors = []
+  for (let i = 0; i < list.length; i++) {
+    if (i !== skip)
+      try { list[i].cancel() } catch (e) { errors.push(e) }
+  }
+
+  if (errors.length > 0) {
+    for (const e of errors) ec.reportFailure(e)
+  }
+}
+
+/** @Hidden */
+function futureIterableToArray<A>(values: Future<A>[] | Iterable<Future<A>>, ec: Scheduler): Future<A>[] {
+  if (!values) return []
+  if (Object.prototype.toString.call(values) === "[object Array]")
+    return values as Future<A>[]
+
+  const arr: Future<A>[] = []
+  try {
+    const cursor = values[Symbol.iterator]()
+
+    while (true) {
+      const item = cursor.next()
+      if (item.value) arr.push(item.value)
+      if (item.done) break
+    }
+
+    return arr
+  } catch (e) {
+    futureCancelAll(arr, ec)
+    throw e
+  }
+}
+
+/**
+ * Internal implementation for `Future.sequence`.
+ *
+ * @Hidden
+ */
+function futureSequence<A>(values: Future<A>[] | Iterable<Future<A>>, ec: Scheduler): Future<A[]> {
+  return Future.create(cb => {
+    try {
+      // This can throw, handling error below
+      const futures = futureIterableToArray(values, ec)
+      // Short-circuit in case the list is empty, otherwise the
+      // futureSequenceLoop fails (must be non-empty as an invariant)
+      if (futures.length === 0) return cb(Success([]))
+      const cRef = Cancelable.of(() => futureCancelAll(futures, ec))
+
+      // Creating race condition
+      let isDone = false
+      let finishedCount = 0
+      let finalArray: A[] = []
+
+      for (let index = 0; index < futures.length; index++) {
+        const fi = index
+        const fa = futures[index]
+
+        fa.onComplete(result => {
+          finishedCount += 1
+
+          if (result.isSuccess()) {
+            if (!isDone) {
+              finalArray[fi] = result.get()
+              isDone = finishedCount === futures.length
+              if (isDone) cb(Success(finalArray))
+            }
+          } else {
+            if (!isDone) {
+              isDone = true
+              cRef.cancel()
+              cb(result as any)
+            } else {
+              ec.reportFailure(result.failed().get())
+            }
+          }
+        })
+      }
+
+      return cRef
+    } catch (e) {
+      // If an error happens here, it means the conversion from iterable to
+      // array failed, and the futures we've seen are already canceled
+      cb(Failure(e))
+    }
+  }, ec)
+}
+
+/**
+ * Internal implementation for `Future.firstCompletedOf`.
+ *
+ * @Hidden
+ */
+function futureFirstCompletedOf<A>(iterable: Future<A>[] | Iterable<Future<A>>, ec: Scheduler): Future<A> {
+  return Future.create(cb => {
+    try {
+      // This can throw, handling error below
+      const futures = futureIterableToArray(iterable, ec)
+      // Short-circuit in case the list is empty, otherwise the
+      // futureSequenceLoop fails (must be non-empty as an invariant)
+      if (futures.length === 0) return cb(Failure(new IllegalArgumentError("empty list of futures")))
+
+      // Creating race condition
+      let isDone = false
+
+      for (let index = 0; index < futures.length; index++) {
+        const fi = index
+        const fa = futures[index]
+
+        fa.onComplete(result => {
+          if (!isDone) {
+            isDone = true
+            futureCancelAll(futures, ec, fi)
+            cb(result)
+          } else if (result.isFailure()) {
+            ec.reportFailure(result.failed().get())
+          }
+        })
+      }
+
+      return Cancelable.of(() => futureCancelAll(futures, ec))
+    } catch (e) {
+      // If an error happens here, it means the conversion from iterable to
+      // array failed, and the futures we've seen are already canceled
+      cb(Failure(e))
+    }
+  }, ec)
+}
+
+/**
+ * Internal implementation for `Future.traverse`.
+ *
+ * @Hidden
+ */
+function futureTraverse<A, B>(
+  list: A[] | Iterable<A>,
+  f: (a: A) => Future<B>,
+  parallelism: number,
+  ec: Scheduler): Future<B[]> {
+
+  if (parallelism <= 0) {
+    throw new IllegalArgumentError(`parallelism <= 0`)
+  }
+  return Future.of(() => iterableToArray(list), ec)
+    .flatMap(values => futureTraverseLoop(values, f, parallelism, ec, 0, []))
+}
+
+/** @Hidden */
+function futureTraverseLoop<A, B>(
+  list: A[],
+  f: (a: A) => Future<B>,
+  parallelism: number,
+  ec: Scheduler,
+  index: number,
+  result: B[]): Future<B[]> {
+
+  if (index >= list.length) return Future.pure(result)
+  let batch: Future<B>[] = []
+  let length = 0
+
+  try {
+    while (index < list.length && length < parallelism) {
+      batch.push(f(list[index++]))
+      length += 1
+    }
+
+    const fa = Future.sequence(batch, ec).map(b => {
+      for (let i = 0; i < b.length; i++) result.push(b[i])
+    })
+
+    if (index >= list.length) {
+      // We are done, signal final result
+      return fa.map(_ => result)
+    } else {
+      // Continue with the next batch
+      return fa.flatMap(_ => futureTraverseLoop(list, f, parallelism, ec, index, result))
+    }
+  } catch (e) {
+    // Batch generation triggered an error
+    futureCancelAll(batch, ec)
+    return Future.raise(e)
   }
 }
