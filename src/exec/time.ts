@@ -198,6 +198,16 @@ export abstract class TimeUnit {
    * ```
    */
   abstract ord: number
+
+  /**
+   * A human readable label for this unit.
+   */
+  abstract label: string
+
+  /** Override for `Object.toString`. */
+  toString(): string {
+    return this.label.toUpperCase()
+  }
 }
 
 /** @hidden */ const C0 = 1
@@ -230,6 +240,7 @@ function x(d: number, m: number, over: number): number {
 /** @hidden */
 class Nanoseconds extends TimeUnit {
   ord: number = 0
+  label = "nanoseconds"
   convert(duration: number, unit: TimeUnit): number { return unit.toNanos(duration) }
   toNanos(d: number): number { return d }
   toMicros(d: number): number { return trunc(d / (C1 / C0)) }
@@ -250,6 +261,7 @@ export const NANOSECONDS: TimeUnit =
 /** @hidden */
 class Microseconds extends TimeUnit {
   ord: number = 1
+  label = "microseconds"
   convert(duration: number, unit: TimeUnit): number { return unit.toMicros(duration) }
   toNanos(d: number): number { return x(d, C1 / C0, trunc(MAX / (C1 / C0))) }
   toMicros(d: number): number { return d }
@@ -270,6 +282,7 @@ export const MICROSECONDS: TimeUnit =
 /** @hidden */
 class Milliseconds extends TimeUnit {
   ord: number = 2
+  label = "milliseconds"
   convert(duration: number, unit: TimeUnit): number { return unit.toMillis(duration) }
   toNanos(d: number): number { return x(d, C2 / C0, trunc(MAX / (C2 / C0))) }
   toMicros(d: number): number { return x(d, C2 / C1, trunc(MAX / (C2 / C1))) }
@@ -290,6 +303,7 @@ export const MILLISECONDS: TimeUnit =
 /** @hidden */
 class Seconds extends TimeUnit {
   ord: number = 3
+  label = "seconds"
   convert(duration: number, unit: TimeUnit): number { return unit.toSeconds(duration) }
   toNanos(d: number): number { return x(d, C3 / C0, trunc(MAX / (C3 / C0))) }
   toMicros(d: number): number { return x(d, C3 / C1, trunc(MAX / (C3 / C1))) }
@@ -309,6 +323,7 @@ export const SECONDS: TimeUnit =
 /** @hidden */
 class Minutes extends TimeUnit {
   ord: number = 4
+  label = "minutes"
   convert(duration: number, unit: TimeUnit): number { return unit.toMinutes(duration) }
   toNanos(d: number): number { return x(d, C4 / C0, trunc(MAX / (C4 / C0))) }
   toMicros(d: number): number { return x(d, C4 / C1, trunc(MAX / (C4 / C1))) }
@@ -328,6 +343,7 @@ export const MINUTES: TimeUnit =
 /** @hidden */
 class Hours extends TimeUnit {
   ord: number = 5
+  label = "hours"
   convert(duration: number, unit: TimeUnit): number { return unit.toHours(duration) }
   toNanos(d: number): number { return x(d, C5 / C0, trunc(MAX / (C5 / C0))) }
   toMicros(d: number): number { return x(d, C5 / C1, trunc(MAX / (C5 / C1))) }
@@ -347,6 +363,7 @@ export const HOURS: TimeUnit =
 /** @hidden */
 class Days extends TimeUnit {
   ord: number = 6
+  label = "days"
   convert(duration: number, unit: TimeUnit): number { return unit.toDays(duration) }
   toNanos(d: number): number { return x(d, C6 / C0, trunc(MAX / (C6 / C0))) }
   toMicros(d: number): number { return x(d, C6 / C1, trunc(MAX / (C6 / C1))) }
@@ -531,6 +548,15 @@ export class Duration implements IEquals<Duration> {
     } else {
       return 422082410550358
     }
+  }
+
+  toString(): string {
+    if (this.isFinite())
+      return `${this.duration} ${this.unit.label}`
+    else if (this.duration >= 0)
+      return "[end of time]"
+    else
+      return "[beginning of time]"
   }
 
   /**

@@ -53,3 +53,21 @@ export function arrayBSearchInsertPos<A>(array: Array<A>, f: (a: A) => number):
     return 0
   }
 }
+
+/**
+ * Internal utility that builds an iterator out of an `Iterable` or an `Array`.
+ */
+export function iterableToArray<A>(values: Iterable<A>): A[] {
+  if (!values) return []
+  if (Object.prototype.toString.call(values) === "[object Array]")
+    return values as A[]
+
+  const cursor = values[Symbol.iterator]()
+  const arr: A[] = []
+
+  while (true) {
+    const item = cursor.next()
+    if (item.value) arr.push(item.value)
+    if (item.done) return arr
+  }
+}

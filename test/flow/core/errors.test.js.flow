@@ -27,7 +27,8 @@ import {
   NoSuchElementError,
   IllegalInheritanceError,
   IllegalStateError,
-  IllegalArgumentError
+  IllegalArgumentError,
+  TimeoutError
 } from "../../../src/core"
 
 new ff.CompositeError([])
@@ -99,3 +100,15 @@ new IllegalArgumentError()
 new IllegalArgumentError("message")
 // $ExpectError
 new IllegalArgumentError(1)
+
+// ---
+
+new ff.TimeoutError()
+new ff.TimeoutError("message")
+// $ExpectError
+new ff.TimeoutError(1)
+
+new TimeoutError()
+new TimeoutError("message")
+// $ExpectError
+new TimeoutError(1)

@@ -19,6 +19,7 @@
 
 declare export class TimeUnit {
   ord: number;
+  label: string;
   convert(duration: number, unit: TimeUnit): number;
   toNanos(d: number): number;
   toMicros(d: number): number;
@@ -59,6 +60,7 @@ declare export class Duration {
 
   equals(other: Duration): boolean;
   hashCode(): number;
+  toString(): string;
 
   static of(value: number | Duration): Duration;
   static zero(): Duration;

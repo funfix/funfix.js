@@ -99,6 +99,10 @@ describe("NANOSECONDS", () => {
     jv.integer,
     d => NANOSECONDS.convert(d, MICROSECONDS) === MICROSECONDS.toNanos(d)
   )
+
+  test("toString", () => {
+    expect(NANOSECONDS.toString().toLowerCase()).toBe("nanoseconds")
+  })
 })
 
 describe("MICROSECONDS", () => {
@@ -181,6 +185,10 @@ describe("MICROSECONDS", () => {
     jv.integer,
     d => MICROSECONDS.convert(d, NANOSECONDS) === NANOSECONDS.toMicros(d)
   )
+
+  test("toString", () => {
+    expect(MICROSECONDS.toString().toLowerCase()).toBe("microseconds")
+  })
 })
 
 describe("MILLISECONDS", () => {
@@ -268,6 +276,10 @@ describe("MILLISECONDS", () => {
     jv.integer,
     d => MILLISECONDS.convert(d, MICROSECONDS) === MICROSECONDS.toMillis(d)
   )
+
+  test("toString", () => {
+    expect(MILLISECONDS.toString().toLowerCase()).toBe("milliseconds")
+  })
 })
 
 describe("SECONDS", () => {
@@ -360,6 +372,10 @@ describe("SECONDS", () => {
     jv.integer,
     d => SECONDS.convert(d, MILLISECONDS) === MILLISECONDS.toSeconds(d)
   )
+
+  test("toString", () => {
+    expect(SECONDS.toString().toLowerCase()).toBe("seconds")
+  })
 })
 
 describe("MINUTES", () => {
@@ -457,6 +473,10 @@ describe("MINUTES", () => {
     jv.integer,
     d => MINUTES.convert(d, SECONDS) === SECONDS.toMinutes(d)
   )
+
+  test("toString", () => {
+    expect(MINUTES.toString().toLowerCase()).toBe("minutes")
+  })
 })
 
 describe("HOURS", () => {
@@ -554,6 +574,10 @@ describe("HOURS", () => {
     jv.integer,
     d => HOURS.convert(d, SECONDS) === SECONDS.toHours(d)
   )
+
+  test("toString", () => {
+    expect(HOURS.toString().toLowerCase()).toBe("hours")
+  })
 })
 
 describe("DAYS", () => {
@@ -661,9 +685,18 @@ describe("DAYS", () => {
     jv.integer,
     d => DAYS.convert(d, HOURS) === HOURS.toDays(d)
   )
+
+  test("toString", () => {
+    expect(DAYS.toString().toLowerCase()).toBe("days")
+  })
 })
 
 describe("Duration (finite)", () => {
+  test("toString", () => {
+    expect(Duration.days(2).toString()).toBe("2 days")
+    expect(Duration.minutes(3).toString()).toBe("3 minutes")
+  })
+
   test("it can convert from nanos()", () => {
     const ref = Duration.nanos(86400000000000)
     expect(ref.isFinite()).toBe(true)
@@ -731,6 +764,11 @@ describe("Duration (finite)", () => {
 })
 
 describe("Duration (infinite)", () => {
+  test("toString", () => {
+    expect(Duration.inf().toString()).toBe("[end of time]")
+    expect(Duration.negInf().toString()).toBe("[beginning of time]")
+  })
+
   test("#equals", () => {
     expect(is(Duration.inf(), Duration.inf())).toBe(true)
     expect(is(Duration.negInf(), Duration.negInf())).toBe(true)

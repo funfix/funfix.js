@@ -46,6 +46,8 @@ declare export class Future<+A> {
   toPromise(): Promise<A>;
 
   delayResult(delay: number | Duration): Future<A>;
+  timeoutTo<AA>(after: number | Duration, fallback: () => Future<AA>): Future<A | AA>;
+  timeout(after: number | Duration): Future<A>;
 
   // From IPromiseLike
   then(onFulfilled?: (value: A) => any, onRejected?: (error: any) => any): Future<any>;
@@ -65,7 +67,10 @@ declare export class Future<+A> {
   static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>): Future<B>;
   static fromPromise<A>(ref: IPromiseLike<A>, ec?: Scheduler): Future<A>;
 
-  static sequence<A>(values: Future<A>[] | Iterable<Future<A>>, ec?: Scheduler): Future<A[]>;
+  static firstCompletedOf<A>(list: Future<A>[] | Iterable<Future<A>>, ec?: Scheduler): Future<A>;
+  static sequence<A>(list: Future<A>[] | Iterable<Future<A>>, ec?: Scheduler): Future<A[]>;
+  static traverse<A>(list: A[] | Iterable<A>, parallelism?: number, ec?: Scheduler):
+    <B>(f: (a: A) => Future<B>) => Future<B[]>;
 
   static map2<A1, A2, R>(
     fa1: Future<A1>, fa2: Future<A2>, f: (a1: A1, a2: A2) => R,

@@ -22,7 +22,8 @@ import {
   IllegalStateError,
   NoSuchElementError,
   IllegalArgumentError,
-  NotImplementedError
+  NotImplementedError,
+  TimeoutError
 } from "../../../src/"
 
 describe("DummyError", () => {
@@ -112,6 +113,15 @@ describe("NotImplementedError", () => {
     const ex = new NotImplementedError("dummy")
 
     expect(ex.name).toBe("NotImplementedError")
+    expect(ex.message).toBe("dummy")
+  })
+})
+
+describe("TimeoutError", () => {
+  it("has custom message", () => {
+    const ex = new TimeoutError("dummy")
+
+    expect(ex.name).toBe("TimeoutError")
     expect(ex.message).toBe("dummy")
   })
 })
