@@ -16,9 +16,9 @@
     "option",
     "either"
   ],
-  "main": "dist/funfix.umd.js",
-  "module": "dist/funfix.es5.js",
-  "typings": "dist/types/funfix.d.ts",
+  "main": "dist/index.umd.js",
+  "module": "dist/index.js",
+  "typings": "dist/types/index.d.ts",
   "files": [
     "dist",
     "src",

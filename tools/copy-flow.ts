@@ -63,8 +63,7 @@ async function main() {
   }
 
   const pkg = JSON.parse(fs.readFileSync(path.join(currentDir, "package.json")) as any)
-  exec(`cp -f "${destDir}/${pkg.name}.js.flow" "${currentDir}/${pkg.main}.flow"`)
-  exec(`cp -f "${destDir}/${pkg.name}.js.flow" "${currentDir}/${pkg.module}.flow"`)
+  exec(`cp -f "${destDir}/index.js.flow" "${currentDir}/${pkg.main}.flow"`)
 }
 
 main().then(
