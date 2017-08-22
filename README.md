@@ -25,6 +25,8 @@ npm install --save funfix
 The code is organized in ES2015 modules, but all types, classes and
 functions are exported by the root module.
 
+See the **[JSDoc documentation](https://funfix.org/api/)**.
+
 ### core
 
 Data types for expressing disjunctions:
