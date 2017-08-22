@@ -63,72 +63,122 @@ const email: string | null =
 ## Features Overview
 
 The code is organized in ES2015 modules, but all types, classes and
-functions are exported by the [root module]{@link "index"}.
+functions are exported by the root module.
 
-**["core"]{@link "core/index"}** defines core
-data types and universal interfaces:
+### core
 
-- **[Option&lt;A&gt;]{@link Option}**: data type for representing optional values,
-  much like the "`Maybe`" monadic type from Haskell or
-  "`Option`" from Scala
-- **[Either&lt;L,R&gt;]{@link Either}**: data type for representing disjoint unions,
-  for working with values of two possible types,
-  inspired by the data type with the same name from Haskell and Scala
-- **[Try&lt;A&gt;]{@link Try}**: data type for capturing exceptional results and manipulating 
-  them as values, being equivalent in spirit with `Either&lt;Throwable, A&gt;`,
-  inspired by the data type with the same name from Scala
-- **[core/errors]{@link "core/errors"}**: sub-module that defines the 
-  standard `Error` types
-- **[core/std]{@link "core/std"}**: sub-module that defines the 
-  [[IEquals]] interface for structural equality in [[is]] along with
-  other utilities
+Data types for expressing disjunctions:
+
+|                |                                                                                                    |
+|----------------|----------------------------------------------------------------------------------------------------|
+| {@link Either} | data type for expressing results with two possible outcome types (a disjoint union)                |
+| {@link Option} | data type for expressing optional values                                                           |
+| {@link Try}    | data type for representing the result of computations that may result in either success or failure |
+
+Standard interfaces and tools for dealing with universal equality and
+hash code generation:
+
+|                               |                                                                                                    |
+|-------------------------------|----------------------------------------------------------------------------------------------------|
+| {@link IEquals}               | an interface for defining universal equality and hash code                                                         |
+| {@link is} and {@link equals} | for using `IEquals` in tests, or otherwise falls back to JavaScript's equality (`==` or `valueOf()`) |
+| {@link hashCode}              | for calculating hash codes (for usage in sets and maps data structures) using `IEquals`, or otherwise falls back to calculating a hash from `.valueOf()` or from `.toString()` |
+| {@link isValueObject}         | for testing if a given object implements `IEquals` |
   
-**["exec"]{@link "exec/index"}** defines low level primitives for dealing
-with asynchrony and concurrency:
+Also exposes standard, reusable error types, that help with some common
+scenarios, working with error types being preferable to working with
+strings:
 
-- **[Future&lt;A&gt;]{@link Future}**: a lawful and cancelable alternative 
-  to JavaScript's `Promise`
-- **[DynamicRef&lt;A&gt;]{@link DynamicRef}**: binding mechanism for global variables 
-- **[exec/cancelable]{@link "exec/cancelable"}**: sub-module that defines
-  {@link ICancelable} and derived interfaces, classes and utilities for
-  dealing with cancellation
-- **[exec/scheduler]{@link "exec/scheduler"}**: sub-module that defines
-  {@link Scheduler}, for scheduling asynchronous execution, as an alternative 
-  to working straight with `setTimeout`
-- **[exec/time]{@link "exec/time"}**: sub-module that defines {@link TimeUnit}
-  and {@link Duration} for specifying timespans
+|                                 |                                                                                                    |
+|---------------------------------|----------------------------------------------------------------------------------------------------|
+| {@link DummyError}              | for tagging errors used for testing purposes |
+| {@link IllegalArgumentError}    | for signaling that a given argument is violating the contract of the called function or constructor |
+| {@link IllegalInheritanceError} | for signaling that inheriting from a certain class is illegal |
+| {@link IllegalStateError}       | for signaling that an illegal code branch was executed and thus something is wrong with the code and needs investigation (e.g. a bug) |
+| {@link NoSuchElementError}      | thrown when the user expects an element to be returned from a function call, but no such element exists |
+| {@link NotImplementedError}     | thrown in case an implementation is missing |
+| {@link TimeoutError}            | thrown in case the execution of a procedure takes longer than expected |
+| {@link CompositeError}          | for gathering multiple errors in a single reference that can expose them as a list |
 
-**["effect"]{@link "effect/index"}** defines data types
-for dealing with side effects:
+Misc utilities:
 
-- **[Eval&lt;A&gt;]{@link Eval}**: data type for suspending synchronous side 
-  effects and controlling evaluation (e.g. memoization, error handling)
+|                                 |                                                                                                    |
+|---------------------------------|----------------------------------------------------------------------------------------------------|
+| {@link applyMixins}             | for working with mixins (i.e. classes used as interfaces, with methods that have default implementations), see [Mixins](https://www.typescriptlang.org/docs/handbook/mixins.html) for an explanation |
+| {@link id}                      | is the "identity" function                                                                         |
 
-**["types"]{@link "types/index"}** defines
-[type classes]{@link https://en.wikipedia.org/wiki/Type_class}
+### exec
+
+Scheduling tasks for asynchronous execution:
+
+|                   |                                                                                        |
+|-------------------|--------------------------------------------------------------------------------------- |
+| {@link Future}    | a lawful, fast, cancelable alternative to JavaScript's `Promise`                       |
+| {@link Scheduler} | the alternative to using `setTimeout` for asynchronous boundaries or delayed execution |
+
+In support for futures and schedulers, {@link ICancelable} data types
+are introduced for dealing with cancellation concerns:
+
+|                                                    |                                                                                        |
+|----------------------------------------------------|--------------------------------------------------------------------------------------- |
+| {@link ICancelable} and {@link Cancelable}         | for expressing actions that can be triggered to cancel processes / dispose of resources |
+| {@link IBoolCancelable} and {@link BoolCancelable} | for cancelable references that can be queried for their `isCanceled` status |
+| {@link IAssignCancelable} and {AssignCancelable}   | for cancelable references that can be assigned (behave like a box for) another reference |
+| {@link MultiAssignCancelable}                      | being a mutable cancelable whose underlying reference can be updated multiple times |
+| {@link SingleAssignCancelable}                     | for building forward references, much like `MultiAssignCancelable` except that it can be assigned only once, triggering an error on the second attempt |
+| {@link SerialCancelable}                           | being like a `MultiAssignCancelable` that cancels its previous underlying reference on updates |
+
+And also types for expressing durations:
+
+|                  |                                                                                        |
+|------------------|--------------------------------------------------------------------------------------- |
+| {@link TimeUnit} | inspired by Java's own enumeration, representing time| elated units of measurement     |
+| {@link Duration} | inspired by Scala's own type, as a type safe representation for durations              |
+
+### effect
+
+For suspending synchronous side-effects and functions that execute
+immediately (no asynchronous boundaries):
+
+|              |                                                                                        |
+|--------------|--------------------------------------------------------------------------------------- |
+| {@link Eval} | a lawful, lazy, monadic data type, that can control evaluation, inspired by the `Eval` type in [Typelevel Cats](http://typelevel.org/cats/) and by the `Coeval` type in [Monix](https://monix.io), the equivalent of Haskell's `IO`, but that can only handle immediate execution and not async boundaries. |
+
+N.B. an equivalent `Task` / `IO` type is coming 😉
+
+### types
+
+[Type classes]{@link https://en.wikipedia.org/wiki/Type_class}
 inspired by Haskell's standard library and by 
 [Typelevel Cats]{@link http://typelevel.org/cats/}:
 
-- **[[Eq]]**: a type class for determining equality between instances of the 
-  same type and that obeys the laws defined in [[EqLaws]]
-- **[[Functor]]**: a type class exposing [map]{@link Functor.map} and that 
-  obeys the laws defined in [[FunctorLaws]]
-- **[[Apply]]**: a type class that extends [[Functor]], that exposes
-  [ap]{@link Apply.ap} and that obeys the laws defined in [[ApplyLaws]]
-- **[[Applicative]]**: a type class that extends [[Functor]] and [[Apply]], 
-  that exposes [pure]{@link Applicative.pure} and that obeys the laws 
-  defined in [[ApplicativeLaws]]
-- **[[ApplicativeError]]**: a type class that extends [[Applicative]],
-  for applicative types that can raise errors or recover from them
-  and that obeys the laws defined in [[ApplicativeErrorLaws]]
-- **[[FlatMap]]**: a type class that extends [[Functor]] and [[Apply]], 
-  that exposes [flatMap]{@link FlatMap.flatMap} and
-  [tailRecM]{@link FlatMap.tailRecM} and that obeys the laws 
-  defined in [[FlatMapLaws]]
-- **[[Monad]]**: a type class that extends [[Applicative]] and [[FlatMap]]
-  and that obeys the laws defined in [[MonadLaws]]
-- **[[MonadError]]**: a type class that extends [[ApplicativeError]] 
-  and [[Monad]], for monads that can raise or recover from errors
-  and that obeys the laws defined in [[MonadErrorLaws]]
+|                          |                                                                                                                                                                           |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| {@link Eq}               | a type class for determining equality between instances of the same type and that obeys the laws defined in {@link EqLaws}                                                |
+| {@link Functor}          | a type class exposing `map` and that obeys the laws defined in {@link FunctorLaws}                                                                                        |
+| {@link Apply}            | a type class that extends `Functor`, exposing `ap` and that obeys the laws defined in {@link ApplyLaws}                                                                   |
+| {@link Applicative}      | a type class that extends `Functor` and `Apply`, exposing `pure` and that obeys the laws defined in {@link ApplicativeLaws}                                               |
+| {@link ApplicativeError} | a type class that extends `Applicative`, for applicative types that can raise errors or recover from them and that obeys the laws defined in {@link ApplicativeErrorLaws} | 
+| {@link FlatMap}          | a type class that extends `Functor` and `Apply`, exposing `flatMap` and `tailRecM` and that obeys the laws defined in {@link FlatMapLaws}                                 |
+| {@link Monad}            | a type class that extends `Applicative` and `FlatMap` and that obeys the laws defined in {@link MonadLaws}                                                                |
+| {@link MonadError}       | a type class that extends `ApplicativeError` and `Monad`, for monads that can raise or recover from errors and that obeys the laws defined in {@link MonadErrorLaws}      |
   
 More is coming 😉
+
+## Contributing
+
+The Funfix project welcomes contributions from anybody wishing to
+participate.  All code or documentation that is provided must be
+licensed with the same license that Funfix is licensed with (Apache
+2.0, see LICENSE.txt).
+
+Feel free to open an issue if you notice a bug, have an idea for a
+feature, or have a question about the code. Pull requests are also
+gladly accepted. 
+
+See the project's [GitHub Repository](https://github.com/funfix/funfix).
+
+## License
+
+All code in this repository is licensed under the Apache License,
+Version 2.0.
