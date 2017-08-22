@@ -40,7 +40,7 @@ hash code generation:
 
 |                               |                                                                                                    |
 |-------------------------------|----------------------------------------------------------------------------------------------------|
-| [IEquals](https://funfix.org/api/classes/iequals.html)                | an interface for defining universal equality and hash code                                                         |
+| [IEquals](https://funfix.org/api/interfaces/iequals.html)                | an interface for defining universal equality and hash code                                                         |
 | [is](https://funfix.org/api/globals.html#is) and [equals](https://funfix.org/api/globals.html#equals) | for using `IEquals` in tests, or otherwise falls back to JavaScript's equality (`==` or `valueOf()`) |
 | [hashCode](https://funfix.org/api/globals.html#hashCode)              | for calculating hash codes (for usage in sets and maps data structures) using `IEquals`, or otherwise falls back to calculating a hash from `.valueOf()` or from `.toString()` |
 | [isValueObject](https://funfix.org/api/globals.html#isValueObject)    | for testing if a given object implements `IEquals` |
@@ -76,14 +76,14 @@ Scheduling tasks for asynchronous execution:
 | [Future](https://funfix.org/api/classes/future.html)    | a lawful, fast, cancelable alternative to JavaScript's `Promise`                       |
 | [Scheduler](https://funfix.org/api/classes/scheduler.html) | the alternative to using `setTimeout` for asynchronous boundaries or delayed execution |
 
-In support for futures and schedulers, [ICancelable](https://funfix.org/api/classes/icancelable.html) data types
+In support for futures and schedulers, [ICancelable](https://funfix.org/api/interfaces/icancelable.html) data types
 are introduced for dealing with cancellation concerns:
 
 |                                                    |                                                                                        |
 |----------------------------------------------------|--------------------------------------------------------------------------------------- |
-| [ICancelable](https://funfix.org/api/classes/icancelable.html) and [Cancelable](https://funfix.org/api/classes/cancelable.html)         | for expressing actions that can be triggered to cancel processes / dispose of resources |
-| [IBoolCancelable](https://funfix.org/api/classes/iboolcancelable.html) and [BoolCancelable](https://funfix.org/api/classes/boolcancelable.html) | for cancelable references that can be queried for their `isCanceled` status |
-| [IAssignCancelable](https://funfix.org/api/classes/iassigncancelable.html) and [AssignCancelable](https://funfix.org/api/classes/assigncancelable.html)   | for cancelable references that can be assigned (behave like a box for) another reference |
+| [ICancelable](https://funfix.org/api/interfaces/icancelable.html) and [Cancelable](https://funfix.org/api/classes/cancelable.html)         | for expressing actions that can be triggered to cancel processes / dispose of resources |
+| [IBoolCancelable](https://funfix.org/api/interfaces/iboolcancelable.html) and [BoolCancelable](https://funfix.org/api/classes/boolcancelable.html) | for cancelable references that can be queried for their `isCanceled` status |
+| [IAssignCancelable](https://funfix.org/api/interfaces/iassigncancelable.html) and [AssignCancelable](https://funfix.org/api/classes/assigncancelable.html)   | for cancelable references that can be assigned (behave like a box for) another reference |
 | [MultiAssignCancelable](https://funfix.org/api/classes/multiassigncancelable.html)   | being a mutable cancelable whose underlying reference can be updated multiple times |
 | [SingleAssignCancelable](https://funfix.org/api/classes/singleassigncancelable.html) | for building forward references, much like `MultiAssignCancelable` except that it can be assigned only once, triggering an error on the second attempt |
 | [SerialCancelable](https://funfix.org/api/classes/serialcancelable.html)             | being like a `MultiAssignCancelable` that cancels its previous underlying reference on updates |
