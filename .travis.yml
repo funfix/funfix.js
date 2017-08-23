@@ -11,10 +11,11 @@ notifications:
 node_js:
   - '7.10'
 before_script:
-  - npm prune && npm cache clean
-  - npm install
+  - npm install -g yarn
+  - yarn cache clean
+  - yarn install
 script:
-  - npm run test:prod
+  - yarn test:prod
 # after_success:
 #  - npm run report-coverage
 #  - npm run semantic-release
