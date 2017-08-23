@@ -1,130 +1,45 @@
 {
-  "name": "funfix",
-  "version": "0.0.0-development",
-  "description": "Functional programming library for Javascript",
-  "keywords": [
-    "fp",
-    "functional-programming",
-    "concurrency",
-    "asynchrony",
-    "future",
-    "promise",
-    "io",
-    "task",
-    "monad",
-    "applicative",
-    "option",
-    "either"
-  ],
-  "main": "dist/index.umd.js",
-  "module": "dist/index.js",
-  "typings": "dist/types/index.d.ts",
-  "files": [
-    "dist",
-    "src",
-    "index.js.flow"
-  ],
+  "name": "@funfix/packages",
   "repository": {
     "type": "git",
     "url": "https://github.com/funfix/funfix.git"
   },
   "author": "Alexandru Nedelcu <noreply@alexn.org>",
   "license": "Apache-2.0",
-  "engines": {
-    "node": ">=6.0.0"
-  },
   "scripts": {
-    "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
-    "prebuild": "rimraf dist",
-    "copy-flow": "ts-node tools/copy-flow.ts",
-    "doc": "typedoc --mode file --theme minimal --listInvalidSymbolLinks --excludeNotExported --excludePrivate --out dist/docs --target es6 --name Funfix --readme rootdoc.md src",
-    "build": "tsc && rollup -c && npm run doc && yarn run copy-flow",
-    "start": "tsc-watch --onSuccess 'rollup -c'",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:prod": "yarn run lint && yarn run test -- --coverage --no-cache",
-    "deploy-docs": "node tools/gh-pages-publish.js",
-    "report-coverage": "codecov",
-    "commit": "git-cz",
-    "semantic-release": "semantic-release pre && npm publish && semantic-release post",
-    "prepush": "npm run test:prod && npm run build",
-    "commitmsg": "validate-commit-msg",
-    "clean": "rimraf dist",
-    "prepublish": "./tools/prepublish.sh"
-  },
-  "config": {
-    "commitizen": {
-      "path": "node_modules/cz-conventional-changelog"
-    },
-    "validate-commit-msg": {
-      "types": "conventional-commit-types",
-      "helpMessage": "Use \"npm run commit\" instead, we use conventional-changelog format :) (https://github.com/commitizen/cz-cli)"
-    }
-  },
-  "jest": {
-    "globals": {
-      "ts-jest": {
-        "skipBabel": true
-      }
-    },
-    "mapCoverage": true,
-    "transform": {
-      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
-    },
-    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js"
-    ],
-    "coveragePathIgnorePatterns": [
-      "/node_modules/",
-      "/test/"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 90,
-        "functions": 90,
-        "lines": 90,
-        "statements": 90
-      }
-    }
+    "postinstall": "lerna bootstrap && ./scripts/update-common.js",
+    "test": "lerna run test",
+    "test:prod": "lerna run test:prod",
+    "lint": "lerna run lint",
+    "build": "lerna run build"
   },
   "devDependencies": {
-    "@types/jest": "^20.0.0",
-    "@types/node": "^8.0.0",
+    "@types/mocha": "^2.2.42",
+    "@types/node": "^8.0.24",
     "babel-core": "^6.24.1",
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.5.1",
     "babel-preset-es2015-rollup": "^3.0.0",
-    "codecov": "^2.2.0",
-    "colors": "^1.1.2",
-    "commitizen": "^2.9.6",
-    "cross-env": "^5.0.0",
-    "cz-conventional-changelog": "^2.0.0",
     "flow-bin": "^0.53.0",
-    "husky": "^0.14.0",
-    "jest": "^20.0.4",
+    "fs-extra": "^4.0.1",
     "jsverify": "^0.8.2",
-    "lodash": "^4.17.4",
-    "prompt": "^1.0.0",
-    "replace-in-file": "^2.5.0",
+    "lerna": "^2.0.0-rc.5",
+    "mocha": "^3.5.0",
+    "nyc": "^11.1.0",
     "rimraf": "^2.6.1",
-    "rollup": "^0.48.2",
+    "rollup": "^0.47.6",
     "rollup-plugin-babel": "^3.0.0",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-node-resolve": "^3.0.0",
-    "rollup-plugin-typescript2": "^0.5.0",
-    "semantic-release": "^7.0.1",
-    "ts-jest": "^20.0.7",
-    "ts-node": "^3.2.0",
+    "rollup-plugin-sourcemaps": "^0.4.2",
+    "source-map-support": "^0.4.16",
+    "ts-node": "^3.3.0",
     "tsc-watch": "^1.0.7",
     "tslint": "^5.5.0",
     "tslint-config-standard": "^6.0.1",
     "tslint-eslint-rules": "^4.1.1",
     "typedoc": "^0.8.0",
-    "typescript": "^2.4.1",
-    "validate-commit-msg": "^2.12.1"
+    "typescript": "^2.4.1"
   }
 }

@@ -1,0 +1,100 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import type { EvalK, TypeClass } from "../../src/"
+import { Either, applyMixins } from "funfix-core"
+import { Eval } from "funfix-effect"
+import {
+  Equiv,
+  MonadError,
+  MonadErrorLaws,
+  ApplicativeError,
+  ApplicativeErrorLaws,
+  Applicative,
+  ApplicativeLaws,
+  Apply,
+  ApplyLaws,
+  Functor,
+  FunctorLaws,
+  monadErrorOf,
+  monadErrorLawsOf
+} from "../../src/"
+
+const erasure: MonadError<any, any> = MonadError._funErasure
+const typeId: string = MonadError._funTypeId
+const supertypes: string[] = MonadError._funSupertypeIds
+const tc: TypeClass<MonadError<any, any>> = MonadError
+
+const F: MonadError<Eval<any>, any> = monadErrorOf(Eval)
+const apError: ApplicativeError<Eval<any>, any> = F
+const applicative: Applicative<Eval<any>> = F
+const apply: Apply<Eval<any>> = F
+const functor: Functor<Eval<any>> = F
+
+const laws1: MonadErrorLaws<Eval<any>, any> = monadErrorLawsOf(F)
+const laws2: ApplicativeErrorLaws<Eval<any>, any> = laws1
+const laws3: ApplicativeLaws<Eval<any>> = laws1
+const laws4: ApplyLaws<Eval<any>> = laws1
+const laws5: FunctorLaws<Eval<any>> = laws1
+
+// $ExpectError
+const err5: MonadErrorLaws<string> = monadErrorLawsOf(F)
+
+class MonadErrorLawsForEval implements MonadErrorLaws<Eval<any>, any> {
+  +F: MonadError<Eval<any>, any> = monadErrorOf(Eval);
+
+  // Functor
+  covariantIdentity: <A>(fa: EvalK<A>) => Equiv<EvalK<A>>;
+  covariantComposition: <A, B, C>(fa: EvalK<A>, f: (a: A) => B, g: (b: B) => C) => Equiv<EvalK<C>>;
+  // Apply
+  applyComposition: <A, B, C>(fa: EvalK<A>, fab: EvalK<(a: A) => B>, fbc: EvalK<(b: B) => C>) => Equiv<EvalK<C>>;
+  applyProductConsistency: <A, B>(fa: EvalK<A>, f: EvalK<(a: A) => B>) => Equiv<EvalK<B>>;
+  applyMap2Consistency: <A, B>(fa: EvalK<A>, f: EvalK<(a: A) => B>) => Equiv<EvalK<B>>;
+  // FlatMap
+  flatMapAssociativity: <A, B, C>(fa: EvalK<A>, f: (a: A) => EvalK<B>, g: (b: B) => EvalK<C>) => Equiv<EvalK<C>>;
+  flatMapConsistentApply: <A, B>(fa: EvalK<A>, fab: EvalK<(a: A) => B>) => Equiv<EvalK<B>>;
+  followedByConsistency: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => Equiv<EvalK<B>>;
+  followedByLConsistency: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => Equiv<EvalK<B>>;
+  forEffectConsistency: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => Equiv<EvalK<A>>;
+  forEffectLConsistency: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => Equiv<EvalK<A>>;
+  tailRecMConsistentFlatMap: <A>(a: A, f: (a: A) => EvalK<A>) => Equiv<EvalK<A>>;
+  // Applicative
+  applicativeIdentity: <A>(fa: EvalK<A>) => Equiv<EvalK<A>>;
+  applicativeHomomorphism: <A, B>(a: A, f: (a: A) => B) => Equiv<EvalK<B>>;
+  applicativeInterchange: <A, B>(a: A, ff: EvalK<(a: A) => B>) => Equiv<EvalK<B>>;
+  applicativeMap: <A, B>(fa: EvalK<A>, f: (a: A) => B) => Equiv<EvalK<B>>;
+  applicativeComposition: <A, B, C>(fa: EvalK<A>, fab: EvalK<(a: A) => B>, fbc: EvalK<(b: B) => C>) => Equiv<EvalK<C>>;
+  applicativeUnit: <A>(a: A) => Equiv<EvalK<A>>;
+  // Monad
+  monadLeftIdentity: <A, B>(a: A, f: (a: A) => EvalK<B>) => Equiv<EvalK<B>>;
+  monadRightIdentity: <A, B>(fa: EvalK<A>) => Equiv<EvalK<A>>;
+  mapFlatMapCoherence: <A, B>(fa: EvalK<A>, f: (a: A) => B) => Equiv<EvalK<B>>;
+  tailRecMStackSafety: () => Equiv<EvalK<number>>;
+  // ApplicativeError
+  monadErrorRecoverWith: <A>(e: any, f: (e: any) => EvalK<A>) => Equiv<EvalK<A>>;
+  monadErrorRecover: <A>(e: any, f: (e: any) => A) => Equiv<EvalK<A>>;
+  recoverWithPure: <A>(a: A, f: (e: any) => EvalK<A>) => Equiv<EvalK<A>>;
+  recoverPure: <A>(a: A, f: (e: any) => A) => Equiv<EvalK<A>>;
+  raiseErrorAttempt: (e: any) => Equiv<EvalK<Either<any, void>>>;
+  pureAttempt: <A>(a: A) => Equiv<EvalK<Either<any, A>>>;
+  // MonadError
+  monadErrorLeftZero: <A, B>(e: any, f: (a: A) => EvalK<B>) => Equiv<EvalK<B>>
+}
+
+applyMixins(MonadErrorLawsForEval, [MonadErrorLaws])

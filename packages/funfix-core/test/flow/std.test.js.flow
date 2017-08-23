@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import * as ff from "../../src/"
+// A la carte import
+import {
+  IEquals,
+  is,
+  equals,
+  hashCode,
+  isValueObject,
+  hashCodeOfString,
+  applyMixins
+} from "../../src/"
+
+// IEquals test (1)
+const opt: ff.Option<number> = ff.Option.of(1)
+const ref1: ff.IEquals<ff.Option<number>> = opt
+// $ExpectError
+const invalid1: ff.IEquals<ff.Option<string>> = opt
+
+// IEquals test (2)
+const ref2: IEquals<ff.Option<number>> = opt
+// $ExpectError
+const invalid2: IEquals<ff.Option<string>> = opt
+
+// Can instances of same type be equal?
+is("test", "test")
+is(1, 1)
+// $ExpectError
+const t1 = is<string>("test", 1)
+
+// Alias
+equals("test", "test")
+equals(1, 1)
+// $ExpectError
+const t2 = equals<string>("test", 1)
+
+hashCode("test")
+hashCode(10)
+hashCodeOfString("test")
+// $ExpectError
+hashCodeOfString(10)
+
+isValueObject(1)
+
+class Mixin { base(): number { return 1 } }
+class Child {}
+
+applyMixins(Child, [Mixin])
+
+// $ExpectError
+applyMixins("", [Mixin])
+
+// $ExpectError
+applyMixins(Child, [""])

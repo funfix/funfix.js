@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import {
+  Scheduler,
+  GlobalScheduler,
+  TestScheduler,
+  Duration,
+  ICancelable
+} from "../../src/"
+
+const global: Scheduler = Scheduler.global.get()
+
+const ts: number = global.currentTimeMillis()
+global.executeAsync(() => console.log("hello"))
+global.trampoline(() => console.log("hello"))
+global.reportFailure("error")
+
+const oneSec = Duration.seconds(1)
+const c1: ICancelable = global.scheduleOnce(10000, () => console.log("delayed"))
+const c2: ICancelable = global.scheduleOnce(oneSec, () => console.log("delayed"))
+const c3: ICancelable = global.scheduleWithFixedDelay(1000, 1000, () => console.log("periodic"))
+const c4: ICancelable = global.scheduleAtFixedRate(1000, 1000, () => console.log("periodic"))
+const c5: ICancelable = global.scheduleWithFixedDelay(oneSec, oneSec, () => console.log("periodic"))
+const c6: ICancelable = global.scheduleAtFixedRate(oneSec, oneSec, () => console.log("periodic"))
+
+const globalRef = new GlobalScheduler(true)
+const testS1 = new TestScheduler()
+const testS2 = new TestScheduler(err => console.error(err))
+
+testS2.executeAsync(() => console.log("test"))
+testS2.tick()
+testS2.tick(1000)
+testS2.tick(oneSec)
+
+const failures: any[] = testS2.triggeredFailures()
+const test1: boolean = testS2.hasTasksLeft()
+
+Scheduler.global.bind(new TestScheduler(), () => {
+  Scheduler.global.get()
+})
+
+Scheduler.global.bindL(() => new TestScheduler(), () => {
+  Scheduler.global.get()
+})

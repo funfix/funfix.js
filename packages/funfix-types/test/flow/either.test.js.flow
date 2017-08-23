@@ -1,0 +1,55 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import { Either } from "funfix-core"
+import {
+  Eq,
+  eqOf,
+  Monad,
+  monadOf,
+  FlatMap,
+  flatMapOf,
+  Applicative,
+  applicativeOf,
+  Apply,
+  applyOf,
+  Functor,
+  functorOf,
+  EitherInstances
+} from "../../src/"
+
+// Either.__types
+
+const functor1: Functor<Either<any, any>> = functorOf(Either)
+const functor2: Functor<Either<any, any>> = EitherInstances.global
+
+const ap1: Apply<Either<any, any>> = applyOf(Either)
+const ap2: Apply<Either<any, any>> = EitherInstances.global
+
+const applicative1: Applicative<Either<any, any>> = applicativeOf(Either)
+const applicative2: Applicative<Either<any, any>> = EitherInstances.global
+
+const eq1: Eq<Either<any, any>> = eqOf(Either)
+const eq2: Eq<Either<any, any>> = EitherInstances.global
+
+const flatMap1: FlatMap<Either<any, any>> = flatMapOf(Either)
+const flatMap2: FlatMap<Either<any, any>> = EitherInstances.global
+
+const monad1: Monad<Either<any, any>> = monadOf(Either)
+const monad2: Monad<Either<any, any>> = EitherInstances.global

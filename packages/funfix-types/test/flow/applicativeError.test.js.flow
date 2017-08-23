@@ -1,0 +1,79 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import type { EvalK, TypeClass } from "../../src/"
+import { Either, applyMixins } from "funfix-core"
+import { Eval } from "funfix-effect"
+import {
+  Equiv,
+  ApplicativeError,
+  ApplicativeErrorLaws,
+  Applicative,
+  ApplicativeLaws,
+  Apply,
+  ApplyLaws,
+  Functor,
+  FunctorLaws,
+  applicativeErrorOf,
+  applicativeErrorLawsOf
+} from "../../src/"
+
+const erasure: ApplicativeError<any, any> = ApplicativeError._funErasure
+const typeId: string = ApplicativeError._funTypeId
+const supertypes: string[] = ApplicativeError._funSupertypeIds
+const tc: TypeClass<ApplicativeError<any, any>> = ApplicativeError
+
+const F: ApplicativeError<Eval<any>, any> = applicativeErrorOf(Eval)
+const applicative: Applicative<Eval<any>> = F
+const apply: Apply<Eval<any>> = F
+const functor: Functor<Eval<any>> = F
+
+const laws1: ApplicativeErrorLaws<Eval<any>, any> = applicativeErrorLawsOf(F)
+const laws2: ApplicativeLaws<Eval<any>> = laws1
+const laws3: ApplyLaws<Eval<any>> = laws1
+const laws4: FunctorLaws<Eval<any>> = laws1
+
+// $ExpectError
+const err5: ApplicativeErrorLaws<string> = applicativeErrorLawsOf(F)
+
+class ApplicativeErrorLawsForEval implements ApplicativeErrorLaws<Eval<any>, any> {
+  +F: ApplicativeError<Eval<any>, any> = applicativeErrorOf(Eval);
+
+  // Mixed-in
+  covariantIdentity: <A>(fa: EvalK<A>) => Equiv<EvalK<A>>;
+  covariantComposition: <A, B, C>(fa: EvalK<A>, f: (a: A) => B, g: (b: B) => C) => Equiv<EvalK<C>>;
+  applyComposition: <A, B, C>(fa: EvalK<A>, fab: EvalK<(a: A) => B>, fbc: EvalK<(b: B) => C>) => Equiv<EvalK<C>>;
+  applyProductConsistency: <A, B>(fa: EvalK<A>, f: EvalK<(a: A) => B>) => Equiv<EvalK<B>>;
+  applyMap2Consistency: <A, B>(fa: EvalK<A>, f: EvalK<(a: A) => B>) => Equiv<EvalK<B>>;
+  applicativeIdentity: <A>(fa: EvalK<A>) => Equiv<EvalK<A>>;
+  applicativeHomomorphism: <A, B>(a: A, f: (a: A) => B) => Equiv<EvalK<B>>;
+  applicativeInterchange: <A, B>(a: A, ff: EvalK<(a: A) => B>) => Equiv<EvalK<B>>;
+  applicativeMap: <A, B>(fa: EvalK<A>, f: (a: A) => B) => Equiv<EvalK<B>>;
+  applicativeComposition: <A, B, C>(fa: EvalK<A>, fab: EvalK<(a: A) => B>, fbc: EvalK<(b: B) => C>) => Equiv<EvalK<C>>;
+  applicativeUnit: <A>(a: A) => Equiv<EvalK<A>>;
+
+  applicativeErrorRecoverWith: <A>(e: any, f: (e: any) => EvalK<A>) => Equiv<EvalK<A>>;
+  applicativeErrorRecover: <A>(e: any, f: (e: any) => A) => Equiv<EvalK<A>>;
+  recoverWithPure: <A>(a: A, f: (e: any) => EvalK<A>) => Equiv<EvalK<A>>;
+  recoverPure: <A>(a: A, f: (e: any) => A) => Equiv<EvalK<A>>;
+  raiseErrorAttempt: (e: any) => Equiv<EvalK<Either<any, void>>>;
+  pureAttempt: <A>(a: A) => Equiv<EvalK<Either<any, A>>>;
+}
+
+applyMixins(ApplicativeErrorLawsForEval, [ApplicativeErrorLaws])
