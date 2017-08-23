@@ -35,11 +35,10 @@
     "rollup-plugin-sourcemaps": "^0.4.2",
     "source-map-support": "^0.4.16",
     "ts-node": "^3.3.0",
-    "tsc-watch": "^1.0.7",
     "tslint": "^5.5.0",
     "tslint-config-standard": "^6.0.1",
     "tslint-eslint-rules": "^4.1.1",
     "typedoc": "^0.8.0",
-    "typescript": "^2.4.2"
+    "typescript": "2.4.2"
   }
 }
