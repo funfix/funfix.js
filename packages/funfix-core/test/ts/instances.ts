@@ -49,7 +49,7 @@ export const arbFailure: jv.Arbitrary<Try<number>> =
 export const arbTry: jv.Arbitrary<Try<number>> =
   jv.number.smap(
     i => i % 4 < 3 ? Success(i) : Failure(i),
-    fa => fa.isSuccess() ? fa.get() : fa.failed().get()
+    fa => fa.isSuccess() ? fa.get() : fa.failed().get() as any
   )
 
 export const arbAny: jv.Arbitrary<any> =

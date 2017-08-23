@@ -9,11 +9,11 @@
     "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "doc": "../../scripts/generate-docs.js .",
     "prebuild": "rimraf dist",
-    "build": "tsc && rollup -c && npm run copy-flow && npm run doc",
+    "build": "tsc && rollup -c && yarn copy-flow && yarn doc",
     "start": "node ../../node_modules/.bin/tsc-watch --onSuccess 'rollup -c'",
     "test": "mocha --opts mocha.opts",
     "test:watch": "mocha --opts mocha.opts --watch",
-    "test:prod": "npm run build && npm run lint && nyc mocha --opts mocha.opts --reporter dot",
+    "test:prod": "yarn build && yarn lint && nyc mocha --opts mocha.opts --reporter dot",
     "copy-flow": "../../scripts/copy-flow.js ."
   },
   "files": [
