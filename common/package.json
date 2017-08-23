@@ -26,7 +26,7 @@
 
     "test": "mocha --opts mocha.opts",
     "test:watch": "mocha --opts mocha.opts --watch",
-    "test:prod": "npm run lint && nyc mocha --opts mocha.opts --reporter dot",
+    "test:prod": "npm run build && npm run lint && nyc mocha --opts mocha.opts --reporter dot",
     "copy-flow": "../../scripts/copy-flow.js ."
   },
 
