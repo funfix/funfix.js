@@ -29,7 +29,6 @@
     "test:prod": "yarn build && yarn lint && nyc mocha --opts mocha.opts --reporter dot",
     "copy-flow": "../../scripts/copy-flow.js ."
   },
-
   "nyc": {
     "include": [
       "src/**/*.ts",

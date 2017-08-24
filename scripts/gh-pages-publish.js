@@ -31,34 +31,28 @@ if (!process.env["CI"]) {
   process.exit(1)
 }
 
-if (process.env["TRAVIS_BRANCH"] !== "master" || process.env["TRAVIS_PULL_REQUEST"] !== "false") {
+const branch = process.env["TRAVIS_BRANCH"]
+const m = branch.match(/^v(\d+\.\d+\.\d+)$/)
+let version = m && m[1]
+
+if (!version && process.env["TRAVIS_BRANCH"] === "master" && process.env["TRAVIS_PULL_REQUEST"] === 'false') {
+  version = 'next'
+}
+
+if (!version) {
   console.info("Only deploying docs on the master branch and not for pull requests, exiting!")
   process.exit(0)
 }
 
+console.info(`Version detected: ${version}`)
 const commonDir = path.join(path.dirname(process.argv[1]), "..", "common")
 const rootDir = path.join(commonDir, "..", "packages")
 
-let repoUrl
-let pkg = JSON.parse(readFileSync("package.json", "utf-8"))
-if (typeof pkg.repository === "object") {
-  if (!pkg.repository.hasOwnProperty("url")) {
-    throw new Error("URL does not exist in repository section")
-  }
-  repoUrl = pkg.repository.url
-} else {
-  repoUrl = pkg.repository
-}
-
-const parsedUrl = url.parse(repoUrl)
-const repository = (parsedUrl.host || "") + (parsedUrl.path || "")
+const repository = "github.com/funfix/funfix.org.git"
 const ghToken = process.env.GH_TOKEN
 
 const destDir = path.join(process.env["TMPDIR"] || ".", `docs-${Math.floor(Math.random() * 100000)}`)
 const sourceDir = path.resolve(".")
-const version = exec("git fetch && git tag | grep '^v' | sort | tail -1")
-  .toString()
-  .replace(/^\s+|\s+$/g, "")
 
 echo("Deploying docs!!!")
 if (process.env.TMPDIR && existsSync(process.env.TMPDIR)) {
@@ -69,7 +63,7 @@ exec(`rm -rf "${destDir}"`)
 exec(`git clone "https://${ghToken}@${repository}" "${destDir}" -b gh-pages`)
 
 exec(`mkdir -p "${destDir}"/archive/`)
-exec(`rm -rf "${destDir}"/archive/${version} && rm -rf "${destDir}"/api`)
+exec(`rm -rf "${destDir}"/archive/${version}`)
 exec(`mkdir -p "${destDir}"/archive/${version}`)
 
 for (const p of fs.readdirSync(rootDir)) {
@@ -84,15 +78,18 @@ for (const p of fs.readdirSync(rootDir)) {
   exec(`cp -rp "${docsDir}" "${destDir}"/archive/${version}/${prefixLess}`)
 }
 
-exec(`ln -s ./archive/${version} "${destDir}"/api`)
+if (version !== 'next') {
+  exec(`rm -rf "${destDir}"/api`)
+  exec(`ln -s ./archive/${version} "${destDir}"/api`)
+} 
 
 cd(destDir)
 exec("git add .")
 exec('git config user.name "Alexandru Nedelcu"')
 exec('git config user.email "noreply@alexn.org"')
 exec(`git commit -m "docs(docs): update gh-pages for ${version}"`)
-exec(`git push --force --quiet "https://${ghToken}@${repository}" gh-pages:gh-pages`)
+//exec(`git push --force --quiet "https://${ghToken}@${repository}" gh-pages:gh-pages`)
 
-cd("~")
-exec(`rm -rf ${destDir}`)
-echo("Docs deployed!!")
+//cd("~")
+//exec(`rm -rf ${destDir}`)
+//echo("Docs deployed!!")

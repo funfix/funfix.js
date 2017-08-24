@@ -21,6 +21,8 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.5.1",
     "babel-preset-es2015-rollup": "^3.0.0",
+    "commitizen": "^2.9.6",
+    "cz-conventional-changelog": "^2.0.0",
     "flow-bin": "^0.53.0",
     "fs-extra": "^4.0.1",
     "jsverify": "^0.8.2",
@@ -39,6 +41,16 @@
     "tslint-config-standard": "^6.0.1",
     "tslint-eslint-rules": "^4.1.1",
     "typedoc": "^0.8.0",
-    "typescript": "~2.5.1"
+    "typescript": "~2.5.1",
+    "validate-commit-msg": "^2.14.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-conventional-changelog"
+    },
+    "validate-commit-msg": {
+      "types": "conventional-commit-types",
+      "helpMessage": "Use \"npm run commit\" instead, we use conventional-changelog format :) (https://github.com/commitizen/cz-cli)"
+    }
   }
 }
