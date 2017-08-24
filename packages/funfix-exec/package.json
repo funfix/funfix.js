@@ -1,7 +1,7 @@
 {
   "name": "funfix-exec",
   "description": "Sub-package of Funfix defining type classes inspired by Haskell's standard library and by Typelevel Cats",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "main": "dist/index.umd.js",
   "module": "dist/index.js",
   "typings": "dist/types/index.d.ts",
@@ -17,7 +17,7 @@
     "copy-flow": "../../scripts/copy-flow.js ."
   },
   "dependencies": {
-    "funfix-core": "^5.0.0"
+    "funfix-core": "^5.0.1"
   },
   "files": [
     "dist",

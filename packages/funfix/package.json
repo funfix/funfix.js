@@ -1,7 +1,7 @@
 {
   "name": "funfix",
   "description": "Functional programming library for Javascript",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "keywords": [
     "fp",
     "functional-programming",
@@ -45,10 +45,10 @@
     "copy-flow": "../../scripts/copy-flow.js ."
   },
   "dependencies": {
-    "funfix-core": "^5.0.0",
-    "funfix-exec": "^5.0.0",
-    "funfix-effect": "^5.0.0",
-    "funfix-types": "^5.0.0"
+    "funfix-core": "^5.0.1",
+    "funfix-effect": "^5.0.1",
+    "funfix-exec": "^5.0.1",
+    "funfix-types": "^5.0.1"
   },
   "nyc": {
     "include": [
