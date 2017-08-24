@@ -10,55 +10,45 @@ belonging into a standard library.
 
 ## Contents
 
-Included are data types for expression disjunctions:
+Included are data types for expressing disjunctions:
 
-- {@link Either}: data type for expressing results with two possible
-   outcome types (a disjoint union)
-- {@link Option}: data type for expressing optional values
-- {@link Try}: data type for representing the result of computations
-  that may result in either success or failure
+|                |                                                                                                    |
+|----------------|----------------------------------------------------------------------------------------------------|
+| {@link Either} | data type for expressing results with two possible outcome types (a disjoint union)                |
+| {@link Option} | data type for expressing optional values                                                           |
+| {@link Try}    | data type for representing the result of computations that may result in either success or failure |
 
-The core also includes tools for dealing with universal equality
-and hash code generation:
+Standard interfaces and tools for dealing with universal equality and
+hash code generation:
 
-- {@link IEquals} an interface for defining universal
-  equality and hash code
-- {@link is} and {@link equals} for using `IEquals` in tests, or
-  otherwise falls back to JavaScript's equality (`==` or `valueOf()`)
-- {@link hashCode} for calculating hash codes (for usage in sets
-  and maps data structures) using `IEquals`, or otherwise falls back
-  to calculating a hash from `.valueOf()` or from `.toString()`
-- {@link isValueObject} for testing if a given object implements
-  `IEquals`
-
+|                               |                                                                                                    |
+|-------------------------------|----------------------------------------------------------------------------------------------------|
+| {@link IEquals}               | an interface for defining universal equality and hash code                                                         |
+| {@link is} and {@link equals} | for using `IEquals` in tests, or otherwise falls back to JavaScript's equality (`==` or `valueOf()`) |
+| {@link hashCode}              | for calculating hash codes (for usage in sets and maps data structures) using `IEquals`, or otherwise falls back to calculating a hash from `.valueOf()` or from `.toString()` |
+| {@link isValueObject}         | for testing if a given object implements `IEquals` |
+  
 Also exposes standard, reusable error types, that help with some common
 scenarios, working with error types being preferable to working with
 strings:
 
-- {@link DummyError} for tagging errors used for testing purposes
-- {@link IllegalArgumentError} for signaling that a given argument
-  is violating the contract of the called function or constructor
-- {@link IllegalInheritanceError} for signaling that inheriting
-  from a certain class is illegal
-- {@link IllegalStateError} for signaling that an illegal code branch
-  was executed and thus something is wrong with the code and needs
-  investigation (e.g. a bug)
-- {@link NoSuchElementError} thrown when the user expects an element
-  to be returned from a function call, but no such element exists
-- {@link NotImplementedError} thrown in case an implementation
-  is missing
-- {@link TimeoutError} thrown in case the execution of a procedure
-  takes longer than expected
-- {@link CompositeError} for gathering multiple errors in a single
-  reference that can expose them as a list
+|                                 |                                                                                                    |
+|---------------------------------|----------------------------------------------------------------------------------------------------|
+| {@link DummyError}              | for tagging errors used for testing purposes |
+| {@link IllegalArgumentError}    | for signaling that a given argument is violating the contract of the called function or constructor |
+| {@link IllegalInheritanceError} | for signaling that inheriting from a certain class is illegal |
+| {@link IllegalStateError}       | for signaling that an illegal code branch was executed and thus something is wrong with the code and needs investigation (e.g. a bug) |
+| {@link NoSuchElementError}      | thrown when the user expects an element to be returned from a function call, but no such element exists |
+| {@link NotImplementedError}     | thrown in case an implementation is missing |
+| {@link TimeoutError}            | thrown in case the execution of a procedure takes longer than expected |
+| {@link CompositeError}          | for gathering multiple errors in a single reference that can expose them as a list |
 
-And misc utilities:
+Misc utilities:
 
-- {@link applyMixins} for working with mixins (i.e. classes used
-  as interfaces, with methods that have default implementations),
-  see [Mixins](https://www.typescriptlang.org/docs/handbook/mixins.html)
-  for an explanation
-- {@link id} is the "identity" function
+|                                 |                                                                                                    |
+|---------------------------------|----------------------------------------------------------------------------------------------------|
+| {@link applyMixins}             | for working with mixins (i.e. classes used as interfaces, with methods that have default implementations), see [Mixins](https://www.typescriptlang.org/docs/handbook/mixins.html) for an explanation |
+| {@link id}                      | is the "identity" function                                                                         |
 
 ## Usage
 

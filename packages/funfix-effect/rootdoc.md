@@ -9,14 +9,9 @@ types for dealing with laziness and side effects.
 
 ## Contents
 
-For suspending synchronous side-effects and functions that execute
-immediately (no asynchronous boundaries):
-
-- {@link Eval}: a lawful, lazy, monadic data type, that can control
-  evaluation, inspired by the `Eval` type in 
-  [Typelevel Cats](http://typelevel.org/cats/) and by the `Coeval`
-  type in [Monix](https://monix.io), the equivalent of Haskell's `IO`, 
-  but that can only handle immediate execution and not async boundaries.
+|              |                                                                                        |
+|--------------|--------------------------------------------------------------------------------------- |
+| {@link Eval} | a lawful, lazy, monadic data type, that can control evaluation, inspired by the `Eval` type in [Typelevel Cats](http://typelevel.org/cats/) and by the `Coeval` type in [Monix](https://monix.io), the equivalent of Haskell's `IO`, but that can only handle immediate execution and not async boundaries. |
 
 N.B. an equivalent `Task` / `IO` type is coming 😉
 

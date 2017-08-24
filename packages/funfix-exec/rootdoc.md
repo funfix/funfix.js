@@ -9,38 +9,31 @@ utilities and data types for building higher level concurrency tools.
 
 ## Contents
 
-For scheduling tasks for execution:
+Scheduling tasks for asynchronous execution:
 
-- {@link Future}, a lawful, fast, cancelable alternative to
-  JavaScript's `Promise`
-- {@link Scheduler}, the alternative to using `setTimeout` for
-  asynchronous boundaries or delayed execution
+|                   |                                                                                        |
+|-------------------|--------------------------------------------------------------------------------------- |
+| {@link Future}    | a lawful, fast, cancelable alternative to JavaScript's `Promise`                       |
+| {@link Scheduler} | the alternative to using `setTimeout` for asynchronous boundaries or delayed execution |
 
 In support for futures and schedulers, {@link ICancelable} data types
 are introduced for dealing with cancellation concerns:
 
-- {@link ICancelable} and {@link Cancelable} for expressing actions
-  that can be triggered to cancel processes / dispose of resources
-- {@link IBoolCancelable} and {@link BoolCancelable} for
-  cancelable references that can be queried for their `isCanceled`
-  status
-- {@link IAssignCancelable} and {AssignCancelable} for cancelable
-  references that can be assigned (behave like a box for) another
-  reference
-- {@link MultiAssignCancelable} being a mutable cancelable
-  whose underlying reference can be updated multiple times
-- {@link SingleAssignCancelable} for building forward references,
-  much like `MultiAssignCancelable` except that it can be assigned
-  only once, triggering an error on the second attempt
-- {@link SerialCancelable} being like a `MultiAssignCancelable`
-  that cancels its previous underlying reference on updates
+|                                                    |                                                                                        |
+|----------------------------------------------------|--------------------------------------------------------------------------------------- |
+| {@link ICancelable} and {@link Cancelable}         | for expressing actions that can be triggered to cancel processes / dispose of resources |
+| {@link IBoolCancelable} and {@link BoolCancelable} | for cancelable references that can be queried for their `isCanceled` status |
+| {@link IAssignCancelable} and {AssignCancelable}   | for cancelable references that can be assigned (behave like a box for) another reference |
+| {@link MultiAssignCancelable}                      | being a mutable cancelable whose underlying reference can be updated multiple times |
+| {@link SingleAssignCancelable}                     | for building forward references, much like `MultiAssignCancelable` except that it can be assigned only once, triggering an error on the second attempt |
+| {@link SerialCancelable}                           | being like a `MultiAssignCancelable` that cancels its previous underlying reference on updates |
 
 And also types for expressing durations:
 
-- {@link TimeUnit}, inspired by Java's own enumeration, representing
-  time-related units of measurement
-- {@link Duration}, inspired by Scala's own type, as a type safe
-  representation for durations
+|                  |                                                                                        |
+|------------------|--------------------------------------------------------------------------------------- |
+| {@link TimeUnit} | inspired by Java's own enumeration, representing time| elated units of measurement     |
+| {@link Duration} | inspired by Scala's own type, as a type safe representation for durations              |
 
 ## Usage
 

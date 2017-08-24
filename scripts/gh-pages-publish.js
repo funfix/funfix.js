@@ -79,8 +79,9 @@ for (const p of fs.readdirSync(rootDir)) {
   const docsDir = path.join(dir, "dist", "docs")
   if (!fs.existsSync(docsDir) || !fs.lstatSync(docsDir).isDirectory()) continue
 
-  exec(`rm -rf "${destDir}"/archive/${version}/${p}`)
-  exec(`cp -rp "${docsDir}" "${destDir}"/archive/${version}/${p}`)
+  const prefixLess = p.replace(/^funfix\-/, '')
+  exec(`rm -rf "${destDir}"/archive/${version}/${prefixLess}`)
+  exec(`cp -rp "${docsDir}" "${destDir}"/archive/${version}/${prefixLess}`)
 }
 
 exec(`ln -s ./archive/${version} "${destDir}"/api`)

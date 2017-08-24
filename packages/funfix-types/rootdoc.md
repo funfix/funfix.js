@@ -23,6 +23,8 @@ Summary of type classes:
 | {@link Monad}            | a type class that extends `Applicative` and `FlatMap` and that obeys the laws defined in {@link MonadLaws}                                                                |
 | {@link MonadError}       | a type class that extends `ApplicativeError` and `Monad`, for monads that can raise or recover from errors and that obeys the laws defined in {@link MonadErrorLaws}      |
 
+More is coming 😉
+
 ## Usage
 
 You can depend on the whole `funfix` library, by adding it to
