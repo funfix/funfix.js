@@ -44,6 +44,7 @@
     ],
     "reporter": [
       "lcov",
+      "json",
       "text-summary",
       "html"
     ],
