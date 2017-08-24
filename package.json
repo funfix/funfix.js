@@ -13,7 +13,7 @@
     "lint": "lerna run lint",
     "build": "lerna run build",
     "commitmsg": "validate-commit-msg",
-    "semantic-release": "semantic-release pre && lerna publish && semantic-release post"    
+    "semantic-release": "semantic-release pre && lerna publish && semantic-release post"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.42",
@@ -27,6 +27,7 @@
     "cz-conventional-changelog": "^2.0.0",
     "flow-bin": "^0.53.0",
     "fs-extra": "^4.0.1",
+    "husky": "^0.14.3",
     "jsverify": "^0.8.2",
     "lerna": "^2.0.0-rc.5",
     "mocha": "^3.5.0",
