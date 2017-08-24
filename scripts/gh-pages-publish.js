@@ -18,6 +18,7 @@
 
 const { cd, exec, echo } = require("shelljs")
 const { readFileSync, existsSync } = require("fs")
+const fs = require("fs")
 const url = require("url")
 const path = require("path")
 
@@ -35,6 +36,9 @@ if (process.env["TRAVIS_BRANCH"] !== "master" || process.env["TRAVIS_PULL_REQUES
   process.exit(0)
 }
 
+const commonDir = path.join(path.dirname(process.argv[1]), "..", "common")
+const rootDir = path.join(commonDir, "..", "packages")
+
 let repoUrl
 let pkg = JSON.parse(readFileSync("package.json", "utf-8"))
 if (typeof pkg.repository === "object") {
@@ -50,7 +54,7 @@ const parsedUrl = url.parse(repoUrl)
 const repository = (parsedUrl.host || "") + (parsedUrl.path || "")
 const ghToken = process.env.GH_TOKEN
 
-const destDir = `${pkg.name}-docs-${Math.floor(Math.random() * 100000)}`
+const destDir = path.join(process.env["TMPDIR"] || ".", `docs-${Math.floor(Math.random() * 100000)}`)
 const sourceDir = path.resolve(".")
 const version = exec("git fetch && git tag | grep '^v' | sort | tail -1")
   .toString()
@@ -66,7 +70,19 @@ exec(`git clone "https://${ghToken}@${repository}" "${destDir}" -b gh-pages`)
 
 exec(`mkdir -p "${destDir}"/archive/`)
 exec(`rm -rf "${destDir}"/archive/${version} && rm -rf "${destDir}"/api`)
-exec(`rsync -rcv --delete-excluded "${sourceDir}"/dist/docs/ "${destDir}"/archive/${version}`)
+exec(`mkdir -p "${destDir}"/archive/${version}`)
+
+for (const p of fs.readdirSync(rootDir)) {
+  const dir = path.join(rootDir, p)
+  if (!fs.lstatSync(dir).isDirectory()) continue
+
+  const docsDir = path.join(dir, "dist", "docs")
+  if (!fs.existsSync(docsDir) || !fs.lstatSync(docsDir).isDirectory()) continue
+
+  exec(`rm -rf "${destDir}"/archive/${version}/${p}`)
+  exec(`cp -rp "${docsDir}" "${destDir}"/archive/${version}/${p}`)
+}
+
 exec(`ln -s ./archive/${version} "${destDir}"/api`)
 
 cd(destDir)
@@ -76,6 +92,6 @@ exec('git config user.email "noreply@alexn.org"')
 exec(`git commit -m "docs(docs): update gh-pages for ${version}"`)
 exec(`git push --force --quiet "https://${ghToken}@${repository}" gh-pages:gh-pages`)
 
-cd("..")
+cd("~")
 exec(`rm -rf ${destDir}`)
 echo("Docs deployed!!")
