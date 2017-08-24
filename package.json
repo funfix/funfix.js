@@ -12,8 +12,7 @@
     "test:prod": "lerna run test:prod",
     "lint": "lerna run lint",
     "build": "lerna run build",
-    "commitmsg": "validate-commit-msg",
-    "semantic-release": "semantic-release pre && lerna publish && semantic-release post"
+    "commitmsg": "validate-commit-msg"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.42",
