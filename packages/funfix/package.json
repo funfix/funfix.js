@@ -5,9 +5,8 @@
   "keywords": [
     "fp",
     "functional-programming",
-    "type-classes",
     "concurrency",
-    "async",
+    "asynchrony",
     "future",
     "promise",
     "io",
@@ -15,9 +14,7 @@
     "monad",
     "applicative",
     "option",
-    "either",
-    "typescript",
-    "flow"
+    "either"
   ],
   "main": "dist/index.umd.js",
   "module": "dist/index.js",

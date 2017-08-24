@@ -14,6 +14,20 @@
   },
   "author": "Alexandru Nedelcu <noreply@alexn.org>",
   "license": "Apache-2.0",
+  "keywords": [
+    "fp",
+    "functional-programming",
+    "concurrency",
+    "asynchrony",
+    "future",
+    "promise",
+    "io",
+    "task",
+    "monad",
+    "applicative",
+    "option",
+    "either"
+  ],
   "engines": {
     "node": ">=6.0.0"
   },
