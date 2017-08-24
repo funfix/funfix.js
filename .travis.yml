@@ -19,4 +19,4 @@ script:
 after_success:
   - ./scripts/upload-coverage.sh
   - ./scripts/gh-pages-publish.js
-#  - npm run semantic-release
+
