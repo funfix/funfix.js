@@ -55,7 +55,7 @@ These sub-projects are:
 Exposes primitive interfaces and data types that need to be
 universally available, belonging into a standard library.
 
-**[See JSDoc documentation](https://funfix.org/api/funfix-core/)**.
+**[See JSDoc documentation](https://funfix.org/api/core/)**.
 
 For an à la carte install:
 
@@ -107,7 +107,7 @@ Misc utilities:
 Contains low level / side-effectful utilities and data types for
 building higher level concurrency tools.
 
-**[See JSDoc documentation](https://funfix.org/api/funfix-exec/)**.
+**[See JSDoc documentation](https://funfix.org/api/exec/)**.
 
 For an à la carte install:
 
@@ -146,7 +146,7 @@ And also types for expressing durations:
 
 Defines monadic data types for dealing with laziness and side effects.
 
-**[See JSDoc documentation](https://funfix.org/api/funfix-effect/)**.
+**[See JSDoc documentation](https://funfix.org/api/effect/)**.
 
 For an à la carte install:
 
@@ -167,7 +167,7 @@ N.B. an equivalent `Task` / `IO` type is coming 😉
 Defines type classes inspired by Haskell's standard library and
 by [Typelevel Cats](https://typelevel.org/cats/).
 
-**[See JSDoc documentation](https://funfix.org/api/funfix-types/)**.
+**[See JSDoc documentation](https://funfix.org/api/types/)**.
 
 For an à la carte install:
 
