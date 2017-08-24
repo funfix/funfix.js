@@ -198,21 +198,6 @@ Funfix supports both [TypeScript](https://www.typescriptlang.org/) and [Flow](ht
 
 It also makes the best use of the capabilities of each. For example TypeScript has bivariant generics, but Flow supports variance annotations and Funfix makes use of them. Development happens in TypeScript, due to better tooling, but both are first class citizens.
 
-## Semantic versioning
-
-[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
-
-Funfix versioning follows the [sematic versioning (semver)](http://semver.org/) specification, meaning that versions have the `$major.$minor.$patch` format, where any `$major` increment means that a breaking change happened. It's also configured with a fully automated release process, triggered by any commits on master.
-
-## Recommended Companions
-
-Projects for usage in combination with Funfix:
-
-- [Immutable.js](https://facebook.github.io/immutable-js/):
-  a library exposing immutable collections, by Facebook
-- [JSVerify](https://jsverify.github.io/):
-  property based testing
-
 ## Contributing
 
 The Funfix project welcomes contributions from anybody wishing to
