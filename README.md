@@ -194,9 +194,13 @@ More is coming 😉
 
 ## TypeScript or Flow?
 
-Funfix supports both [TypeScript](https://www.typescriptlang.org/) and [Flow](https://flow.org/) type annotations out of the box.
+Funfix supports both [TypeScript](https://www.typescriptlang.org/)
+and [Flow](https://flow.org/) type annotations out of the box.
 
-It also makes the best use of the capabilities of each. For example TypeScript has bivariant generics, but Flow supports variance annotations and Funfix makes use of them. Development happens in TypeScript, due to better tooling, but both are first class citizens.
+It also makes the best use of the capabilities of each. For example
+TypeScript has bivariant generics, but Flow supports variance
+annotations and Funfix makes use of them. Development happens in
+TypeScript, due to better tooling, but both are first class citizens.
 
 ## Contributing
 

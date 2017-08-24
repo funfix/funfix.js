@@ -4,9 +4,9 @@
   <img src="https://funfix.org/public/logo/funfix-512.png" width="120" align="right" style="float:right; display: block; width:120px;" />
 </a>
 
-Sub-project of **[Funfix](https://funfix.org)**, exposes type classes
-inspired by Haskell's standard library and by 
-[Typelevel Cats](https://typelevel.org/cats/).
+Sub-project of **[Funfix](https://funfix.org)** exposing type classes
+inspired by Haskell's standard library and
+by [Typelevel Cats](https://typelevel.org/cats/).
 
 ## Contents
 
