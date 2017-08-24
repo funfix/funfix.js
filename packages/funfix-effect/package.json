@@ -1,0 +1,71 @@
+{
+  "name": "funfix-effect",
+  "description": "Sub-package of Funfix defining monadic data types for dealing with laziness and side effects",
+  "version": "5.0.0",
+  "main": "dist/index.umd.js",
+  "module": "dist/index.js",
+  "typings": "dist/types/index.d.ts",
+  "scripts": {
+    "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
+    "doc": "../../scripts/generate-docs.js .",
+    "prebuild": "rimraf dist",
+    "build": "tsc && rollup -c && yarn copy-flow && yarn doc",
+    "start": "node ../../node_modules/.bin/tsc-watch --onSuccess 'rollup -c'",
+    "test": "mocha --opts mocha.opts",
+    "test:watch": "mocha --opts mocha.opts --watch",
+    "test:prod": "yarn build && yarn lint && nyc mocha --opts mocha.opts --reporter dot",
+    "copy-flow": "../../scripts/copy-flow.js ."
+  },
+  "dependencies": {
+    "funfix-core": "^5.0.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "index.js.flow"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/funfix/funfix.git"
+  },
+  "author": "Alexandru Nedelcu <noreply@alexn.org>",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=6.0.0"
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.ts",
+      "src/**/*.tsx"
+    ],
+    "extension": [
+      ".ts",
+      ".tsx"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "reporter": [
+      "lcov",
+      "json",
+      "text-summary",
+      "html"
+    ],
+    "sourceMap": true,
+    "instrument": true
+  },
+  "keywords": [
+    "fp",
+    "functional-programming",
+    "concurrency",
+    "asynchrony",
+    "future",
+    "promise",
+    "io",
+    "task",
+    "monad",
+    "applicative",
+    "option",
+    "either"
+  ]
+}

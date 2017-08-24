@@ -1,0 +1,116 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+// Testing a la carte import
+import type { OptionK, TypeClass } from "../../src/"
+import { Option, Some, applyMixins, Either } from "funfix-core"
+import {
+  Equiv,
+  Functor,
+  FunctorLaws,
+  Apply,
+  ApplyLaws,
+  FlatMap,
+  FlatMapLaws,
+  Applicative,
+  ApplicativeLaws,
+  Monad,
+  MonadLaws,
+  monadLawsOf,
+  monadOf
+} from "../../src/"
+
+const erasure: Monad<any> = Monad._funErasure
+const typeId: string = Monad._funTypeId
+const supertypes: string[] = FlatMap._funSupertypeIds
+const tc: TypeClass<Monad<any>> = Monad
+
+const F: Monad<Option<any>> = monadOf(Option)
+const apply: Apply<Option<any>> = F
+const functor: Functor<Option<any>> = F
+const applicative: Applicative<Option<any>> = F
+const flatMap: FlatMap<Option<any>> = F
+
+const laws1: MonadLaws<Option<any>> = monadLawsOf(F)
+const laws2: ApplyLaws<Option<any>> = laws1
+const laws3: FunctorLaws<Option<any>> = laws1
+const laws4: FlatMapLaws<Option<any>> = laws1
+const laws5: ApplicativeLaws<Option<any>> = laws1
+
+const opt1: OptionK<string> = F.map(Some(1), x => String(x))
+const opt2: OptionK<number> = F.map(Some(1), x => x + 1)
+// $ExpectError
+const err1: OptionK<string> = F.map(Some(1), x => x + 1)
+
+const opt3: OptionK<number> = Some(1)
+// $ExpectError
+const err2: OptionK<string> = Some(1)
+
+const opt4: OptionK<number> = F.ap(Some(1), Some(x => x + 1))
+const opt5: OptionK<number> = F.ap(Some(1), Some(x => x + 1))
+// $ExpectError
+const err3: OptionK<number> = F.ap(Some(1), Some(x => String(x)))
+
+const opt6: OptionK<string> = F.map2(Some(1), Some(2), (a, b) => String(a + b))
+const opt7: OptionK<string> = F.map2(Some(1), Some(2), (a, b) => String(a + b))
+
+const opt8: OptionK<[number, string]> = F.product(Some(1), Some("value"))
+// $ExpectError
+const err4: OptionK<[string, number]> = F.product(Some(1), Some("value"))
+
+const opt9: OptionK<number>  = F.flatMap(Some(1), x => Some(x + 1))
+const opt10: OptionK<string> = F.flatMap(Some(1), x => Some(String(1)))
+const opt11: OptionK<number> = F.tailRecM(1, a => Some(Either.right(a + 1)))
+
+// $ExpectError
+const err5: MonadLaws<string> = monadLawsOf(F)
+
+class MonadLawsForOption implements MonadLaws<Option<any>> {
+  +F: Monad<Option<any>> = monadOf(Option);
+
+  // Functor
+  covariantIdentity: <A>(fa: OptionK<A>) => Equiv<OptionK<A>>;
+  covariantComposition: <A, B, C>(fa: OptionK<A>, f: (a: A) => B, g: (b: B) => C) => Equiv<OptionK<C>>;
+  // Apply
+  applyComposition: <A, B, C>(fa: OptionK<A>, fab: OptionK<(a: A) => B>, fbc: OptionK<(b: B) => C>) => Equiv<OptionK<C>>;
+  applyProductConsistency: <A, B>(fa: OptionK<A>, f: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
+  applyMap2Consistency: <A, B>(fa: OptionK<A>, f: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
+  // FlatMap
+  flatMapAssociativity: <A, B, C>(fa: OptionK<A>, f: (a: A) => OptionK<B>, g: (b: B) => OptionK<C>) => Equiv<OptionK<C>>;
+  flatMapConsistentApply: <A, B>(fa: OptionK<A>, fab: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
+  followedByConsistency: <A, B>(fa: OptionK<A>, fb: OptionK<B>) => Equiv<OptionK<B>>;
+  followedByLConsistency: <A, B>(fa: OptionK<A>, fb: OptionK<B>) => Equiv<OptionK<B>>;
+  forEffectConsistency: <A, B>(fa: OptionK<A>, fb: OptionK<B>) => Equiv<OptionK<A>>;
+  forEffectLConsistency: <A, B>(fa: OptionK<A>, fb: OptionK<B>) => Equiv<OptionK<A>>;
+  tailRecMConsistentFlatMap: <A>(a: A, f: (a: A) => OptionK<A>) => Equiv<OptionK<A>>;
+  // Applicative
+  applicativeIdentity: <A>(fa: OptionK<A>) => Equiv<OptionK<A>>;
+  applicativeHomomorphism: <A, B>(a: A, f: (a: A) => B) => Equiv<OptionK<B>>;
+  applicativeInterchange: <A, B>(a: A, ff: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
+  applicativeMap: <A, B>(fa: OptionK<A>, f: (a: A) => B) => Equiv<OptionK<B>>;
+  applicativeComposition: <A, B, C>(fa: OptionK<A>, fab: OptionK<(a: A) => B>, fbc: OptionK<(b: B) => C>) => Equiv<OptionK<C>>;
+  applicativeUnit: <A>(a: A) => Equiv<OptionK<A>>;
+  // Monad
+  monadLeftIdentity: <A, B>(a: A, f: (a: A) => OptionK<B>) => Equiv<OptionK<B>>;
+  monadRightIdentity: <A, B>(fa: OptionK<A>) => Equiv<OptionK<A>>;
+  mapFlatMapCoherence: <A, B>(fa: OptionK<A>, f: (a: A) => B) => Equiv<OptionK<B>>;
+  tailRecMStackSafety: () => Equiv<OptionK<number>>;
+}
+
+applyMixins(MonadLawsForOption, [MonadLaws])

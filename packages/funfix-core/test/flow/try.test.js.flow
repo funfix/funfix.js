@@ -1,0 +1,50 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import {
+  Failure,
+  Success,
+  Try
+} from "../../src/"
+
+const failure: Try<string> = Failure(1)
+const success: Try<string> = Success("unu")
+
+class Human { isHuman: boolean }
+class Animal { isAnimal: boolean }
+class Cat extends Animal { isCat: boolean }
+class Dog extends Animal { isDog: boolean }
+
+// Try is covariant
+const animal0: Try<Animal> = Failure("error")
+const animal1: Try<Animal> = Success(new Dog())
+
+// Covariant behavior for getOrElse and orElse
+const dogTry: Try<Dog> = Try.success(new Dog())
+
+const r21: Animal = dogTry.getOrElse(new Animal())
+const r22: Animal = dogTry.getOrElseL(() => new Animal())
+const r23: Animal = dogTry.getOrElse(new Cat())
+const r24: Animal = dogTry.getOrElseL(() => new Cat())
+const r25: Object = dogTry.getOrElse(new Human())
+
+const r26: Try<Animal> = dogTry.orElse(Success(new Cat()))
+const r27: Try<Animal> = dogTry.orElseL(() => Success(new Cat()))
+const r28: Try<Object> = dogTry.orElse(Success(new Human()))
+const r29: Try<Object> = dogTry.orElseL(() => Success(new Human()))

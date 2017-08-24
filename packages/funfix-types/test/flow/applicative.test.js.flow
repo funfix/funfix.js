@@ -1,0 +1,88 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import { Option, Some, applyMixins } from "funfix-core"
+import type { OptionK, TypeClass } from "../../src/"
+import {
+  Equiv,
+  Applicative,
+  ApplicativeLaws,
+  Apply,
+  ApplyLaws,
+  Functor,
+  FunctorLaws,
+  applicativeOf,
+  applicativeLawsOf,
+} from "../../src/"
+
+const erasure: Applicative<any> = Applicative._funErasure
+const typeId: string = Applicative._funTypeId
+const supertypes: string[] = Applicative._funSupertypeIds
+const tc: TypeClass<Applicative<any>> = Applicative
+
+const F: Applicative<Option<any>> = applicativeOf(Option)
+const apply: Apply<Option<any>> = F
+const functor: Functor<Option<any>> = F
+
+const laws1: ApplicativeLaws<Option<any>> = applicativeLawsOf(F)
+const laws2: ApplyLaws<Option<any>> = laws1
+const laws3: FunctorLaws<Option<any>> = laws1
+
+const opt1: OptionK<string> = F.map(Some(1), x => String(x))
+const opt2: OptionK<number> = F.map(Some(1), x => x + 1)
+// $ExpectError
+const err1: OptionK<string> = F.map(Some(1), x => x + 1)
+
+const opt3: OptionK<number> = Some(1)
+// $ExpectError
+const err2: OptionK<string> = Some(1)
+
+const opt4: OptionK<number> = F.ap(Some(1), Some(x => x + 1))
+const opt5: OptionK<number> = F.ap(Some(1), Some(x => x + 1))
+// $ExpectError
+const err3: OptionK<number> = F.ap(Some(1), Some(x => String(x)))
+
+const opt6: OptionK<string> = F.map2(Some(1), Some(2), (a, b) => String(a + b))
+const opt7: OptionK<string> = F.map2(Some(1), Some(2), (a, b) => String(a + b))
+
+const opt8: OptionK<[number, string]> = F.product(Some(1), Some("value"))
+// $ExpectError
+const err4: OptionK<[string, number]> = F.product(Some(1), Some("value"))
+
+// $ExpectError
+const err5: ApplicativeLaws<string> = applicativeLawsOf(F)
+
+class ApplicativeLawsForOption implements ApplicativeLaws<Option<any>> {
+  +F: Applicative<Option<any>> = applicativeOf(Option);
+
+  // Mixed-in
+  covariantIdentity: <A>(fa: OptionK<A>) => Equiv<OptionK<A>>;
+  covariantComposition: <A, B, C>(fa: OptionK<A>, f: (a: A) => B, g: (b: B) => C) => Equiv<OptionK<C>>;
+  applyComposition: <A, B, C>(fa: OptionK<A>, fab: OptionK<(a: A) => B>, fbc: OptionK<(b: B) => C>) => Equiv<OptionK<C>>;
+  applyProductConsistency: <A, B>(fa: OptionK<A>, f: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
+  applyMap2Consistency: <A, B>(fa: OptionK<A>, f: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
+  applicativeIdentity: <A>(fa: OptionK<A>) => Equiv<OptionK<A>>;
+  applicativeHomomorphism: <A, B>(a: A, f: (a: A) => B) => Equiv<OptionK<B>>;
+  applicativeInterchange: <A, B>(a: A, ff: OptionK<(a: A) => B>) => Equiv<OptionK<B>>;
+  applicativeMap: <A, B>(fa: OptionK<A>, f: (a: A) => B) => Equiv<OptionK<B>>;
+  applicativeComposition: <A, B, C>(fa: OptionK<A>, fab: OptionK<(a: A) => B>, fbc: OptionK<(b: B) => C>) => Equiv<OptionK<C>>;
+  applicativeUnit: <A>(a: A) => Equiv<OptionK<A>>;
+}
+
+applyMixins(ApplicativeLawsForOption, [ApplicativeLaws])

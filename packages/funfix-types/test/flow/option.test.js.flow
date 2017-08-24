@@ -1,0 +1,55 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import { Option } from "funfix-core"
+import {
+  Eq,
+  eqOf,
+  Monad,
+  monadOf,
+  FlatMap,
+  flatMapOf,
+  Applicative,
+  applicativeOf,
+  Apply,
+  applyOf,
+  Functor,
+  functorOf,
+  OptionInstances
+} from "../../src/"
+
+// Option.__types
+
+const functor1: Functor<Option<any>> = functorOf(Option)
+const functor2: Functor<Option<any>> = OptionInstances.global
+
+const ap1: Apply<Option<any>> = applyOf(Option)
+const ap2: Apply<Option<any>> = OptionInstances.global
+
+const applicative1: Applicative<Option<any>> = applicativeOf(Option)
+const applicative2: Applicative<Option<any>> = OptionInstances.global
+
+const eq1: Eq<Option<any>> = eqOf(Option)
+const eq2: Eq<Option<any>> = OptionInstances.global
+
+const flatMap1: FlatMap<Option<any>> = flatMapOf(Option)
+const flatMap2: FlatMap<Option<any>> = OptionInstances.global
+
+const monad1: Monad<Option<any>> = monadOf(Option)
+const monad2: Monad<Option<any>> = OptionInstances.global

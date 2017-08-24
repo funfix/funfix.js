@@ -1,0 +1,56 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+// Testing a la carte import
+import type { TypeClass } from "../../src/"
+import { Option, Some, None, applyMixins } from "funfix-core"
+import {
+  Eq,
+  EqLaws,
+  eqOf,
+  eqLawsOf
+} from "../../src/"
+
+const erasure: Eq<any> = Eq._funErasure
+const typeId: string = Eq._funTypeId
+const supertypes: string[] = Eq._funSupertypeIds
+const tc: TypeClass<Eq<any>> = Eq
+
+const F: Eq<Option<any>> = eqOf(Option)
+const laws: EqLaws<Option<any>> = eqLawsOf(F)
+
+const eq1 = F.eqv(Some(1), Some(2))
+const eq2 = F.eqv(Some(1), None)
+
+// $ExpectError
+const err1 = F.eqv(Some(1), "")
+
+// $ExpectError
+const err2: EqLaws<string> = eqLawsOf(F)
+
+class EqLawsForOption<T> implements EqLaws<Option<T>> {
+  +F: Eq<Option<T>> = eqOf(Option);
+
+  // Mixed-in
+  reflexive: (a: Option<T>) => boolean;
+  symmetric: (x: Option<T>, y: Option<T>) => boolean;
+  transitive: (x: Option<T>, y: Option<T>, z: Option<T>) => boolean;
+}
+
+applyMixins(EqLawsForOption, [EqLaws])
