@@ -1,7 +1,7 @@
 {
   "name": "funfix-effect",
   "description": "Sub-package of Funfix defining monadic data types for dealing with laziness and side effects",
-  "version": "0.0.0-development",
+  "version": "5.0.0",
   "main": "dist/index.umd.js",
   "module": "dist/index.js",
   "typings": "dist/types/index.d.ts",
@@ -17,7 +17,7 @@
     "copy-flow": "../../scripts/copy-flow.js ."
   },
   "dependencies": {
-    "funfix-core": "4.0.0"
+    "funfix-core": "^5.0.0"
   },
   "files": [
     "dist",

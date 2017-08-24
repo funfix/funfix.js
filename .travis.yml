@@ -18,5 +18,5 @@ script:
   - yarn test:prod
 after_success:
   - ./scripts/upload-coverage.sh
-  - npm run deploy-docs
+  - ./scripts/gh-pages-publish.js
 #  - npm run semantic-release
