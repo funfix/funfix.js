@@ -1,5 +1,5 @@
 {
-  "version": "5.0.0",
+  "version": "0.0.0-development",
   "main": "dist/index.umd.js",
   "module": "dist/index.js",
   "typings": "dist/types/index.d.ts",
@@ -34,13 +34,14 @@
   "scripts": {
     "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "doc": "../../scripts/generate-docs.js .",
-    "prebuild": "rimraf dist",
-    "build": "tsc && rollup -c && yarn copy-flow && yarn doc",
+    "clean": "rimraf dist && rimraf coverage && rimraf .nyc_output",
+    "prebuild": "npm run clean",
+    "build": "tsc && rollup -c && npm run copy-flow && npm run doc",
     "start": "node ../../node_modules/.bin/tsc-watch --onSuccess 'rollup -c'",
 
     "test": "mocha --opts mocha.opts",
     "test:watch": "mocha --opts mocha.opts --watch",
-    "test:prod": "yarn build && yarn lint && nyc mocha --opts mocha.opts --reporter dot",
+    "test:prod": "npm run lint && nyc mocha --opts mocha.opts --reporter dot",
     "copy-flow": "../../scripts/copy-flow.js ."
   },
   "nyc": {
@@ -58,7 +59,7 @@
     "reporter": [
       "lcov",
       "json",
-      "text-summary",
+      "text",
       "html"
     ],
     "sourceMap": true,

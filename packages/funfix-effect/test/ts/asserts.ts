@@ -31,13 +31,21 @@ export function throws(thunk: () => any, message?: string): void {
 }
 
 export function equal<A>(lh: A, rh: A): void {
-  return fns.ok(is(lh, rh), `${lh} == ${rh}`)
+  return fns.ok(is(lh, rh), `${toString(lh)} == ${toString(rh)}`)
 }
 
 export function notEqual<A>(lh: A, rh: A): void {
-  return fns.ok(!is(lh, rh), `${lh} != ${rh}`)
+  return fns.ok(!is(lh, rh), `${toString(lh)} != ${toString(rh)}`)
 }
 
 export function fail(message: string): void {
     return fns.fail(message)
+}
+
+function toString(obj: Object): string {
+  try {
+    return JSON.stringify(obj)
+  } catch (e) {
+    return obj.toString()
+  }
 }

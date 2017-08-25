@@ -278,8 +278,8 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    */
   transform<B>(failure: (e: Throwable) => B, success: (a: A) => B): Future<B> {
     return this.transformWith(
-      e => Future.pure(failure(e)),
-      a => Future.pure(success(a)))
+      e => Future.pure(failure(e), this._scheduler),
+      a => Future.pure(success(a), this._scheduler))
   }
 
   /**
@@ -341,7 +341,8 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * ```
    */
   map<B>(f: (a: A) => B): Future<B> {
-    return this.transformWith(Future.raise, a => Future.pure(f(a)))
+    return this.transformWith(Future.raise,
+      a => Future.pure(f(a), this._scheduler))
   }
 
   /**
@@ -382,7 +383,9 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * ```
    */
   recover<AA>(f: (e: Throwable) => AA): Future<A | AA> {
-    return this.transformWith<A | AA>(a => Future.pure(f(a)), Future.pure)
+    return this.transformWith<A | AA>(
+      e => Future.pure(f(e), this._scheduler),
+      a => Future.pure(a, this._scheduler))
   }
 
   then<TResult1, TResult2>(
@@ -390,9 +393,11 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
     onRejected?: ((reason: Throwable) => (IPromiseLike<TResult2> | TResult2)) | undefined | null): Future<TResult2 | TResult1> {
 
     if (!onFulfilled && !onRejected) return this as any
+    const ec = this._scheduler
     return this.transformWith(
-      promiseThen(onRejected, Future.raise),
-      promiseThen(onFulfilled, Future.pure)) as any
+      promiseThen(onRejected, e => Future.raise(e, ec), ec),
+      promiseThen(onFulfilled, a => Future.pure(a, ec), ec)
+    ) as any
   }
 
   /**
@@ -503,9 +508,10 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        local overrides, being a {@link DynamicRef}
    */
   static of<A>(thunk: () => A, ec: Scheduler = Scheduler.global.get()): Future<A> {
-    return new FutureBuilder(
-      cb => ec.executeAsync(() => cb(Try.of(() => thunk()))),
-      ec)
+    return new FutureBuilder<A>(
+      cb => ec.executeAsync(() => cb(Try.of(thunk))),
+      ec
+    )
   }
 
   /**
@@ -630,8 +636,18 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * Future.unit() === Future.unit()
    * ```
    */
-  static unit(): Future<void> {
-    return futureUnit
+  static unit(ec: Scheduler = Scheduler.global.get()): Future<void> {
+    // Given that this reference is immutable once built for the given
+    // Scheduler, and that schedulers don't change that much, we are
+    // caching the reference in order to preserve memory
+    const ecAny = ec as any
+    let ref = ecAny["_funCache"] && ecAny["_funCache"]["futureUnit"]
+    if (!ref) {
+      ref = new PureFuture(Success(undefined), ec)
+      ecAny["_funCache"] = ecAny["_funCache"] || {}
+      ecAny["_funCache"]["futureUnit"] = ref
+    }
+    return ref
   }
 
   /**
@@ -649,7 +665,7 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * @param ec is the scheduler that will actually schedule the tick's execution
    */
   static delayedTick<A>(delay: number | Duration, ec: Scheduler = Scheduler.global.get()): Future<void> {
-    return Future.create(cb => ec.scheduleOnce(delay, () => cb(Success(undefined))), ec)
+    return Future.create<void>(cb => ec.scheduleOnce(delay, () => cb(Success(undefined))), ec)
   }
 
   /**
@@ -675,12 +691,17 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *          `Left(a)` value, until a `Right(b)` value is returned,
    *          which will be the `onComplete` result of the `Future`
    *          reference
+   *
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
    */
-  static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>): Future<B> {
+  static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>, ec: Scheduler = Scheduler.global.get()): Future<B> {
     // Recursive loop based on flatMap
     return f(a).flatMap(r => {
-      if (r.isRight()) return Future.pure(r.get())
-      return Future.tailRecM(r.swap().get(), f)
+      if (r.isRight()) return Future.pure(r.get(), ec)
+      return Future.tailRecM(r.swap().get(), f, ec)
     })
   }
 
@@ -704,7 +725,7 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
     if (ref instanceof Future)
       return (ref as Future<A>).withScheduler(ec)
     else
-      return Future.create(
+      return Future.create<A>(
         cb => { ref.then(value => cb(Success(value)),err => cb(Failure(err))) },
         ec
       )
@@ -787,7 +808,8 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
   static traverse<A>(list: A[] | Iterable<A>, parallelism: number = Infinity, ec: Scheduler = Scheduler.global.get()):
     <B>(f: (a: A) => Future<B>) => Future<B[]> {
 
-    return f => futureTraverse(list, f, parallelism, ec)
+    return <B>(f: (a: A) => Future<B>) =>
+      futureTraverse(list, f, parallelism, ec)
   }
 
   /**
@@ -1019,7 +1041,7 @@ class PureFuture<A> extends Future<A> {
   }
 
   onComplete(f: (a: Try<A>) => void): void {
-    this._scheduler.trampoline(() => f(this._value))
+    this._scheduler.executeBatched(() => f(this._value))
   }
 
   transformWith<B>(failure: (e: Throwable) => Future<B>, success: (a: A) => Future<B>): Future<B> {
@@ -1054,7 +1076,7 @@ class FutureBuilder<A> extends Future<A> {
 
         for (const f of listeners) {
           // Forced async boundary
-          ec.trampoline(() => f(result))
+          ec.executeBatched(() => f(result))
         }
       }
     }
@@ -1066,7 +1088,7 @@ class FutureBuilder<A> extends Future<A> {
   onComplete(f: (a: Try<A>) => void): void {
     if (this._result !== None) {
       // Forced async boundary
-      this._scheduler.trampoline(() => f(this._result.get()))
+      this._scheduler.executeBatched(() => f(this._result.get()))
     } else {
       this._listeners.push(f)
     }
@@ -1086,7 +1108,7 @@ class FutureBuilder<A> extends Future<A> {
 
   withScheduler(ec: Scheduler): Future<A> {
     if (this._scheduler === ec) return this
-    return new FutureBuilder(
+    return new FutureBuilder<A>(
       cb => {
         this.onComplete(cb)
         return this._cancelable
@@ -1112,7 +1134,7 @@ function genericTransformWith<A, B>(
   scheduler: Scheduler,
   cancelable?: ICancelable): Future<B> {
 
-  return new FutureBuilder(
+  return new FutureBuilder<B>(
     cb => {
       const cRef = new MultiAssignCancelable(cancelable)
 
@@ -1151,31 +1173,26 @@ function genericTransformWith<A, B>(
 }
 
 /**
- * Reusable instance for `Future<void>`.
- *
- * @hidden
- */
-const futureUnit: Future<void> =
-  new PureFuture(Success(undefined), Scheduler.global.get())
-
-/**
  * Internal, reusable function used in the implementation of {@link Future.then}.
  *
  * @Hidden
  */
-function promiseThen<T, R>(f: ((t: T) => IPromiseLike<R> | R) | undefined | null, alt: (t: T) => Future<T>):
+function promiseThen<T, R>(
+  f: ((t: T) => IPromiseLike<R> | R) | undefined | null,
+  alt: (t: T) => Future<T>,
+  ec: Scheduler):
   ((value: T) => Future<R | T>) {
 
   return value => {
     if (typeof f !== "function") return alt(value)
 
     const fb = f(value)
-    if (!fb) return Future.pure(value)
+    if (!fb) return Future.pure(value, ec)
 
     if (typeof (fb as any).then === "function")
-      return Future.fromPromise(fb as IPromiseLike<R>)
+      return Future.fromPromise(fb as IPromiseLike<R>, ec)
     else
-      return Future.pure(fb as R)
+      return Future.pure(fb as R, ec)
   }
 }
 
@@ -1221,7 +1238,7 @@ function futureIterableToArray<A>(values: Future<A>[] | Iterable<Future<A>>, ec:
  * @Hidden
  */
 function futureSequence<A>(values: Future<A>[] | Iterable<Future<A>>, ec: Scheduler): Future<A[]> {
-  return Future.create(cb => {
+  return Future.create<A[]>(cb => {
     try {
       // This can throw, handling error below
       const futures = futureIterableToArray(values, ec)
@@ -1275,7 +1292,7 @@ function futureSequence<A>(values: Future<A>[] | Iterable<Future<A>>, ec: Schedu
  * @Hidden
  */
 function futureFirstCompletedOf<A>(iterable: Future<A>[] | Iterable<Future<A>>, ec: Scheduler): Future<A> {
-  return Future.create(cb => {
+  return Future.create<A>(cb => {
     try {
       // This can throw, handling error below
       const futures = futureIterableToArray(iterable, ec)
@@ -1337,7 +1354,7 @@ function futureTraverseLoop<A, B>(
   index: number,
   result: B[]): Future<B[]> {
 
-  if (index >= list.length) return Future.pure(result)
+  if (index >= list.length) return Future.pure(result, ec)
   let batch: Future<B>[] = []
   let length = 0
 

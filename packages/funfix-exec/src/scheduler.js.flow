@@ -22,6 +22,12 @@ import { Cancelable } from "./cancelable"
 import { DynamicRef } from "./ref"
 
 declare export class Scheduler {
+  /** @protected */
+  _batchIndex: number;
+  /** @protected */
+  constructor(em: ExecutionModel): Scheduler;
+
+  executeBatched(runnable: () => void): void;
   executeAsync(runnable: () => void): void;
   trampoline(runnable: () => void): void;
 
@@ -32,17 +38,35 @@ declare export class Scheduler {
   scheduleWithFixedDelay(initialDelay: number | Duration, delay: number | Duration, runnable: () => void): Cancelable;
   scheduleAtFixedRate(initialDelay: number | Duration, period: number | Duration, runnable: () => void): Cancelable;
 
+  +executionModel: ExecutionModel;
+  withExecutionModel(em: ExecutionModel): Scheduler;
+
   static +global: DynamicRef<Scheduler>;
 }
 
 declare export class TestScheduler extends Scheduler {
-  constructor(reporter?: (error: any) => void): TestScheduler;
+  constructor(reporter?: (error: any) => void, em?: ExecutionModel): TestScheduler;
 
   triggeredFailures(): Array<any>;
   hasTasksLeft(): boolean;
   tick(duration?: number | Duration): number;
+  tickOne(): boolean;
 }
 
 declare export class GlobalScheduler extends Scheduler {
-  constructor(canUseSetImmediate?: boolean): GlobalScheduler;
+  constructor(canUseSetImmediate?: boolean, em?: ExecutionModel): GlobalScheduler;
+}
+
+declare export class ExecutionModel {
+  recommendedBatchSize: number;
+  type: "batched" | "synchronous" | "alwaysAsync";
+
+  equals(other: ExecutionModel): boolean;
+  hashCode(): number;
+
+  static synchronous(): ExecutionModel;
+  static alwaysAsync(): ExecutionModel;
+  static batched(recommendedBatchSize?: number): ExecutionModel;
+
+  static +global: DynamicRef<ExecutionModel>;
 }

@@ -73,6 +73,13 @@ for (const p of fs.readdirSync(rootDir)) {
   const srcJSON = JSON.parse(fs.readFileSync(path.join(commonDir, "package.json"), "utf-8"))
   const dstJSON = JSON.parse(fs.readFileSync(dst, "utf-8"))
   for (const key of Object.keys(srcJSON)) dstJSON[key] = srcJSON[key]
+  
+  // Changing dependencies, changing versions automatically!
+  if (srcJSON['version'] && dstJSON['dependencies']) {
+    for (const key of Object.keys(dstJSON['dependencies'])) {
+      if (key.match(/^funfix/)) dstJSON['dependencies'][key] = srcJSON['version']
+    }
+  }  
 
   console.info(`Updating: ${dst}`)
   fs.writeFileSync(

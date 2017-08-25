@@ -16,8 +16,8 @@
  */
 
 import * as assert from "./asserts"
-import { is, Try, Success, Failure, Some, None, DummyError, Left, Right, IllegalStateError, TimeoutError, IllegalArgumentError } from "funfix-core"
-import { Future, IPromiseLike, TestScheduler, Scheduler, BoolCancelable, Cancelable, Duration } from "../../src/"
+import { id, is, Try, Success, Failure, Some, None, DummyError, Left, Right, IllegalStateError, TimeoutError, IllegalArgumentError } from "funfix-core"
+import { Future, IPromiseLike, TestScheduler, Scheduler, BoolCancelable, Cancelable, Duration, ExecutionModel } from "../../src/"
 
 describe("PureFuture", () => {
   it("pure", () => {
@@ -44,8 +44,7 @@ describe("PureFuture", () => {
   })
 
   it("pure.map", () => {
-    const s = new TestScheduler()
-    const f = Future.pure(10, s).map(_ => _ * 2)
+    const f = Future.pure(10).map(_ => _ * 2)
 
     assert.equal(f.value(), Some(Success(20)))
 
@@ -73,17 +72,21 @@ describe("PureFuture", () => {
   })
 
   it("pure.flatMap is stack safe in recursive loop", () => {
+    const ec = new TestScheduler()
+
     function loop(n: number): Future<number> {
-      if (n <= 0) return Future.pure(n)
-      return Future.pure(n).flatMap(x => loop(x - 1))
+      if (n <= 0) return Future.pure(n, ec)
+      return Future.pure(n, ec).flatMap(x => loop(x - 1))
     }
 
     assert.equal(loop(10000).value(), Some(Success(0)))
   })
 
   it("pure.flatMap protects against user errors", () => {
+    const ec = new TestScheduler()
+
     const dummy = new DummyError("dummy")
-    const f = Future.pure(1).flatMap(_ => { throw dummy })
+    const f = Future.pure(1, ec).flatMap(_ => { throw dummy })
 
     assert.equal(f.value(), Some(Failure(dummy)))
   })
@@ -91,6 +94,16 @@ describe("PureFuture", () => {
   it("pure.attempt", () => {
     const f = Future.pure(1).attempt()
     assert.equal(f.value(), Some(Success(Right(1))))
+  })
+
+  it("pure.recover <-> pure", () => {
+    const f = Future.pure(1)
+    assert.equal(f.value(), f.recover(_ => 0).value())
+  })
+
+  it("pure.recoverWith <-> pure", () => {
+    const f = Future.pure(1)
+    assert.equal(f.value(), f.recoverWith(Future.raise).value())
   })
 
   it("raise(err).map <-> raise(err)", () => {
@@ -170,12 +183,10 @@ describe("PureFuture", () => {
   })
 
   it("pure.withScheduler", () => {
-    const s1 = new TestScheduler()
-    s1.trampoline = s1.executeAsync
-    const s2 = new TestScheduler()
-    s2.trampoline = s2.executeAsync
+    const s1 = new TestScheduler(undefined, ExecutionModel.alwaysAsync())
+    const s2 = new TestScheduler(undefined, ExecutionModel.alwaysAsync())
 
-    const f = Future.pure(1, s1)
+    const f = Future.of(() => 1, s1)
       .withScheduler(s2)
       .map(x => x + 1)
 
@@ -202,6 +213,36 @@ describe("PureFuture", () => {
 
   it("unit() yields undefined", () => {
     assert.ok(is(Future.unit().value(), Some(Success(undefined))))
+  })
+
+  it("does processing in batches", () => {
+    const em = ExecutionModel.batched()
+    const ec = new TestScheduler().withExecutionModel(em)
+    let effect = 0
+
+    function loop(n: number, acc: number): Future<number> {
+      return Future.pure(n, ec).flatMap(n => {
+        if (n > 0) {
+          effect += 1
+          return loop(n - 1, acc + 1)
+        }
+        return Future.pure(acc, ec)
+      })
+    }
+
+    const total = em.recommendedBatchSize * 8
+    const f = loop(total, 0)
+
+    assert.equal(f.value(), None)
+    assert.ok(effect <= em.recommendedBatchSize)
+
+    ec.tickOne()
+    assert.equal(f.value(), None)
+    assert.ok(effect > 0 && effect <= total, "effect > 0 && effect <= total")
+
+    ec.tick()
+    assert.equal(f.value(), Some(Success(total)))
+    assert.equal(effect, total)
   })
 })
 
@@ -320,6 +361,20 @@ describe("FutureBuilder", () => {
     assert.equal(f.value(), Some(Failure(dummy)))
   })
 
+  it("Future.of(() => v).recover <-> Future.pure(v)", () => {
+    const ec = new TestScheduler()
+    const f = Future.of(() => 1, ec).recover(_ => 0)
+    ec.tick()
+    assert.equal(f.value(), Some(Success(1)))
+  })
+
+  it("Future.of(() => v).recoverWith <-> Future.pure(v)", () => {
+    const ec = new TestScheduler()
+    const f = Future.of(() => 1, ec).recoverWith(Future.raise)
+    ec.tick()
+    assert.equal(f.value(), Some(Success(1)))
+  })
+
   it("Future.of(throw err).recover", () => {
     const s = new TestScheduler()
     const dummy = new DummyError("dummy")
@@ -420,9 +475,8 @@ describe("FutureBuilder", () => {
   })
 
   it("Future.of(f).withScheduler", () => {
-    const s1 = new TestScheduler()
-    const s2 = new TestScheduler()
-    s2.trampoline = s2.executeAsync
+    const s1 = new TestScheduler(undefined, ExecutionModel.alwaysAsync())
+    const s2 = new TestScheduler(undefined, ExecutionModel.alwaysAsync())
 
     const f = Future.of(() => 1, s1)
       .withScheduler(s2)
@@ -483,6 +537,16 @@ describe("Future is Promise-like", () => {
 
     const f = Future.pure(10, s).then(x => Future.pure(x * 2))
     assert.equal(f.value(), Some(Success(20)))
+  })
+
+  it("raise(ex).then(f, null) <-> raise(ex)", () => {
+    const ec = new TestScheduler()
+    const dummy = new DummyError("dummy")
+    const f: Future<number> =
+      Future.raise(dummy, ec).then<number,number>(id, null)
+
+    ec.tick()
+    assert.equal(f.value(), Some(Failure(dummy)))
   })
 
   it("Future.fromPromise(fa) === fa", () => {
@@ -1033,7 +1097,7 @@ describe("Future.traverse", () => {
       }
     }
 
-    const f = Future.traverse(iter as Iterable<number>, Infinity, ec)(Future.pure)
+    const f = Future.traverse(iter as Iterable<number>, Infinity, ec)(x => Future.pure(x, ec))
       .map(arr => {
         let sum = 0
         for (const e of arr) sum += e
@@ -1061,7 +1125,7 @@ describe("Future.traverse", () => {
       }
     }
 
-    const all = Future.traverse(iter as any, Infinity, ec)(Future.pure)
+    const all = Future.traverse(iter as any, Infinity, ec)(x => Future.pure(x, ec))
     ec.tick()
     assert.equal(all.value(), Some(Failure(dummy)))
   })
@@ -1083,11 +1147,13 @@ describe("Future.traverse", () => {
 
 describe("Future.tailRecM", () => {
   it("is tail safe", () => {
-    const f = Future.tailRecM(0, a => {
-      return a < 10000
-        ? Future.pure(Left(a + 1))
-        : Future.pure(Right(a))
-    })
+    const ec = new TestScheduler()
+    const f = Scheduler.global.bind(ec, () =>
+      Future.tailRecM(0, a => {
+        return a < 10000
+          ? Future.pure(Left(a + 1))
+          : Future.pure(Right(a))
+      }))
 
     assert.ok(is(f.value(), Some(Success(10000))))
   })
