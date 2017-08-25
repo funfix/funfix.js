@@ -23,7 +23,7 @@ import { DynamicRef } from "./ref"
 
 declare export class Scheduler {
   /** @protected */
-  _batchIndex: number
+  _batchIndex: number;
   /** @protected */
   constructor(em: ExecutionModel): Scheduler;
 

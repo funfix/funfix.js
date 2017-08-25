@@ -54,7 +54,7 @@ export abstract class Scheduler {
         this.executeBatched = this.executeAsync
         break
 
-      case "trampolined":
+      case "synchronous":
         this.executeBatched = this.trampoline
         break
 
@@ -79,7 +79,7 @@ export abstract class Scheduler {
    *
    * The rules, depending on the chosen `ExecutionModel`:
    *
-   * - if `trampolined`, then all tasks are executed with
+   * - if `synchronous`, then all tasks are executed with
    *   {@link Scheduler.trampoline}
    * - if `asynchronous`, then all tasks are executed with
    *   {@link Scheduler.executeAsync}
@@ -339,18 +339,19 @@ export class ExecutionModel implements IEquals<ExecutionModel> {
    *   batches up to a maximum size; after a batch of
    *   {@link recommendedBatchSize} is executed, the next
    *   execution should be asynchronous.
-   * - `trampolined`: specifies that execution should be
-   *   synchronous (immediate) for as long as possible.
+   * - `synchronous`: specifies that execution should be
+   *   synchronous (immediate / trampolined) for as long as
+   *   possible.
    * - `alwaysAsync`: specifies a run-loop should always do
    *   async execution of tasks, triggering asynchronous
    *   boundaries on each step.
    */
-  public type: "batched" | "trampolined" | "alwaysAsync"
+  public type: "batched" | "synchronous" | "alwaysAsync"
 
-  private constructor(type: "batched" | "trampolined" | "alwaysAsync", batchSize?: number) {
+  private constructor(type: "batched" | "synchronous" | "alwaysAsync", batchSize?: number) {
     this.type = type
     switch (type) {
-      case "trampolined":
+      case "synchronous":
         this.recommendedBatchSize = maxPowerOf2
         break
       case "alwaysAsync":
@@ -377,8 +378,8 @@ export class ExecutionModel implements IEquals<ExecutionModel> {
    * An {@link ExecutionModel} that specifies that execution should be
    * synchronous (immediate, trampolined) for as long as possible.
    */
-  static trampolined(): ExecutionModel {
-    return new ExecutionModel("trampolined")
+  static synchronous(): ExecutionModel {
+    return new ExecutionModel("synchronous")
   }
 
   /**
@@ -563,9 +564,9 @@ export class TestScheduler extends Scheduler {
    *
    * @param em the {@link ExecutionModel} to use for
    *        the {@link Scheduler.executionModel}, defaults to
-   *        `"trampolined"` for `TestScheduler`
+   *        `"synchronous"` for `TestScheduler`
    */
-  constructor(reporter?: (error: any) => void, em: ExecutionModel = ExecutionModel.trampolined()) {
+  constructor(reporter?: (error: any) => void, em: ExecutionModel = ExecutionModel.synchronous()) {
     super(em)
     this._reporter = reporter || (_ => {})
     this._clock = 0

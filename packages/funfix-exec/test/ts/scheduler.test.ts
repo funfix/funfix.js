@@ -69,7 +69,7 @@ describe("GlobalScheduler", () => {
     })
   })
 
-  it("executes stuff trampolined", () => {
+  it("executes stuff synchronous", () => {
     const s = new GlobalScheduler()
     let count = 0
 
@@ -255,8 +255,8 @@ describe("GlobalScheduler", () => {
     const s = Scheduler.global.get()
     assert.equal(s.executionModel, ExecutionModel.global.get())
 
-    const s2 = s.withExecutionModel(ExecutionModel.trampolined())
-    assert.equal(s2.executionModel.type, "trampolined")
+    const s2 = s.withExecutionModel(ExecutionModel.synchronous())
+    assert.equal(s2.executionModel.type, "synchronous")
     assert.equal(s2.executionModel.recommendedBatchSize, 1 << 30)
 
     const s3 = s.withExecutionModel(ExecutionModel.alwaysAsync())
@@ -373,7 +373,7 @@ describe("TestScheduler", () => {
     assert.not(s.hasTasksLeft())
   })
 
-  it("executes stuff trampolined", () => {
+  it("executes stuff synchronous", () => {
     const s = new TestScheduler()
     let count = 0
 
@@ -537,10 +537,10 @@ describe("TestScheduler", () => {
 
   it("executionModel", () => {
     const s = new TestScheduler()
-    assert.equal(s.executionModel, ExecutionModel.trampolined())
+    assert.equal(s.executionModel, ExecutionModel.synchronous())
 
-    const s2 = s.withExecutionModel(ExecutionModel.trampolined())
-    assert.equal(s2.executionModel.type, "trampolined")
+    const s2 = s.withExecutionModel(ExecutionModel.synchronous())
+    assert.equal(s2.executionModel.type, "synchronous")
     assert.equal(s2.executionModel.recommendedBatchSize, 1 << 30)
 
     const s3 = s.withExecutionModel(ExecutionModel.alwaysAsync())
@@ -587,8 +587,8 @@ describe("TestScheduler", () => {
     assert.equal(ec.triggeredFailures()[0], dummy)
   })
 
-  it("executes immediately for ExecutionModel.trampolined", () => {
-    const ec = new TestScheduler().withExecutionModel(ExecutionModel.trampolined())
+  it("executes immediately for ExecutionModel.synchronous", () => {
+    const ec = new TestScheduler().withExecutionModel(ExecutionModel.synchronous())
     let count = 0
 
     for (let i = 0; i < 1024; i++)
@@ -664,15 +664,15 @@ describe("ExecutionModel", () => {
     assert.equal(ref1, ref2)
 
     assert.equal(ref1.hashCode(), ref2.hashCode())
-    assert.notEqual(ref1.hashCode(), ExecutionModel.trampolined().hashCode())
+    assert.notEqual(ref1.hashCode(), ExecutionModel.synchronous().hashCode())
   })
 
-  it("trampolined", () => {
-    const ref1 = ExecutionModel.trampolined()
-    assert.equal(ref1.type, "trampolined")
+  it("synchronous", () => {
+    const ref1 = ExecutionModel.synchronous()
+    assert.equal(ref1.type, "synchronous")
     assert.equal(ref1.recommendedBatchSize, 1 << 30)
 
-    const ref2 = ExecutionModel.trampolined()
+    const ref2 = ExecutionModel.synchronous()
     assert.equal(ref1, ref2)
 
     assert.equal(ref1.hashCode(), ref2.hashCode())
