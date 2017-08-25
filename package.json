@@ -9,7 +9,7 @@
   "scripts": {
     "postinstall": "lerna bootstrap && ./scripts/update-common.js",
     "test": "lerna run test",
-    "test:prod": "lerna run build && lerna run test:prod",
+    "test:prod": "lerna run test:prod",
     "lint": "lerna run lint",
     "build": "lerna run build",
     "commitmsg": "validate-commit-msg"

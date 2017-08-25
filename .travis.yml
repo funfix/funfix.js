@@ -11,7 +11,7 @@ before_script:
   - yarn cache clean
   - yarn install
 script:
-  - yarn test:prod
+  - yarn build && yarn test:prod
 after_success:
   - ./scripts/upload-coverage.sh
   - ./scripts/gh-pages-publish.js
