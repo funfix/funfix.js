@@ -15,22 +15,34 @@
  * limitations under the License.
  */
 
-import { Future, TestScheduler } from "funfix-exec"
+import { Future, Scheduler, TestScheduler, ExecutionModel } from "funfix-exec"
 import * as jv from "jsverify"
 import * as laws from "./laws"
 import * as inst from "./instances"
 import { Eq } from "../../src/"
 
+//
+import { applicativeOf } from "../../src/"
+import * as assert from "./asserts"
+
 describe("Future obeys type class laws", () => {
-  const s = new TestScheduler()
+  const ec = new TestScheduler(ex => { throw ex }, ExecutionModel.synchronous())
   const eq = new (
     class extends Eq<Future<any>> {
       eqv(lh: Future<any>, rh: Future<any>): boolean {
-        s.tick(1000 * 60 * 60 * 24 * 10)
-        return lh.value().equals(rh.value())
+        ec.tick(1000 * 60 * 60 * 24 * 10)
+        return !lh.value().isEmpty() && lh.value().equals(rh.value())
       }
     })()
 
-  const arbF = inst.arbFuture(s)
+  before(function() {
+    Scheduler.global.set(ec)
+  })
+
+  after(function () {
+    Scheduler.global.revert()
+  })
+
+  const arbF = inst.arbFuture(ec)
   laws.testMonadError(Future, jv.number, arbF, jv.string, eq)
 })

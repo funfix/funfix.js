@@ -51,4 +51,32 @@ describe("DynamicRef", () => {
     assert.equal(ref.bindL(() => ++x, () => ref.get() * ref.get()), 11 * 12)
     assert.equal(ref.get(), 10)
   })
+
+  it("should set, then revert", () => {
+    const ref = DynamicRef.of(() => 1)
+    ref.set(2)
+    ref.set(3)
+
+    assert.equal(ref.get(), 3)
+    ref.revert()
+    assert.equal(ref.get(), 2)
+    ref.revert()
+    assert.equal(ref.get(), 1)
+    ref.revert()
+    assert.equal(ref.get(), 1)
+  })
+
+  it("should setL, then revert", () => {
+    const ref = DynamicRef.of(() => 1)
+    ref.setL(() => 2)
+    ref.setL(() => 3)
+
+    assert.equal(ref.get(), 3)
+    ref.revert()
+    assert.equal(ref.get(), 2)
+    ref.revert()
+    assert.equal(ref.get(), 1)
+    ref.revert()
+    assert.equal(ref.get(), 1)
+  })
 })

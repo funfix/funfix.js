@@ -636,8 +636,18 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * Future.unit() === Future.unit()
    * ```
    */
-  static unit(): Future<void> {
-    return futureUnit
+  static unit(ec: Scheduler = Scheduler.global.get()): Future<void> {
+    // Given that this reference is immutable once built for the given
+    // Scheduler, and that schedulers don't change that much, we are
+    // caching the reference in order to preserve memory
+    const ecAny = ec as any
+    let ref = ecAny["_funCache"] && ecAny["_funCache"]["futureUnit"]
+    if (!ref) {
+      ref = new PureFuture(Success(undefined), ec)
+      ecAny["_funCache"] = ecAny["_funCache"] || {}
+      ecAny["_funCache"]["futureUnit"] = ref
+    }
+    return ref
   }
 
   /**
@@ -1161,14 +1171,6 @@ function genericTransformWith<A, B>(
     },
     scheduler)
 }
-
-/**
- * Reusable instance for `Future<void>`.
- *
- * @hidden
- */
-const futureUnit: Future<void> =
-  new PureFuture(Success(undefined), Scheduler.global.get())
 
 /**
  * Internal, reusable function used in the implementation of {@link Future.then}.

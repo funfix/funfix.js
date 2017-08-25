@@ -115,22 +115,20 @@ export const arbDuration: jv.Arbitrary<Duration> =
     d => [d.duration, d.unit]
   )
 
-export function arbFuture(s: Scheduler): jv.Arbitrary<Future<number>> {
+export function arbFuture(ec: Scheduler): jv.Arbitrary<Future<number>> {
   return jv.int32.smap(
     i => {
       switch (i % 5) {
         case 0:
-          return Future.pure(i, s)
+          return Future.pure(i, ec)
         case 1:
-          return Future.raise(new DummyError(`dummy${i}`), s)
+          return Future.raise(new DummyError(`dummy${i}`), ec)
         case 2:
-          return Future.of(() => i, s)
+          return Future.of(() => i, ec)
         case 3:
-          return Future.of(() => { throw new DummyError(`dummy${i}`) })
+          return Future.of(() => { throw new DummyError(`dummy${i}`) }, ec)
         default:
-          return Future.create(cb => {
-            s.trampoline(() => cb(Success(i)))
-          })
+          return Future.create(cb => { ec.trampoline(() => cb(Success(i))) }, ec)
       }
     },
     fa => fa.value().getOrElse(Success(0)).getOrElse(0)

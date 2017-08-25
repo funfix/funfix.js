@@ -20,6 +20,10 @@
 declare export class DynamicRef<A> {
   get(): A;
 
+  revert(): void;
+  set(value: A): void;
+  setL(thunk: () => A): void;
+
   bind<R>(value: A, thunk: () => R): R;
   bindL<R>(value: () => A, thunk: () => R): R;
 
