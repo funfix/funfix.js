@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { arrayBSearchInsertPos } from "../../src/internals"
+import { arrayBSearchInsertPos, maxPowerOf2, nextPowerOf2 } from "../../src/internals"
 import * as jv from "jsverify"
 import * as assert from "./asserts"
 
@@ -85,4 +85,30 @@ describe("arrayBSearchInsertPos", () => {
         (pos === 0 || sorted[pos - 1] <= elem) &&
         (pos >= sorted.length || elem <= sorted[pos])
     })
+})
+
+describe("nextPowerOf2 and maxPowerOf2", () => {
+  it("maxPowerOf2 === 1 << 30", () => {
+    assert.equal(maxPowerOf2, 1 << 30)
+  })
+
+  it("nextPowerOf2(2^n) === 2^n", () => {
+    let cursor = 1
+    while (cursor <= 2048) {
+      assert.equal(nextPowerOf2(cursor), cursor)
+      cursor = cursor * 2
+    }
+  })
+
+  it("nextPowerOf2(0) === 1", () => {
+    assert.equal(nextPowerOf2(0), 1)
+  })
+
+  it("nextPowerOf2(-1) throws error", () => {
+    assert.throws(() => nextPowerOf2(-1))
+  })
+
+  it("nextPowerOf2(maxPowerOf2 + 1) == maxPowerOf2", () => {
+    assert.equal(nextPowerOf2(maxPowerOf2 + 1), maxPowerOf2)
+  })
 })

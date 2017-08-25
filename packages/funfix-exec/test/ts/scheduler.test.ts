@@ -21,7 +21,8 @@ import {
   Scheduler,
   GlobalScheduler,
   TestScheduler,
-  Duration
+  Duration,
+  ExecutionModel
 } from "../../src/"
 
 describe("GlobalScheduler", () => {
@@ -87,32 +88,59 @@ describe("GlobalScheduler", () => {
     assert.ok(time >= now)
   })
 
-  it("report errors", () => {
-    const oldFn = console.error
-    const dummy = new DummyError("dummy")
-    let reported: Throwable[] = []
+  function testErrorReporting(f: (ec: Scheduler, r: () => void) => void): () => Promise<void> {
+    return () => {
+      const oldFn = console.error
+      const ec = Scheduler.global.get()
+      const dummy = new DummyError("dummy")
+      let reported: any = null
 
-    // Overriding console.error
-    console.error = (...args: any[]) => {
-      reported = args
-    }
+      const p = new Promise<void>((resolve, _) => {
+        // Overriding console.error
+        console.error = (...args: any[]) => {
+          reported = args && args[0] || null
+          resolve(undefined)
+        }
 
-    const restore = (err?: any) => {
-      console.error = oldFn
-      if (err) throw err
-    }
-
-    const p = new Promise(resolve => {
-      Scheduler.global.get().executeAsync(() => {
-        resolve(1)
-        throw dummy
+        f(ec, () => { throw dummy })
       })
+
+      return p.then(_ => {
+        console.error = oldFn
+        assert.ok(reported, "reported != null")
+        assert.equal(reported.message, "dummy")
+      })
+    }
+  }
+
+  it("reports errors with trampoline",
+    testErrorReporting((ec, r) => ec.trampoline(r))
+  )
+
+  it("reports errors with executeAsync",
+    testErrorReporting((ec, r) => ec.executeAsync(r))
+  )
+
+  it("reports errors with scheduleOnce",
+    testErrorReporting((ec, r) => ec.scheduleOnce(1, r))
+  )
+
+  it("executes async with setImmediate", () => {
+    const ec = new GlobalScheduler(true)
+    const p = new Promise<boolean>((resolve, _) => {
+      ec.executeAsync(() => resolve(true))
     })
 
-    p.catch(restore).then(() => {
-      restore()
-      assert.equal(reported[0], dummy)
+    return p.then(r => assert.ok(r))
+  })
+
+  it("executes async with setTimeout", () => {
+    const ec = new GlobalScheduler(false)
+    const p = new Promise<boolean>((resolve, _) => {
+      ec.executeAsync(() => resolve(true))
     })
+
+    return p.then(r => assert.ok(r))
   })
 
   it("schedule with delay", () => {
@@ -221,6 +249,27 @@ describe("GlobalScheduler", () => {
       assert.equal(r, 1)
       assert.ok(times >= 2)
     })
+  })
+
+  it("executionModel", () => {
+    const s = Scheduler.global.get()
+    assert.equal(s.executionModel, ExecutionModel.global.get())
+
+    const s2 = s.withExecutionModel(ExecutionModel.trampolined())
+    assert.equal(s2.executionModel.type, "trampolined")
+    assert.equal(s2.executionModel.recommendedBatchSize, 1 << 30)
+
+    const s3 = s.withExecutionModel(ExecutionModel.alwaysAsync())
+    assert.equal(s3.executionModel.type, "alwaysAsync")
+    assert.equal(s3.executionModel.recommendedBatchSize, 1)
+
+    const s4 = s.withExecutionModel(ExecutionModel.batched())
+    assert.equal(s4.executionModel.type, "batched")
+    assert.equal(s4.executionModel.recommendedBatchSize, 128)
+
+    const s5 = s.withExecutionModel(ExecutionModel.batched(200))
+    assert.equal(s5.executionModel.type, "batched")
+    assert.equal(s5.executionModel.recommendedBatchSize, 256)
   })
 })
 
@@ -484,5 +533,173 @@ describe("TestScheduler", () => {
     assert.equal(s.triggeredFailures().length, 2)
     assert.equal(s.triggeredFailures()[0], dummy)
     assert.equal(s.triggeredFailures()[1], dummy)
+  })
+
+  it("executionModel", () => {
+    const s = new TestScheduler()
+    assert.equal(s.executionModel, ExecutionModel.trampolined())
+
+    const s2 = s.withExecutionModel(ExecutionModel.trampolined())
+    assert.equal(s2.executionModel.type, "trampolined")
+    assert.equal(s2.executionModel.recommendedBatchSize, 1 << 30)
+
+    const s3 = s.withExecutionModel(ExecutionModel.alwaysAsync())
+    assert.equal(s3.executionModel.type, "alwaysAsync")
+    assert.equal(s3.executionModel.recommendedBatchSize, 1)
+
+    const s4 = s.withExecutionModel(ExecutionModel.batched())
+    assert.equal(s4.executionModel.type, "batched")
+    assert.equal(s4.executionModel.recommendedBatchSize, 128)
+
+    const s5 = s.withExecutionModel(ExecutionModel.batched(200))
+    assert.equal(s5.executionModel.type, "batched")
+    assert.equal(s5.executionModel.recommendedBatchSize, 256)
+  })
+
+  it("executes step by step with tickOne", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+
+    ec.executeAsync(() => effect += 10)
+    ec.executeAsync(() => effect += 20)
+    ec.scheduleOnce(1000, () => effect += 30)
+    assert.equal(effect, 0)
+
+    assert.ok(ec.tickOne())
+    assert.equal(effect, 20)
+    assert.ok(ec.tickOne())
+    assert.equal(effect, 30)
+    assert.not(ec.tickOne())
+
+    assert.equal(ec.tick(1000), 1)
+    assert.equal(effect, 60)
+    assert.not(ec.tickOne())
+  })
+
+  it("reports errors with tickOne", () => {
+    const ec = new TestScheduler()
+    const dummy = new DummyError("dummy")
+
+    ec.executeAsync(() => { throw dummy })
+    assert.equal(ec.triggeredFailures().length, 0)
+    assert.ok(ec.tickOne())
+    assert.equal(ec.triggeredFailures().length, 1)
+    assert.equal(ec.triggeredFailures()[0], dummy)
+  })
+
+  it("executes immediately for ExecutionModel.trampolined", () => {
+    const ec = new TestScheduler().withExecutionModel(ExecutionModel.trampolined())
+    let count = 0
+
+    for (let i = 0; i < 1024; i++)
+      ec.executeBatched(() => { count += 1 })
+
+    assert.equal(count, 1024)
+  })
+
+  it("executes asynchronously for ExecutionModel.alwaysAsync", () => {
+    const ec = new TestScheduler().withExecutionModel(ExecutionModel.alwaysAsync())
+    let count = 0
+
+    for (let i = 0; i < 1024; i++) {
+      const old = count
+      ec.executeBatched(() => { count += 1 })
+      assert.equal(count, old)
+      ec.tick()
+      assert.equal(count, old + 1)
+    }
+  })
+
+  it("executes in batches for ExecutionModel.batched", () => {
+    const em = ExecutionModel.batched()
+    const ec = new TestScheduler().withExecutionModel(em)
+    const batchSize = em.recommendedBatchSize
+    const total = batchSize * 8
+    let count = 0
+
+    for (let i = 0; i < total; i++)
+      ec.executeBatched(() => { count += 1 })
+
+    assert.equal(count, batchSize - 1)
+    ec.tickOne()
+    assert.equal(count, batchSize)
+    ec.tick()
+    assert.equal(count, total)
+  })
+
+  it("executes in batches for ExecutionModel.batched for recursive loops", () => {
+    const em = ExecutionModel.batched()
+    const ec = new TestScheduler().withExecutionModel(em)
+    const batchSize = em.recommendedBatchSize
+    const total = batchSize * 8
+    let count = 0
+
+    const loop = (idx: number) => ec.executeBatched(() => {
+      if (idx < total) {
+        count += 1
+        loop(idx + 1)
+      }
+    })
+
+    loop(0)
+
+    for (let i = 0; i < 8; i++) {
+      assert.equal(count, i * batchSize + batchSize - 1)
+      ec.tickOne()
+    }
+
+    assert.equal(count, total)
+  })
+})
+
+describe("ExecutionModel", () => {
+  it("alwaysAsync", () => {
+    const ref1 = ExecutionModel.alwaysAsync()
+
+    assert.equal(ref1.type, "alwaysAsync")
+    assert.equal(ref1.recommendedBatchSize, 1)
+
+    const ref2 = ExecutionModel.alwaysAsync()
+    assert.equal(ref1 === ref2, false)
+    assert.equal(ref1, ref2)
+
+    assert.equal(ref1.hashCode(), ref2.hashCode())
+    assert.notEqual(ref1.hashCode(), ExecutionModel.trampolined().hashCode())
+  })
+
+  it("trampolined", () => {
+    const ref1 = ExecutionModel.trampolined()
+    assert.equal(ref1.type, "trampolined")
+    assert.equal(ref1.recommendedBatchSize, 1 << 30)
+
+    const ref2 = ExecutionModel.trampolined()
+    assert.equal(ref1, ref2)
+
+    assert.equal(ref1.hashCode(), ref2.hashCode())
+    assert.notEqual(ref1.hashCode(), ExecutionModel.batched().hashCode())
+  })
+
+  it("batched()", () => {
+    const ref1 = ExecutionModel.batched()
+    assert.equal(ref1.type, "batched")
+    assert.equal(ref1.recommendedBatchSize, ExecutionModel.global.get().recommendedBatchSize)
+
+    const ref2 = ExecutionModel.global.get()
+    assert.equal(ref1, ref2)
+
+    assert.equal(ref1.hashCode(), ref2.hashCode())
+    assert.notEqual(ref1.hashCode(), ExecutionModel.alwaysAsync().hashCode())
+  })
+
+  it("batched(200)", () => {
+    const ref1 = ExecutionModel.batched(200)
+    assert.equal(ref1.type, "batched")
+    assert.equal(ref1.recommendedBatchSize, 256)
+
+    const ref2 = ExecutionModel.batched(200)
+    assert.equal(ref1, ref2)
+
+    assert.equal(ref1.hashCode(), ref2.hashCode())
+    assert.notEqual(ref1.hashCode(), ExecutionModel.alwaysAsync().hashCode())
   })
 })

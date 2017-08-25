@@ -58,7 +58,7 @@
     "reporter": [
       "lcov",
       "json",
-      "text-summary",
+      "text",
       "html"
     ],
     "sourceMap": true,

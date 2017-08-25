@@ -65,7 +65,7 @@ declare export class Future<+A> {
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec?: Scheduler): Future<A>;
   static unit(): Future<void>;
   static delayedTick<A>(delay: number | Duration, ec?: Scheduler): Future<void>;
-  static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>): Future<B>;
+  static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>, ec?: Scheduler): Future<B>;
   static fromPromise<A>(ref: IPromiseLike<A>, ec?: Scheduler): Future<A>;
 
   static firstCompletedOf<A>(list: Future<A>[] | Iterable<Future<A>>, ec?: Scheduler): Future<A>;

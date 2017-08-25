@@ -1,7 +1,7 @@
 {
   "name": "funfix",
   "description": "Functional programming library for Javascript",
-  "version": "5.0.1",
+  "version": "5.0.0",
   "keywords": [
     "fp",
     "functional-programming",
@@ -65,7 +65,7 @@
     "reporter": [
       "lcov",
       "json",
-      "text-summary",
+      "text",
       "html"
     ],
     "sourceMap": true,
