@@ -1,0 +1,50 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import {
+  StackedCancelable,
+  Cancelable,
+  ICancelable,
+  IBoolCancelable,
+  IAssignCancelable
+} from "../../src/"
+
+const ref1: StackedCancelable = StackedCancelable.empty()
+const ref2: StackedCancelable = new StackedCancelable()
+
+const ref3: StackedCancelable = new StackedCancelable([
+  Cancelable.of(() => console.info("Cancelled #1")),
+  Cancelable.of(() => console.info("Cancelled #2"))
+])
+
+const ref4: StackedCancelable = StackedCancelable.collection(
+  Cancelable.of(() => console.info("Cancelled #1")),
+  Cancelable.of(() => console.info("Cancelled #2"))
+)
+
+const ref5: StackedCancelable =
+  ref1.push(Cancelable.of(() => console.info("Cancelable #1")))
+
+const ref6: ICancelable = ref1.pop()
+
+const isCancelable: ICancelable = ref1
+const isBoolCancelable: IBoolCancelable = ref1
+
+// $ExpectError
+const isNotAssignCancelable: IAssignCancelable = ref1

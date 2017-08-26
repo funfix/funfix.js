@@ -19,11 +19,13 @@ import { IllegalStateError, DummyError, CompositeError } from "funfix-core"
 import * as assert from "./asserts"
 
 import {
-  Cancelable, BoolCancelable,
+  Cancelable,
+  BoolCancelable,
   AssignCancelable,
   MultiAssignCancelable,
   SingleAssignCancelable,
-  SerialCancelable
+  SerialCancelable,
+  StackedCancelable
 } from "../../src/"
 
 class TestCancelable extends BoolCancelable {
@@ -512,5 +514,107 @@ describe("SingleAssignmentCancelable", () => {
 
     assert.ok(!c.isCanceled())
     assert.equal(effect, 1)
+  })
+})
+
+describe("StackedCancelable", () => {
+  it("cancels underlying tasks", () => {
+    let effect = 0
+    const c1 = Cancelable.of(() => effect += 1)
+    const c2 = Cancelable.of(() => effect += 2)
+    const c3 = Cancelable.of(() => effect += 3)
+
+    const all = StackedCancelable.collection(c1, c2, c3)
+    assert.not(all.isCanceled())
+    assert.equal(effect, 0)
+
+    all.cancel()
+    assert.ok(all.isCanceled())
+    assert.equal(effect, 6)
+
+    all.cancel() // no-op
+    assert.equal(effect, 6)
+  })
+
+  it("can .push() and pop() in FIFO order", () => {
+    let effect = 0
+    const c1 = Cancelable.of(() => effect += 1)
+    const c2 = Cancelable.of(() => effect += 2)
+    const c3 = Cancelable.of(() => effect += 3)
+
+    const sc = StackedCancelable.collection(c1, c2, c3)
+    assert.equal(sc.pop(), c3)
+
+    sc.push(Cancelable.of(() => effect += 4))
+      .push(Cancelable.of(() => effect += 5))
+
+    sc.pop()
+    sc.cancel()
+    assert.equal(effect, 1 + 2 + 4)
+  })
+
+  it("cancels refs on push() if cancelled", () => {
+    const sc = StackedCancelable.empty()
+    sc.cancel()
+    assert.ok(sc.isCanceled())
+
+    const c = BoolCancelable.empty()
+    assert.not(c.isCanceled())
+
+    sc.push(c)
+    assert.ok(c.isCanceled())
+  })
+
+  it("returns empty cancelable on pop() if empty or cancelled", () => {
+    const sc = new StackedCancelable()
+    assert.equal(sc.pop(), Cancelable.empty())
+
+    sc.cancel()
+    assert.equal(sc.pop(), Cancelable.empty())
+  })
+
+  it("handles once exception", () => {
+    const dummy = new DummyError("dummy")
+    const c1 = BoolCancelable.empty()
+    const c2 = Cancelable.of(() => { throw dummy })
+    const c3 = BoolCancelable.empty()
+
+    const sc = StackedCancelable.collection(c1, c2, c3)
+    try {
+      sc.cancel()
+      assert.fail("should have triggered error")
+    } catch (e) {
+      assert.equal(e, dummy)
+    }
+
+    assert.ok(sc.isCanceled())
+    assert.ok(c1.isCanceled())
+    assert.ok(c3.isCanceled())
+  })
+
+  it("handles multiple exceptions", () => {
+    const dummy1 = new DummyError("dummy1")
+    const dummy2 = new DummyError("dummy2")
+
+    const c1 = BoolCancelable.empty()
+    const c2 = Cancelable.of(() => { throw dummy1 })
+    const c3 = Cancelable.of(() => { throw dummy2 })
+    const c4 = BoolCancelable.empty()
+
+    const sc = StackedCancelable.collection(c1, c2, c3, c4)
+    try {
+      sc.cancel()
+      assert.fail("should have triggered error")
+    } catch (e) {
+      assert.ok(e instanceof CompositeError)
+      const errors = (e as CompositeError).errors()
+      assert.equal(errors.length, 2)
+      assert.equal(errors[0], dummy1)
+      assert.equal(errors[1], dummy2)
+    }
+
+    assert.ok(sc.isCanceled())
+    assert.ok(c1.isCanceled())
+    assert.ok(c4.isCanceled())
   })
 })

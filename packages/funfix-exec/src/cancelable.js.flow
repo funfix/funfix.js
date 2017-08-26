@@ -76,3 +76,16 @@ declare export class SingleAssignCancelable extends AssignCancelable {
   static of(cb: () => void): SingleAssignCancelable;
   static empty(): SingleAssignCancelable;
 }
+
+declare export class StackedCancelable {
+  constructor(initial?: ICancelable[]): StackedCancelable;
+
+  isCanceled(): boolean;
+  cancel(): void;
+
+  push(value: ICancelable): this;
+  pop(): ICancelable;
+
+  static empty(): StackedCancelable;
+  static collection(...refs: Array<ICancelable>): StackedCancelable;
+}
