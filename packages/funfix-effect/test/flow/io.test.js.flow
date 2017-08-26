@@ -1,0 +1,101 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import type { Throwable } from "funfix-core"
+import { Try, Either, Left, Right, Success } from "funfix-core"
+import { ICancelable, Future, Scheduler, StackedCancelable } from "funfix-exec"
+import { IO } from "../../src/"
+
+const t1: IO<number> = IO.now(1)
+
+const f1: Future<number> = t1.run()
+const f2: Future<number> = t1.run(Scheduler.global.get())
+const c1: ICancelable = t1.runOnComplete((r: Try<number>) => console.info(r.getOrElse(0)))
+const c2: ICancelable = t1.runOnComplete((r: Try<number>) => console.info(r.getOrElse(0)), Scheduler.global.get())
+
+const map1: IO<string> = t1.map(x => String(x))
+const map2: IO<number> = t1.map(x => x + 1)
+const map3: IO<IO<number>> = t1.map(x => IO.pure(x + 1))
+
+const fmap1: IO<string> = t1.flatMap(x => IO.now(String(x)))
+const fmap2: IO<number> = t1.flatMap(x => IO.now(x + 1))
+const fmap3: IO<IO<number>> = t1.flatMap(x => IO.now(IO.now(x + 1)))
+
+const chain1: IO<string> = t1.chain(x => IO.now(String(x)))
+const chain2: IO<number> = t1.chain(x => IO.now(x + 1))
+const chain3: IO<IO<number>> = t1.chain(x => IO.now(IO.now(x + 1)))
+
+const tr1: IO<string> = t1.transform(e => String(e), v => String(v))
+const tr2: IO<IO<number>> = t1.transform(e => IO.now(1), v => IO.now(v))
+const tr3: IO<number> = t1.transformWith(e => IO.now(1), v => IO.now(v))
+const tr4: IO<string | number> = t1.transform(e => String(e), v => v)
+const tr5: IO<string | number> = t1.transformWith(e => IO.now(String(e)), v => IO.pure(v))
+
+const r1: IO<number> = t1.recover(e => 0)
+const r2: IO<number> = t1.recoverWith(e => IO.now(0))
+const r3: IO<string | number> = t1.recover(e => String(e))
+const r4: IO<string | number> = t1.recoverWith(e => IO.now(String(e)))
+
+const at1: IO<Either<Throwable, number>> = t1.attempt()
+const fr1: IO<void> = t1.forEachL((x: number) => console.info(x))
+
+const of1: IO<number> = IO.of(() => 1)
+const of2: IO<string> = IO.of(() => "Hello!")
+const of3: IO<number> = IO.always(() => 1)
+const of4: IO<string> = IO.once(() => "Hello!")
+
+const pure1: IO<number> = IO.now(1)
+const pure2: IO<string> = IO.now("Hello!")
+const pure3: IO<number> = IO.pure(1)
+const pure4: IO<string> = IO.pure("Hello!")
+const pure5: IO<void> = IO.unit()
+
+const err1: IO<number> = IO.raise("Error!")
+
+const s1: IO<number> = IO.suspend(() => IO.pure(1))
+const s2: IO<number> = IO.defer(() => IO.pure(1))
+
+const rec: IO<string> = IO.tailRecM(10, (a: number) => {
+  if (a <= 0)
+    return IO.of(() => Left(a - 1))
+  else
+    return IO.pure(Right("Done!"))
+})
+
+const async1: IO<number> =
+  IO.asyncUnsafe((context, callback) => {
+    const ec: Scheduler = context.scheduler
+    const conn: StackedCancelable = context.connection
+
+    const task = ec.scheduleOnce(1000, () => {
+      conn.pop()
+      callback(Success(1))
+    })
+
+    conn.push(task)
+  })
+
+const async2: IO<number> =
+  IO.async((ec: Scheduler, cb) => cb(Success(1)))
+
+const async3: IO<number> =
+  IO.async((ec, cb) => {
+    const task: ICancelable = ec.scheduleOnce(10, () => cb(Success(1)))
+    return task
+  })

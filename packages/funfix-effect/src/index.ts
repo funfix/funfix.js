@@ -16,3 +16,4 @@
  */
 
 export * from "./eval"
+export * from "./io"

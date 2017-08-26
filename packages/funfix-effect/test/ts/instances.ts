@@ -16,7 +16,8 @@
  */
 
 import * as jv from "jsverify"
-import { Eval } from "../../src/"
+import { Eval, IO } from "../../src/"
+import {Failure, Success} from "funfix-core";
 
 export const arbEval: jv.Arbitrary<Eval<number>> =
   jv.pair(jv.number, jv.number).smap(
@@ -37,4 +38,31 @@ export const arbEval: jv.Arbitrary<Eval<number>> =
       }
     },
     u => [u.get(), u.get()]
+  )
+
+export const arbIO: jv.Arbitrary<IO<number>> =
+  jv.pair(jv.number, jv.number).smap(
+    v => {
+      switch (v[0] % 9) {
+        case 0:
+          return IO.now(v[1])
+        case 1:
+          return IO.raise(v[1])
+        case 2:
+          return IO.always(() => v[1])
+        case 3:
+          return IO.once(() => v[1])
+        case 4:
+          return IO.suspend(() => IO.now(v[1]))
+        case 5:
+          return IO.async<number>((ec, cb) => cb(Success(v[1])))
+        case 6:
+          return IO.async<number>((ec, cb) => cb(Failure(v[1])))
+        case 7:
+          return IO.async<number>((ec, cb) => cb(Success(v[1]))).flatMap(IO.now)
+        default:
+          return IO.now(0).flatMap(_ => IO.now(v[1]))
+      }
+    },
+    u => [0, 0]
   )

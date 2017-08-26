@@ -38,7 +38,16 @@ export abstract class Scheduler {
    */
   public readonly executionModel: ExecutionModel
 
-  protected _batchIndex: number = 0
+  /**
+   * Index of the current cycle, incremented automatically (modulo
+   * the batch size) when doing execution by means of
+   * {@link Scheduler.executeBatched} and the `Scheduler` is
+   * configured with {@link ExecutionModel.batched}.
+   *
+   * When observed as being zero, it means an async boundary just
+   * happened.
+   */
+  batchIndex: number = 0
 
   /**
    * @param em the {@link ExecutionModel} to use for
@@ -62,9 +71,9 @@ export abstract class Scheduler {
         const modulus = em.recommendedBatchSize - 1
 
         this.executeBatched = (r) => {
-          const next = (this._batchIndex + 1) & modulus
+          const next = (this.batchIndex + 1) & modulus
           if (next) {
-            this._batchIndex = next
+            this.batchIndex = next
             return this.trampoline(r)
           } else {
             return this.executeAsync(r)
@@ -510,7 +519,7 @@ export class GlobalScheduler extends Scheduler {
 
   scheduleOnce(delay: number | Duration, runnable: () => void): ICancelable {
     const r = () => {
-      this._batchIndex = 0
+      this.batchIndex = 0
       try { runnable() } catch (e) { this.reportFailure(e) }
     }
 
@@ -676,7 +685,7 @@ export class TestScheduler extends Scheduler {
           const elem = toExecute[index] as any
           try {
             toExecute.splice(index, 1)
-            this._batchIndex = 0
+            this.batchIndex = 0
             elem[1]()
           } catch (e) {
             this.reportFailure(e)
@@ -719,7 +728,7 @@ export class TestScheduler extends Scheduler {
 
     if (!peek || peek[0] > this._clock) return false
     this._tasks.pop()
-    this._batchIndex = 0
+    this.batchIndex = 0
     try { peek[1]() } catch (e) { this.reportFailure(e) }
     return true
   }

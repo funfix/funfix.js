@@ -23,9 +23,9 @@ import { DynamicRef } from "./ref"
 
 declare export class Scheduler {
   /** @protected */
-  _batchIndex: number;
-  /** @protected */
   constructor(em: ExecutionModel): Scheduler;
+
+  batchIndex: number;
 
   executeBatched(runnable: () => void): void;
   executeAsync(runnable: () => void): void;

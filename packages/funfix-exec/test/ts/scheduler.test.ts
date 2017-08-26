@@ -621,8 +621,10 @@ describe("TestScheduler", () => {
       ec.executeBatched(() => { count += 1 })
 
     assert.equal(count, batchSize - 1)
+    assert.equal(ec.batchIndex, 127)
     ec.tickOne()
     assert.equal(count, batchSize)
+    assert.equal(ec.batchIndex, 0)
     ec.tick()
     assert.equal(count, total)
   })

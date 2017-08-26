@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import type { Throwable } from "funfix-core"
+import { Either, Try } from "funfix-core";
+import { ICancelable, StackedCancelable, Scheduler, Future } from "funfix-exec";
+
+declare export class IO<+A> {
+  run<A>(ec?: Scheduler): Future<A>;
+  runOnComplete<A>(cb: (result: Try<A>) => void, ec?: Scheduler): ICancelable;
+
+  map<B>(f: (a: A) => B): IO<B>;
+  flatMap<B>(f: (a: A) => IO<B>): IO<B>;
+  chain<B>(f: (a: A) => IO<B>): IO<B>;
+  transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): IO<R>;
+  transformWith<R>(failure: (e: Throwable) => IO<R>, success: (a: A) => IO<R>): IO<R>;
+  recover<AA>(f: (e: Throwable) => AA): IO<A | AA>;
+  recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA>;
+  attempt(): IO<Either<Throwable, A>>;
+  forEachL(cb: (a: A) => void): IO<void>;
+
+  +_funKindF: IO<any>;
+  +_funKindA: A;
+  static +_funErasure: IO<any>;
+
+  static of<A>(thunk: () => A): IO<A>;
+  static pure<A>(value: A): IO<A>;
+  static now<A>(value: A): IO<A>;
+  static unit(): IO<void>;
+  static raise(e: Throwable): IO<empty>;
+  static fromTry<A>(a: Try<A>): IO<A>;
+  static always<A>(thunk: () => A): IO<A>;
+  static once<A>(thunk: () => A): IO<A>;
+  static suspend<A>(thunk: () => IO<A>): IO<A>;
+  static defer<A>(thunk: () => IO<A>): IO<A>;
+  static async<A>(register: (ec: Scheduler, cb: (a: Try<A>) => void) => ICancelable | void): IO<A>;
+  static asyncUnsafe<A>(register: IORegister<A>): IO<A>;
+  static tailRecM<A, B>(a: A, f: (a: A) => IO<Either<A, B>>): IO<B>;
+}
+
+export type IORegister<A> =
+  (context: IOContext, callback: (result: Try<A>) => void) => void;
+
+declare export class IOContext {
+  +scheduler: Scheduler;
+  +connection: StackedCancelable;
+  +options: IOOptions;
+  constructor(scheduler: Scheduler, connection?: StackedCancelable, options?: IOOptions): IOContext;
+
+  markAsyncBoundary(): void;
+  shouldCancel(): boolean;
+}
+
+export type IOOptions = {
+  autoCancelableRunLoops: boolean;
+};
