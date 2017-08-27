@@ -43,7 +43,7 @@ export const arbEval: jv.Arbitrary<Eval<number>> =
 export const arbIO: jv.Arbitrary<IO<number>> =
   jv.pair(jv.number, jv.number).smap(
     v => {
-      switch (v[0] % 9) {
+      switch (v[0] % 11) {
         case 0:
           return IO.now(v[1])
         case 1:
@@ -60,8 +60,12 @@ export const arbIO: jv.Arbitrary<IO<number>> =
           return IO.async<number>((ec, cb) => cb(Failure(v[1])))
         case 7:
           return IO.async<number>((ec, cb) => cb(Success(v[1]))).flatMap(IO.now)
-        default:
+        case 8:
           return IO.now(0).flatMap(_ => IO.now(v[1]))
+        case 9:
+          return IO.always(() => v[1]).memoizeOnSuccess()
+        default:
+          return IO.suspend(() => IO.pure(v[1])).memoize()
       }
     },
     u => [0, 0]

@@ -538,6 +538,78 @@ describe("IO builders", () => {
     const ec = scheduler()
     assert.equal(IO.fromTry(Failure("error")).run(ec).value(), Some(Failure("error")))
   })
+
+  it("converts fromFuture(Future.pure(v))", () => {
+    const ec = scheduler()
+    const f = IO.fromFuture(Future.pure(1)).run(ec)
+    assert.equal(f.value(), Some(Success(1)))
+  })
+
+  it("converts fromFuture(Future.raise(v))", () => {
+    const ec = scheduler()
+    const f = IO.fromFuture(Future.raise("error")).run(ec)
+    assert.equal(f.value(), Some(Failure("error")))
+  })
+
+  it("converts deferFuture(() => Future.of(f))", () => {
+    const ec = scheduler()
+    let effect = 0
+    const f = IO.deferFuture(() => Future.of(() => { effect += 1; return 1 }, ec)).run(ec)
+
+    ec.tick()
+    assert.equal(f.value(), Some(Success(1)))
+    assert.equal(effect, 1)
+  })
+
+  it("converts deferFuture(() => Future.of(throw))", () => {
+    const ec = scheduler()
+    const dummy = new DummyError()
+    let effect = 0
+    const f = IO.deferFuture(() => Future.of(() => { effect += 1; throw dummy }, ec)).run(ec)
+
+    ec.tick()
+    assert.equal(f.value(), Some(Failure(dummy)))
+    assert.equal(effect, 1)
+  })
+
+  it("converts deferFutureAction(() => Future.of(f))", () => {
+    const ec = scheduler()
+
+    let effect = 0
+    const f = IO.deferFutureAction(ec => Future.of(() => { effect += 1; return 1 }, ec)).run(ec)
+
+    assert.equal(f.value(), None); ec.tick()
+    assert.equal(f.value(), Some(Success(1)))
+    assert.equal(effect, 1)
+  })
+
+  it("converts deferFutureAction(() => Future.of(throw))", () => {
+    const ec = scheduler()
+    const dummy = new DummyError()
+
+    let effect = 0
+    const f = IO.deferFutureAction(ec => Future.of(() => { effect += 1; throw dummy }, ec)).run(ec)
+
+    assert.equal(f.value(), None); ec.tick()
+    assert.equal(f.value(), Some(Failure(dummy)))
+    assert.equal(effect, 1)
+  })
+
+  it("deferAction", () => {
+    const ec = scheduler()
+    ec.tick(1000)
+
+    assert.equal(ec.currentTimeMillis(), 1000)
+    const f = IO.deferAction(ec => IO.pure(ec.currentTimeMillis())).run(ec)
+    assert.equal(f.value(), Some(Success(1000)))
+  })
+
+  it("deferAction protects against user error", () => {
+    const ec = scheduler()
+    const dummy = new DummyError()
+    const f = IO.deferAction<number>(ec => { throw dummy }).run(ec)
+    assert.equal(f.value(), Some(Failure(dummy)))
+  })
 })
 
 describe("IO aliases", () => {
@@ -789,6 +861,273 @@ describe("IO run-loop", () => {
     ec2.tick()
     asyncEC.tick()
     assert.equal(f2.value(), Some(Success(1)))
+  })
+})
+
+describe("IO.memoize", () => {
+  it("works for subsequent subscribers after finish", () => {
+    const ec = scheduler()
+
+    let effect = 0
+    const io = IO
+      .suspend(() => { effect += 1; return IO.pure(effect) })
+      .memoize()
+
+    const f1 = io.run(ec)
+    assert.equal(f1.value(), Some(Success(1)))
+    const f2 = io.run(ec)
+    assert.equal(f2.value(), Some(Success(1)))
+    const f3 = io.run(ec)
+    assert.equal(f3.value(), Some(Success(1)))
+  })
+
+  it("works for subsequent subscribers during processing", () => {
+    const ec = scheduler()
+
+    let effect = 0
+    const io = IO
+      .deferFuture(() => Future.of(() => { effect += 1; return effect }, ec))
+      .map(_ => _ + 1)
+      .memoize()
+      .map(_ => _ + 1)
+
+    const f1 = io.run(ec)
+    const f2 = io.run(ec)
+    const f3 = io.run(ec)
+
+    assert.equal(f1.value(), None)
+    assert.equal(f2.value(), None)
+    assert.equal(f3.value(), None)
+
+    ec.tick()
+    assert.equal(f1.value(), Some(Success(3)))
+    assert.equal(f2.value(), Some(Success(3)))
+    assert.equal(f3.value(), Some(Success(3)))
+
+    const f4 = io.run(ec)
+    assert.equal(f4.value(), Some(Success(3)))
+  })
+
+  it("caches failures", () => {
+    const ec = scheduler()
+    let effect = 0
+    const io = IO
+      .defer(() => { effect += 1; return IO.raise(effect) })
+      .memoize()
+
+    const f1 = io.run(ec)
+    assert.equal(f1.value(), Some(Failure(1)))
+    const f2 = io.run(ec)
+    assert.equal(f2.value(), Some(Failure(1)))
+    const f3 = io.run(ec)
+    assert.equal(f3.value(), Some(Failure(1)))
+  })
+
+  jv.property("returns same reference on double call",
+    inst.arbIO,
+    fa => {
+      const mem = fa.memoize()
+      return mem === mem.memoize()
+    })
+
+  it("memoizes IO.always", () => {
+    const ec = scheduler()
+    let effect = 0
+    const io = IO
+      .always(() => { effect += 1; return effect })
+      .memoize()
+
+    assert.equal(io._funADType, "once")
+    assert.equal(io.run(ec).value(), Some(Success(1)))
+    assert.equal(io.run(ec).value(), Some(Success(1)))
+  })
+
+  it("returns same reference on IO.once", () => {
+    const io = IO.once(() => 1)
+    assert.equal(io.memoize(), io)
+  })
+
+  it("memoizes errors for IO.always(f).memoizeOnSuccess().memoize()", () => {
+    const ec = scheduler()
+    const dummy = new DummyError()
+    let effect = 0
+    const io = IO
+      .always(() => { effect += 1; throw dummy })
+      .memoizeOnSuccess()
+
+    const io2 = io.memoize()
+
+    assert.notEqual(io, io2)
+    assert.equal(io2._funADType, "once")
+
+    assert.equal(io2.run(ec).value(), Some(Failure(dummy)))
+    assert.equal(effect, 1)
+    assert.equal(io2.run(ec).value(), Some(Failure(dummy)))
+    assert.equal(effect, 1)
+  })
+
+  it("memoizes errors for IO.async().memoizeOnSuccess().memoize()", () => {
+    const ec = scheduler()
+    const dummy = new DummyError()
+    let effect = 0
+    const io = IO
+      .async((ec, cb) => { effect += 1; cb(Failure(dummy)) })
+      .memoizeOnSuccess()
+
+    const io2 = io.memoize()
+    assert.equal(io._funADType, "memoize")
+    assert.equal(io2._funADType, "memoize")
+    assert.notEqual(io, io2)
+
+    const f1 = io2.run(ec); ec.tick()
+    assert.equal(f1.value(), Some(Failure(dummy)))
+    assert.equal(effect, 1)
+
+    const f2 = io2.run(ec); ec.tick()
+    assert.equal(f2.value(), Some(Failure(dummy)))
+    assert.equal(effect, 1)
+  })
+})
+
+describe("IO.memoizeOnSuccess", () => {
+  it("returns same reference for IO.pure", () => {
+    const io = IO.pure(1)
+    assert.equal(io.memoizeOnSuccess(), io)
+  })
+
+  it("returns same reference for IO.raise", () => {
+    const io = IO.raise("error")
+    assert.equal(io.memoizeOnSuccess(), io)
+  })
+
+  it("returns same reference for IO.once(f)", () => {
+    const io = IO.once(() => 1)
+    assert.equal(io.memoizeOnSuccess(), io)
+  })
+
+  it("repeats processing of IO.always on error", () => {
+    let effect = 0
+    const dummy = new DummyError()
+    const io = IO
+      .always(() => { effect += 1; throw dummy })
+      .memoizeOnSuccess()
+
+    const f1 = io.run()
+    assert.equal(f1.value(), Some(Failure(dummy)))
+    assert.equal(effect, 1)
+
+    const f2 = io.run()
+    assert.equal(f2.value(), Some(Failure(dummy)))
+    assert.equal(effect, 2)
+
+    const f3 = io.run()
+    assert.equal(f3.value(), Some(Failure(dummy)))
+    assert.equal(effect, 3)
+  })
+
+  it("memoizes IO.always", () => {
+    const ec = scheduler()
+    let effect = 0
+    const io = IO
+      .always(() => { effect += 1; return effect })
+      .memoizeOnSuccess()
+
+    assert.equal(io._funADType, "once")
+    assert.equal(io.run(ec).value(), Some(Success(1)))
+    assert.equal(io.run(ec).value(), Some(Success(1)))
+  })
+
+  jv.property("returns same reference on double call",
+    inst.arbIO,
+    fa => {
+      const mem = fa.memoizeOnSuccess()
+      return mem === mem.memoizeOnSuccess()
+    })
+
+  jv.property("returns same reference after memoize()",
+    inst.arbIO,
+    fa => {
+      const mem = fa.memoize()
+      return mem === mem.memoizeOnSuccess()
+    })
+
+  it("works for subsequent subscribers after finish", () => {
+    const ec = scheduler()
+
+    let effect = 0
+    const io = IO
+      .suspend(() => { effect += 1; return IO.pure(effect) })
+      .memoizeOnSuccess()
+
+    const f1 = io.run(ec)
+    assert.equal(f1.value(), Some(Success(1)))
+    const f2 = io.run(ec)
+    assert.equal(f2.value(), Some(Success(1)))
+    const f3 = io.run(ec)
+    assert.equal(f3.value(), Some(Success(1)))
+  })
+
+  it("works for subsequent subscribers during processing", () => {
+    const ec = scheduler()
+
+    let effect = 0
+    const io = IO
+      .deferFuture(() => Future.of(() => { effect += 1; return effect }, ec))
+      .map(_ => _ + 1)
+      .memoizeOnSuccess()
+      .map(_ => _ + 1)
+
+    const f1 = io.run(ec)
+    const f2 = io.run(ec)
+    const f3 = io.run(ec)
+
+    assert.equal(f1.value(), None)
+    assert.equal(f2.value(), None)
+    assert.equal(f3.value(), None)
+
+    ec.tick()
+    assert.equal(f1.value(), Some(Success(3)))
+    assert.equal(f2.value(), Some(Success(3)))
+    assert.equal(f3.value(), Some(Success(3)))
+
+    const f4 = io.run(ec)
+    assert.equal(f4.value(), Some(Success(3)))
+  })
+
+  it("does not caches failures", () => {
+    const ec = scheduler()
+    let effect = 0
+    const io = IO
+      .defer(() => { effect += 1; return IO.raise(effect) })
+      .memoizeOnSuccess()
+
+    const f1 = io.run(ec); ec.tick()
+    assert.equal(f1.value(), Some(Failure(1)))
+    const f2 = io.run(ec); ec.tick()
+    assert.equal(f2.value(), Some(Failure(2)))
+    const f3 = io.run(ec); ec.tick()
+    assert.equal(f3.value(), Some(Failure(3)))
+  })
+
+  it("does not cache failures for async IOs", () => {
+    const ec = scheduler()
+    let effect = 0
+    const io = IO
+      .async((ec, cb) => ec.executeAsync(() => {
+        effect += 1
+        if (effect < 3) cb(Failure(effect))
+        else cb(Success(effect))
+      }))
+      .memoizeOnSuccess()
+
+    const f1 = io.run(ec); ec.tick()
+    assert.equal(f1.value(), Some(Failure(1)))
+    const f2 = io.run(ec); ec.tick()
+    assert.equal(f2.value(), Some(Failure(2)))
+    const f3 = io.run(ec); ec.tick()
+    assert.equal(f3.value(), Some(Success(3)))
+    const f4 = io.run(ec); ec.tick()
+    assert.equal(f4.value(), Some(Success(3)))
   })
 })
 

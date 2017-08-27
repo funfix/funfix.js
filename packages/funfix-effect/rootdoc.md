@@ -11,9 +11,8 @@ types for dealing with laziness and side effects.
 
 |              |                                                                                        |
 |--------------|--------------------------------------------------------------------------------------- |
-| {@link Eval} | a lawful, lazy, monadic data type, that can control evaluation, inspired by the `Eval` type in [Typelevel Cats](http://typelevel.org/cats/) and by the `Coeval` type in [Monix](https://monix.io), the equivalent of Haskell's `IO`, but that can only handle immediate execution and not async boundaries. |
-
-N.B. an equivalent `Task` / `IO` type is coming 😉
+| [Eval]{@link Eval} | lawful, lazy, monadic data type, that can control evaluation, inspired by the `Eval` type in [Typelevel Cats](http://typelevel.org/cats/) and by the `Coeval` type in [Monix](https://monix.io), a more simple `IO`-like type that can only handle immediate execution, no async boundaries, no error handling, not being meant for suspending side effects. |
+| [IO]{@link IO}   | lawful, lazy, monadic data type, capable of expressing and composing side effectful actions, including asynchronous, being the most potent and capable alternative to JavaScript's `Promise`, inspired by Haskell's `IO` and by the [Monix Task](https://monix.io/docs/2x/eval/task.html) |
 
 ## Usage
 

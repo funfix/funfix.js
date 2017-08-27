@@ -31,6 +31,8 @@ declare export class IO<+A> {
   forEachL(cb: (a: A) => void): IO<void>;
   executeWithOptions(set: IOOptions): IO<A>;
   map<B>(f: (a: A) => B): IO<B>;
+  memoize(): IO<A>;
+  memoizeOnSuccess(): IO<A>;
   recover<AA>(f: (e: Throwable) => AA): IO<A | AA>;
   recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA>;
   transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): IO<R>;
@@ -44,6 +46,10 @@ declare export class IO<+A> {
   static async<A>(register: (ec: Scheduler, cb: (a: Try<A>) => void) => ICancelable | void): IO<A>;
   static asyncUnsafe<A>(register: IORegister<A>): IO<A>;
   static defer<A>(thunk: () => IO<A>): IO<A>;
+  static deferAction<A>(f: (ec: Scheduler) => IO<A>): IO<A>;
+  static deferFuture<A>(thunk: () => Future<A>): IO<A>;
+  static deferFutureAction<A>(f: (ec: Scheduler) => Future<A>): IO<A>;
+  static fromFuture<A>(fa: Future<A>): IO<A>;
   static fromTry<A>(a: Try<A>): IO<A>;
   static now<A>(value: A): IO<A>;
   static of<A>(thunk: () => A): IO<A>;

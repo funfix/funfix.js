@@ -36,13 +36,50 @@ import {
  * asynchronous computation, which when executed will produce an `A`
  * as a result, along with possible side-effects.
  *
- * Compared with Funfix's `Future` (see `funfix-exec`) or
- * JavaScript's `Promise`, `IO` does not represent a running
- * computation or a value detached from time, as `IO` does not execute
- * anything when working with its builders or operators and it does
- * not submit any work into the `Scheduler` or any run-loop for
- * execution, the execution eventually taking place only after
- * {@link IO.run} is called and not before that.
+ * Compared with Funfix's
+ * [Future](https://funfix.org/api/exec/classes/future.html) (see
+ * `funfix-exec`) or JavaScript's `Promise`, `IO` does not represent a
+ * running computation or a value detached from time, as `IO` does not
+ * execute anything when working with its builders or operators and it
+ * does not submit any work into the `Scheduler` or any run-loop for
+ * execution, the execution eventually taking place only after {@link
+ * IO.run} is called and not before that.
+ *
+ * In order to understand `IO`, here's the design space:
+ *
+ * |                  | Strict                    | Lazy                          |
+ * |------------------|:-------------------------:|:-----------------------------:|
+ * | **Synchronous**  | `A`                       | `() => A`                     |
+ * |                  |                           | [Eval&lt;A&gt;]{@link Eval}   |
+ * | **Asynchronous** | `Try<A> => void`          | `() => (Try<A> => void)`      |
+ * |                  | `Future<A>` / `Promise`   | [IO&lt;A&gt;]{@link IO}       |
+ *
+ * JavaScript is a language (and runtime) that's strict by default,
+ * meaning that expressions are evaluated immediately instead of
+ * being evaluated on a by-need basis, like in Haskell.
+ *
+ * So a value `A` is said to be strict. To turn an `A` value into a lazy
+ * value, you turn that expression into a parameterless function of
+ * type `() => A`, also called a "thunk".
+ *
+ * A [Future](https://funfix.org/api/exec/classes/future.html) is a
+ * value that's produced by an asynchronous process, but it is said
+ * to have strict behavior, meaning that when you receive a `Future`
+ * reference, whatever process that's supposed to complete the
+ * `Future` has probably started already. This goes for
+ * [JavaScript's Promise](https://promisesaplus.com) as well.
+ *
+ * But there are cases where we don't want strict values, but lazily
+ * evaluated ones. In some cases we want functions, or
+ * `Future`-generators. Because we might want better handling of
+ * parallelism, or we might want to suspend *side effects*. As
+ * without suspending *side effects* we don't have *referential
+ * transparency*, which really helps with reasoning about the code,
+ * being the essence of *functional programming*.
+ *
+ * This `IO` type is thus the complement to `Future`, a lazy, lawful
+ * monadic type that can describe any side effectful action, including
+ * asynchronous ones, also capable of suspending side effects.
  *
  * ## Note on the ExecutionModel
  *
@@ -193,6 +230,58 @@ export class IO<A> {
   }
 
   /**
+   * Memoizes (caches) the result of the source `IO` and reuses it on
+   * subsequent invocations of `run`.
+   *
+   * The resulting task will be idempotent, meaning that
+   * evaluating the resulting task multiple times will have the
+   * same effect as evaluating it once.
+   *
+   * @see {@link IO.memoizeOnSuccess} for a version that only caches
+   *     successful results.
+   */
+  memoize(): IO<A> {
+    switch (this._funADType) {
+      case "pure":
+        return this
+      case "always":
+        const always = (this as any) as IOAlways<A>
+        return new IOOnce(always.thunk, false)
+      case "memoize":
+        const mem = (this as any) as IOMemoize<A>
+        if (!mem.onlySuccess) return mem
+        return new IOMemoize(this, false)
+      default: // flatMap | async
+        return new IOMemoize(this, false)
+    }
+  }
+
+  /**
+   * Memoizes (cache) the successful result of the source task
+   * and reuses it on subsequent invocations of `run`.
+   * Thrown exceptions are not cached.
+   *
+   * The resulting task will be idempotent, but only if the
+   * result is successful.
+   *
+   * @see {@link IO.memoize} for a version that caches both successful
+   *     results and failures
+   */
+  memoizeOnSuccess(): IO<A> {
+    switch (this._funADType) {
+      case "pure":
+      case "once":
+      case "memoize":
+        return this
+      case "always":
+        const always = (this as any) as IOAlways<A>
+        return new IOOnce(always.thunk, true)
+      default: // flatMap | async
+        return new IOMemoize(this, true)
+    }
+  }
+
+  /**
    * Creates a new `IO` that will mirror the source on success,
    * but on failure it will try to recover and yield a successful
    * result by applying the given function `f` to the thrown error.
@@ -254,7 +343,7 @@ export class IO<A> {
    * Identifies the `IO` reference type, useful for debugging and
    * for pattern matching in the implementation.
    */
-  readonly _funADType: "pure" | "always" | "once" | "flatMap" | "async"
+  readonly _funADType: "pure" | "always" | "once" | "flatMap" | "async" | "memoize"
 
   // Implements HK<F, A>
   readonly _funKindF: IO<any>
@@ -328,7 +417,7 @@ export class IO<A> {
    *  - on signaling the result (`Success` or `Failure`),
    *    another async boundary is necessary, but can also
    *    happen with the scheduler's facilities for trampolined
-   *    execution (e.g. {@link Scheduler.trampoline})
+   *    execution (e.g. `Scheduler.trampoline`)
    *
    * **WARNING:** note that not only is this builder unsafe, but also
    * unstable, as the {@link IORegister} callback type is exposing
@@ -348,6 +437,85 @@ export class IO<A> {
    */
   static defer<A>(thunk: () => IO<A>): IO<A> {
     return IO.unit().flatMap(_ => thunk())
+  }
+
+  /**
+   * Defers the creation of an `IO` by using the provided function,
+   * which has the ability to inject a needed `Scheduler`.
+   *
+   * Example:
+   *
+   * ```typescript
+   * function measureLatency<A>(source: IO<A>): IO<[A, Long]> {
+   *   return IO.deferAction<[A, Long]>(s => {
+   *     // We have our Scheduler, which can inject time, we
+   *     // can use it for side-effectful operations
+   *     const start = s.currentTimeMillis()
+   *
+   *     return source.map(a => {
+   *       const finish = s.currentTimeMillis()
+   *       return [a, finish - start]
+   *     })
+   *   })
+   * }
+   * ```
+   *
+   * @param f is the function that's going to be called when the
+   *        resulting `IO` gets evaluated
+   */
+  static deferAction<A>(f: (ec: Scheduler) => IO<A>): IO<A> {
+    return IO.asyncUnsafe<A>((ctx, cb) => {
+      const ec = ctx.scheduler
+      let ioa: IO<A>
+      try { ioa = f(ec) } catch (e) { ioa = IO.raise(e) }
+      ec.trampoline(() => IO.unsafeStart(ioa, ctx, cb))
+    })
+  }
+
+  /**
+   * Given a `thunk` that produces `Future` values, suspends it
+   * in the `IO` context, evaluating it on demand whenever the
+   * resulting `IO` gets evaluated.
+   *
+   * See {@link IO.fromFuture} for the strict version.
+   */
+  static deferFuture<A>(thunk: () => Future<A>): IO<A> {
+    return IO.suspend(() => IO.fromFuture(thunk()))
+  }
+
+  /**
+   * Wraps calls that generate `Future` results into `IO`, provided
+   * a callback with an injected `Scheduler`.
+   *
+   * This builder helps with wrapping `Future`-enabled APIs that need
+   * a `Scheduler` to work.
+   *
+   * @param f is the function that's going to be executed when the task
+   *        gets evaluated, generating the wrapped `Future`
+   */
+  static deferFutureAction<A>(f: (ec: Scheduler) => Future<A>): IO<A> {
+    return IO.deferAction(ec => IO.fromFuture(f(ec)))
+  }
+
+  /**
+   * Converts any strict `Future` value into an {@link IO}.
+   *
+   * Note that this builder does not suspend any side effects, since
+   * the given parameter is strict (and not a function) and because
+   * `Future` has strict behavior.
+   *
+   * See {@link IO.deferFuture} for an alternative that evaluates
+   * lazy thunks that produce future results.
+   */
+  static fromFuture<A>(fa: Future<A>): IO<A> {
+    if (!fa.value().isEmpty()) return IO.fromTry(fa.value().get() as any)
+    return IO.asyncUnsafe<A>((ctx, cb) => {
+      ctx.connection.push(fa)
+      fa.onComplete(result => {
+        ctx.connection.pop()
+        cb(result as any)
+      })
+    })
   }
 
   /**
@@ -496,6 +664,13 @@ class IOOnce<A> extends IO<A> {
     this.onlyOnSuccess = onlyOnSuccess
   }
 
+  memoize(): IO<A> {
+    if (this.onlyOnSuccess && this._thunk)
+      return new IOOnce(this._thunk, false)
+    else
+      return this
+  }
+
   runTry(): Try<A> {
     if (this._thunk) {
       const result = Try.of(this._thunk)
@@ -562,6 +737,21 @@ class IOAsync<A> extends IO<A> {
   readonly _funADType: "async" = "async"
 
   constructor(public readonly register: IORegister<A>) { super() }
+}
+
+class IOMemoize<A> extends IO<A> {
+  readonly _funADType: "memoize" = "memoize"
+
+  public result: Try<A> | Future<A> | null
+  public source?: IO<A>
+  public readonly onlySuccess: boolean
+
+  constructor(source: IO<A>, onlySuccess: boolean) {
+    super()
+    this.source = source
+    this.result = null
+    this.onlySuccess = onlySuccess
+  }
 }
 
 /**
@@ -836,6 +1026,10 @@ function ioGenericRunLoop(
         const ctx = context || new IOContext(scheduler)
         ioExecuteAsync(async.register, ctx, cb, rcb, bFirst, bRest, frameIndex)
         return ctx.connection
+
+      case "memoize":
+        const mem: IOMemoize<any> = current as any
+        return ioStartMemoize(mem, scheduler, context, cb, bFirst, bRest, frameIndex)
     }
   }
 }
@@ -849,15 +1043,13 @@ function ioToFutureGoAsync(
   forcedAsync: boolean): Future<any> {
 
   return Future.create<any>(cb => {
-    const conn = new StackedCancelable()
-    const ctx = new IOContext(scheduler, conn)
-
+    const ctx = new IOContext(scheduler)
     if (forcedAsync)
       ioRestartAsync(start as any, ctx, cb as any, null, bFirst, bRest)
     else
       ioGenericRunLoop(start as any, scheduler, ctx, cb as any, null, bFirst, bRest)
 
-    return conn
+    return ctx.connection
   })
 }
 
@@ -936,8 +1128,8 @@ function taskToFutureRunLoop(
         break
 
       case "async":
-        const async = current as IOAsync<any>
-        return ioToFutureGoAsync(async, scheduler, bFirst, bRest, false)
+      case "memoize":
+        return ioToFutureGoAsync(current, scheduler, bFirst, bRest, false)
     }
   }
 }
@@ -967,4 +1159,63 @@ function ioSafeCallback<A>(
       ec.reportFailure(r.failed().get())
     }
   }
+}
+
+/** @hidden */
+function ioStartMemoize<A>(
+  fa: IOMemoize<A>,
+  ec: Scheduler,
+  context: IOContext | null,
+  cb: (r: Try<A>) => void,
+  bFirstInit: BindT | null,
+  bRestInit: CallStack | null,
+  frameIndex: number): ICancelable | void {
+
+  // Storing the current frameIndex because invoking this
+  // function effectively ends the current run-loop
+  ec.batchIndex = frameIndex
+  // The state that we'll use for subscribing listeners below
+  let state: Try<A> | Future<A>
+
+  // The first evaluation has to trigger the initial run-loop that
+  // will eventually set our completed state
+  if (fa.result) {
+    state = fa.result
+  } else {
+    // NOTE this isn't using the passed `IOContext`, or the bindings
+    // stack because it would be wrong. This has to be executed
+    // independently, within its own context.
+    const f = ioToFutureGoAsync(fa.source as any, ec, null, null, false)
+
+    if (f.value().isEmpty()) {
+      fa.result = f
+      state = f
+
+      f.onComplete(r => {
+        if (r.isSuccess() || !fa.onlySuccess) {
+          // Caching result for subsequent listeners
+          fa.result = r as any
+          // GC purposes
+          delete fa.source
+        } else {
+          // Reverting the state to the original IO reference, such
+          // that it can be retried again
+          fa.result = null
+        }
+      })
+    } else {
+      state = (f.value().get() as any) as Try<any>
+      // Not storing the state on memoizeOnSuccess if it's a failure
+      if (state.isSuccess() || !fa.onlySuccess)
+        fa.result = state as any
+    }
+  }
+
+  // We have the IOMemoize in an already completed state,
+  // so running with it
+  const io: IO<A> = state instanceof Try
+    ? new IOPure(state)
+    : IO.fromFuture(state)
+
+  ioGenericRunLoop(io, ec, context, cb, null, bFirstInit, bRestInit)
 }

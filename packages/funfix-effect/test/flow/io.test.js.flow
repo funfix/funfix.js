@@ -71,6 +71,7 @@ const err1: IO<number> = IO.raise("Error!")
 
 const s1: IO<number> = IO.suspend(() => IO.pure(1))
 const s2: IO<number> = IO.defer(() => IO.pure(1))
+const s3: IO<number> = IO.deferAction((ec: Scheduler) => IO.pure(1))
 
 const rec: IO<string> = IO.tailRecM(10, (a: number) => {
   if (a <= 0)
@@ -103,3 +104,11 @@ const async3: IO<number> =
 
 const opt1: IO<number> = t1.executeWithOptions({ autoCancelableRunLoops: true })
 const c: ICancelable | void = IO.unsafeStart(opt1, new IOContext(ec), r => console.info(r.getOrElse(0)))
+
+const f: Future<number> = Future.pure(1)
+const ff1: IO<number> = IO.fromFuture(f)
+const ff2: IO<number> = IO.deferFuture(() => f)
+const ff3: IO<number> = IO.deferFutureAction((ec: Scheduler) => f)
+
+const mem1: IO<number> = ff1.memoize()
+const mem2: IO<number> = ff1.memoizeOnSuccess()
