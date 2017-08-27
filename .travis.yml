@@ -7,11 +7,10 @@ notifications:
 node_js:
   - '7.10'
 before_script:
-  - npm install -g yarn
-  - yarn cache clean
-  - yarn install
+  - npm prune && npm cache clean
+  - npm install
 script:
-  - yarn build && yarn test:prod
+  - npm run build && npm run test:prod
 after_success:
   - ./scripts/upload-coverage.sh
   - ./scripts/gh-pages-publish.js
