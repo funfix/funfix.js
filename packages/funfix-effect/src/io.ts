@@ -47,12 +47,12 @@ import {
  *
  * In order to understand `IO`, here's the design space:
  *
- * |                  | Strict                    | Lazy                          |
- * |------------------|:-------------------------:|:-----------------------------:|
- * | **Synchronous**  | `A`                       | `() => A`                     |
- * |                  |                           | [Eval&lt;A&gt;]{@link Eval}   |
- * | **Asynchronous** | `Try<A> => void`          | `() => (Try<A> => void)`      |
- * |                  | `Future<A>` / `Promise`   | [IO&lt;A&gt;]{@link IO}       |
+ * |                  | Strict                     | Lazy                              |
+ * |------------------|:--------------------------:|:---------------------------------:|
+ * | **Synchronous**  | `A`                        | `() => A`                         |
+ * |                  |                            | [Eval&lt;A&gt;]{@link Eval}       |
+ * | **Asynchronous** | `(Try<A> => void) => void` | `() => ((Try<A> => void) => void` |
+ * |                  | `Future<A>` / `Promise`    | [IO&lt;A&gt;]{@link IO}           |
  *
  * JavaScript is a language (and runtime) that's strict by default,
  * meaning that expressions are evaluated immediately instead of
@@ -81,6 +81,85 @@ import {
  * monadic type that can describe any side effectful action, including
  * asynchronous ones, also capable of suspending side effects.
  *
+ * ## Getting Started
+ *
+ * To build an `IO` from a parameterless function returning a value
+ * (a thunk), we can use `IO.of`:
+ *
+ * ```typescript
+ * const hello = IO.of(() => "Hello ")
+ * const world = IO.of(() => "World!")
+ * ```
+ *
+ * Nothing gets executed yet, as `IO` is lazy, nothing executes
+ * until you trigger [run]{@link IO.run} on it.
+ *
+ * To combine `IO` values we can use `map` and `flatMap`, which
+ * describe sequencing and this time is in a very real sense because
+ * of the laziness involved:
+ *
+ * ```typescript
+ * const sayHello = hello
+ *   .flatMap(h => world.map(w => h + w))
+ *   .map(console.info)
+ * ```
+ *
+ * This `IO` reference will trigger a side effect on evaluation, but
+ * not yet. To make the above print its message:
+ *
+ * ```typescript
+ * const f: Future<void> = sayHello.run()
+ *
+ * //=> Hello World!
+ * ```
+ *
+ * The returned type is a
+ * [Future](https://funfix.org/api/exec/classes/future.html), a value
+ * that can be completed already or might be completed at some point
+ * in the future, once the running asynchronous process finishes.
+ *
+ * Futures can also be canceled, in case the described computation can
+ * be canceled. Not in this case (since there's nothing that can be
+ * cancelled when building tasks with `IO.of`), but, we can build
+ * cancelable tasks with {@link IO.async}:
+ *
+ * ```typescript
+ * import { Cancelable, Success, IO } from "funfix"
+ *
+ * const delayedHello = IO.async((scheduler, callback) => {
+ *   const task = scheduler.scheduleOnce(1000, () => {
+ *     console.info("Delayed Hello!")
+ *     // Signaling successful completion
+ *     // ("undefined" inhabits type "void")
+ *     callback(Success(undefined))
+ *   })
+ *
+ *   return Cancelable.of(() => {
+ *     console.info("Cancelling!")
+ *     task.cancel()
+ *   })
+ * })
+ * ```
+ *
+ * The sample above prints a message with a delay, where the delay
+ * itself is scheduled with the injected `Scheduler`. The `Scheduler`
+ * is in fact an optional parameter to {@link IO.run} and if one
+ * isn't explicitly provided, then `Scheduler.global` is assumed.
+ *
+ * This action can be cancelled, because it specifies cancellation
+ * logic. If we wouldn't return an explicit `Cancelable` there,
+ * then cancellation wouldn't work. But for this `IO` reference
+ * it does:
+ *
+ * ```typescript
+ * // Triggering execution, which sends a task to execute by means
+ * // of JavaScript's setTimeout (under the hood):
+ * const f: Future<void> = delayedHello.run()
+ *
+ * // If we change our mind before the timespan has passed:
+ * f.cancel()
+ * ```
+ *
  * ## Note on the ExecutionModel
  *
  * `IO` is conservative in how it introduces async boundaries.
@@ -90,7 +169,7 @@ import {
  * assumptions about how things will end up executed, as ultimately
  * it is the implementation's job to decide on the best execution
  * model. All you are guaranteed is asynchronous execution after
- * executing `runAsync`.
+ * executing `run`.
  *
  * Currently the default `ExecutionModel` specifies batched execution
  * by default and `IO` in its evaluation respects the injected
@@ -766,7 +845,7 @@ class IOMemoize<A> extends IO<A> {
 export class IOContext {
   /**
    * The `Scheduler` in charge of evaluating asynchronous boundaries
-   * on `runAsync`.
+   * on `run`.
    */
   public readonly scheduler: Scheduler
 
