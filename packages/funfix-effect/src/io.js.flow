@@ -25,33 +25,35 @@ declare export class IO<+A> {
   run<A>(ec?: Scheduler): Future<A>;
   runOnComplete<A>(cb: (result: Try<A>) => void, ec?: Scheduler): ICancelable;
 
-  map<B>(f: (a: A) => B): IO<B>;
-  flatMap<B>(f: (a: A) => IO<B>): IO<B>;
+  attempt(): IO<Either<Throwable, A>>;
   chain<B>(f: (a: A) => IO<B>): IO<B>;
-  transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): IO<R>;
-  transformWith<R>(failure: (e: Throwable) => IO<R>, success: (a: A) => IO<R>): IO<R>;
+  flatMap<B>(f: (a: A) => IO<B>): IO<B>;
+  forEachL(cb: (a: A) => void): IO<void>;
+  executeWithOptions(set: IOOptions): IO<A>;
+  map<B>(f: (a: A) => B): IO<B>;
   recover<AA>(f: (e: Throwable) => AA): IO<A | AA>;
   recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA>;
-  attempt(): IO<Either<Throwable, A>>;
-  forEachL(cb: (a: A) => void): IO<void>;
+  transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): IO<R>;
+  transformWith<R>(failure: (e: Throwable) => IO<R>, success: (a: A) => IO<R>): IO<R>;
 
   +_funKindF: IO<any>;
   +_funKindA: A;
   static +_funErasure: IO<any>;
 
-  static of<A>(thunk: () => A): IO<A>;
-  static pure<A>(value: A): IO<A>;
-  static now<A>(value: A): IO<A>;
-  static unit(): IO<void>;
-  static raise(e: Throwable): IO<empty>;
-  static fromTry<A>(a: Try<A>): IO<A>;
   static always<A>(thunk: () => A): IO<A>;
-  static once<A>(thunk: () => A): IO<A>;
-  static suspend<A>(thunk: () => IO<A>): IO<A>;
-  static defer<A>(thunk: () => IO<A>): IO<A>;
   static async<A>(register: (ec: Scheduler, cb: (a: Try<A>) => void) => ICancelable | void): IO<A>;
   static asyncUnsafe<A>(register: IORegister<A>): IO<A>;
+  static defer<A>(thunk: () => IO<A>): IO<A>;
+  static fromTry<A>(a: Try<A>): IO<A>;
+  static now<A>(value: A): IO<A>;
+  static of<A>(thunk: () => A): IO<A>;
+  static once<A>(thunk: () => A): IO<A>;
+  static pure<A>(value: A): IO<A>;
+  static raise(e: Throwable): IO<empty>;
+  static suspend<A>(thunk: () => IO<A>): IO<A>;
   static tailRecM<A, B>(a: A, f: (a: A) => IO<Either<A, B>>): IO<B>;
+  static unit(): IO<void>;
+  static unsafeStart<A>(source: IO<A>, context: IOContext, cb: (r: Try<A>) => void): void | ICancelable;
 }
 
 export type IORegister<A> =

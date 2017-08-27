@@ -20,14 +20,15 @@
 import type { Throwable } from "funfix-core"
 import { Try, Either, Left, Right, Success } from "funfix-core"
 import { ICancelable, Future, Scheduler, StackedCancelable } from "funfix-exec"
-import { IO } from "../../src/"
+import { IO, IOContext } from "../../src/"
 
+const ec = Scheduler.global.get()
 const t1: IO<number> = IO.now(1)
 
 const f1: Future<number> = t1.run()
-const f2: Future<number> = t1.run(Scheduler.global.get())
+const f2: Future<number> = t1.run(ec)
 const c1: ICancelable = t1.runOnComplete((r: Try<number>) => console.info(r.getOrElse(0)))
-const c2: ICancelable = t1.runOnComplete((r: Try<number>) => console.info(r.getOrElse(0)), Scheduler.global.get())
+const c2: ICancelable = t1.runOnComplete((r: Try<number>) => console.info(r.getOrElse(0)), ec)
 
 const map1: IO<string> = t1.map(x => String(x))
 const map2: IO<number> = t1.map(x => x + 1)
@@ -99,3 +100,6 @@ const async3: IO<number> =
     const task: ICancelable = ec.scheduleOnce(10, () => cb(Success(1)))
     return task
   })
+
+const opt1: IO<number> = t1.executeWithOptions({ autoCancelableRunLoops: true })
+const c: ICancelable | void = IO.unsafeStart(opt1, new IOContext(ec), r => console.info(r.getOrElse(0)))

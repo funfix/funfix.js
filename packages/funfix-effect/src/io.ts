@@ -108,15 +108,22 @@ export class IO<A> {
   }
 
   /**
-   * Returns a new `IO` that applies the mapping function to the
-   * successful result emitted by the source.
+   * Handle errors by turning them into `Either` values.
    *
-   * ```typescript
-   * IO.now(111).map(_ => _ * 2).get() // 222
-   * ```
+   * If there is no error, then a `Right` value will be returned instead.
+   * Errors can be handled by this method.
    */
-  map<B>(f: (a: A) => B): IO<B> {
-    return new IOFlatMap(this, (a: A) => IO.now(f(a)))
+  attempt(): IO<Either<Throwable, A>> {
+    return this.transform(
+      _ => Either.left<Throwable, A>(_),
+      Either.right)
+  }
+
+  /**
+   * Alias for {@link IO.flatMap .flatMap}.
+   */
+  chain<B>(f: (a: A) => IO<B>): IO<B> {
+    return this.flatMap(f)
   }
 
   /**
@@ -144,10 +151,69 @@ export class IO<A> {
   }
 
   /**
-   * Alias for {@link IO.flatMap .flatMap}.
+   * Returns a new `IO` that upon evaluation will execute the given
+   * function for the generated element, transforming the source into
+   * an `IO<void>`.
    */
-  chain<B>(f: (a: A) => IO<B>): IO<B> {
-    return this.flatMap(f)
+  forEach(cb: (a: A) => void): IO<void> {
+    return this.map(cb)
+  }
+
+  /**
+   * Returns a new `IO` that upon evaluation will execute with the
+   * given set of {@link IOOptions}, allowing for tuning the run-loop.
+   *
+   * This allows for example making run-loops "auto-cancelable",
+   * an option that's off by default due to safety concerns:
+   *
+   * ```typescript
+   * io.executeWithOptions({
+   *   autoCancelableRunLoops: true
+   * })
+   * ```
+   */
+  executeWithOptions(set: IOOptions): IO<A> {
+    return IO.asyncUnsafe<A>((ctx, cb) => {
+      const ec = ctx.scheduler
+      const ctx2 = new IOContext(ec, ctx.connection, set)
+      ec.trampoline(() => IO.unsafeStart(this, ctx2, cb))
+    })
+  }
+
+  /**
+   * Returns a new `IO` that applies the mapping function to the
+   * successful result emitted by the source.
+   *
+   * ```typescript
+   * IO.now(111).map(_ => _ * 2).get() // 222
+   * ```
+   */
+  map<B>(f: (a: A) => B): IO<B> {
+    return new IOFlatMap(this, (a: A) => IO.now(f(a)))
+  }
+
+  /**
+   * Creates a new `IO` that will mirror the source on success,
+   * but on failure it will try to recover and yield a successful
+   * result by applying the given function `f` to the thrown error.
+   *
+   * This function is the equivalent of a `try/catch` statement,
+   * or the equivalent of {@link IO.map .map} for errors.
+   */
+  recover<AA>(f: (e: Throwable) => AA): IO<A | AA> {
+    return this.recoverWith(a => IO.now(f(a)))
+  }
+
+  /**
+   * Creates a new `IO` that will mirror the source on success,
+   * but on failure it will try to recover and yield a successful
+   * result by applying the given function `f` to the thrown error.
+   *
+   * This function is the equivalent of a `try/catch` statement,
+   * or the equivalent of {@link IO.flatMap .flatMap} for errors.
+   */
+  recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA> {
+    return this.transformWith(f, IO.now as any)
   }
 
   /**
@@ -185,51 +251,6 @@ export class IO<A> {
   }
 
   /**
-   * Creates a new `IO` that will mirror the source on success,
-   * but on failure it will try to recover and yield a successful
-   * result by applying the given function `f` to the thrown error.
-   *
-   * This function is the equivalent of a `try/catch` statement,
-   * or the equivalent of {@link IO.map .map} for errors.
-   */
-  recover<AA>(f: (e: Throwable) => AA): IO<A | AA> {
-    return this.recoverWith(a => IO.now(f(a)))
-  }
-
-  /**
-   * Creates a new `IO` that will mirror the source on success,
-   * but on failure it will try to recover and yield a successful
-   * result by applying the given function `f` to the thrown error.
-   *
-   * This function is the equivalent of a `try/catch` statement,
-   * or the equivalent of {@link IO.flatMap .flatMap} for errors.
-   */
-  recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA> {
-    return this.transformWith(f, IO.now as any)
-  }
-
-  /**
-   * Handle errors by turning them into `Either` values.
-   *
-   * If there is no error, then a `Right` value will be returned instead.
-   * Errors can be handled by this method.
-   */
-  attempt(): IO<Either<Throwable, A>> {
-    return this.transform(
-      _ => Either.left<Throwable, A>(_),
-      Either.right)
-  }
-
-  /**
-   * Returns a new `IO` that upon evaluation will execute the given
-   * function for the generated element, transforming the source into
-   * an `IO<void>`.
-   */
-  forEachL(cb: (a: A) => void): IO<void> {
-    return this.map(cb)
-  }
-
-  /**
    * Identifies the `IO` reference type, useful for debugging and
    * for pattern matching in the implementation.
    */
@@ -243,46 +264,6 @@ export class IO<A> {
   static readonly _funErasure: IO<any>
 
   /**
-   * Alias for {@link IO.always}.
-   */
-  static of<A>(thunk: () => A): IO<A> {
-    return IO.always(thunk)
-  }
-
-  /**
-   * Lifts a value into the `IO` context.
-   *
-   * Alias for {@link IO.now}.
-   */
-  static pure<A>(value: A): IO<A> { return IO.now(value) }
-
-  /**
-   * Returns an `IO` that on execution is always successful,
-   * emitting the given strict value.
-   */
-  static now<A>(value: A): IO<A> { return new IOPure(Success(value)) }
-
-  /**
-   * Shorthand for `now(undefined as void)`, always returning
-   * the same reference as optimization.
-   */
-  static unit(): IO<void> {
-    return ioUnitRef
-  }
-
-  /**
-   * Returns an `IO` that on execution is always finishing in error
-   * emitting the specified exception.
-   */
-  static raise<A = never>(e: Throwable): IO<A> { return new IOPure(Failure(e)) }
-
-  /**
-   * Returns a `IO` reference that will signal the result of the
-   * given `Try<A>` reference upon evaluation.
-   */
-  static fromTry<A>(a: Try<A>): IO<A> { return new IOPure(a) }
-
-  /**
    * Promote a `thunk` function to an `IO`, catching exceptions in
    * the process.
    *
@@ -291,39 +272,6 @@ export class IO<A> {
    */
   static always<A>(thunk: () => A): IO<A> {
     return new IOAlways(thunk)
-  }
-
-  /**
-   * Promote a `thunk` function to a `Coeval` that is memoized on the
-   * first evaluation, the result being then available on subsequent
-   * evaluations.
-   *
-   * Note this is equivalent with:
-   *
-   * ```typescript
-   * IO.always(thunk).memoize()
-   * ```
-   */
-  static once<A>(thunk: () => A): IO<A> {
-    return new IOOnce(thunk, false)
-  }
-
-  /**
-   * Promote a `thunk` function generating `IO` results to an `IO`
-   * of the same type.
-   */
-  static suspend<A>(thunk: () => IO<A>): IO<A> {
-    return IO.unit().flatMap(_ => thunk())
-  }
-
-  /**
-   * Promote a `thunk` function generating `IO` results to an `IO`
-   * of the same type.
-   *
-   * Alias for {@link IO.suspend}.
-   */
-  static defer<A>(thunk: () => IO<A>): IO<A> {
-    return IO.unit().flatMap(_ => thunk())
   }
 
   /**
@@ -393,6 +341,71 @@ export class IO<A> {
   }
 
   /**
+   * Promote a `thunk` function generating `IO` results to an `IO`
+   * of the same type.
+   *
+   * Alias for {@link IO.suspend}.
+   */
+  static defer<A>(thunk: () => IO<A>): IO<A> {
+    return IO.unit().flatMap(_ => thunk())
+  }
+
+  /**
+   * Returns a `IO` reference that will signal the result of the
+   * given `Try<A>` reference upon evaluation.
+   */
+  static fromTry<A>(a: Try<A>): IO<A> { return new IOPure(a) }
+
+  /**
+   * Returns an `IO` that on execution is always successful,
+   * emitting the given strict value.
+   */
+  static now<A>(value: A): IO<A> { return new IOPure(Success(value)) }
+
+  /**
+   * Alias for {@link IO.always}.
+   */
+  static of<A>(thunk: () => A): IO<A> {
+    return IO.always(thunk)
+  }
+
+  /**
+   * Promote a `thunk` function to a `Coeval` that is memoized on the
+   * first evaluation, the result being then available on subsequent
+   * evaluations.
+   *
+   * Note this is equivalent with:
+   *
+   * ```typescript
+   * IO.always(thunk).memoize()
+   * ```
+   */
+  static once<A>(thunk: () => A): IO<A> {
+    return new IOOnce(thunk, false)
+  }
+
+  /**
+   * Lifts a value into the `IO` context.
+   *
+   * Alias for {@link IO.now}.
+   */
+  static pure<A>(value: A): IO<A> { return IO.now(value) }
+
+  /**
+   * Returns an `IO` that on execution is always finishing in error
+   * emitting the specified exception.
+   */
+  static raise<A = never>(e: Throwable): IO<A> { return new IOPure(Failure(e)) }
+
+  /**
+   * Promote a `thunk` function generating `IO` results to an `IO`
+   * of the same type.
+   */
+  static suspend<A>(thunk: () => IO<A>): IO<A> {
+    return IO.unit().flatMap(_ => thunk())
+  }
+
+  /**
    * Keeps calling `f` until a `Right(b)` is returned.
    *
    * Based on Phil Freeman's
@@ -414,6 +427,27 @@ export class IO<A> {
       return IO.raise(e)
     }
   }
+
+  /**
+   * Shorthand for `now(undefined as void)`, always returning
+   * the same reference as optimization.
+   */
+  static unit(): IO<void> {
+    return ioUnitRef
+  }
+
+  /**
+   * Unsafe utility - starts the execution of a Task.
+   *
+   * This function allows for specifying a custom {@link IOContext}
+   * when evaluating the `IO` reference.
+   *
+   * DO NOT use directly, as it is UNSAFE to use, unless you know
+   * what you're doing. Prefer {@link IO.run} instead.
+   */
+  static unsafeStart<A>(source: IO<A>, context: IOContext, cb: (r: Try<A>) => void): void | ICancelable {
+    return ioGenericRunLoop(source, context.scheduler, context, cb, null, null, null)
+  }
 }
 
 /**
@@ -431,13 +465,6 @@ class IOPure<A> extends IO<A> {
    * when `get()` is called.
    */
   constructor(public value: Try<A>) { super() }
-
-  toString(): string {
-    return this.value.fold(
-      e => `IO.raise(${JSON.stringify(e)})`,
-      v => `IO.now(${JSON.stringify(v)})`
-    )
-  }
 }
 
 /**
@@ -482,8 +509,6 @@ class IOOnce<A> extends IO<A> {
     }
     return this.cache
   }
-
-  toString(): string { return `IO.once([thunk])` }
 }
 
 /**
@@ -496,7 +521,6 @@ class IOAlways<A> extends IO<A> {
   readonly _funADType: "always" = "always"
 
   constructor(public thunk: () => A) { super() }
-  toString(): string { return `IO.always([thunk])` }
 }
 
 /**
@@ -514,10 +538,6 @@ class IOFlatMap<A, B> extends IO<B> {
     public readonly source: IO<A>,
     public readonly f: ((a: A) => IO<B>),
     public readonly g?: ((e: Throwable) => IO<B>)) { super() }
-
-  toString(): string {
-    return `IOFlatMap(${String(this.source)}, ${this.f}, ${this.g})`
-  }
 }
 
 /**
@@ -542,9 +562,6 @@ class IOAsync<A> extends IO<A> {
   readonly _funADType: "async" = "async"
 
   constructor(public readonly register: IORegister<A>) { super() }
-  toString(): string {
-    return `IO#Async([context], [function])`
-  }
 }
 
 /**
@@ -753,7 +770,10 @@ function ioGenericRunLoop(
     if (current instanceof Try) {
       if (current.isSuccess()) {
         const bind = _ioPopNextBind(bFirst, bRest)
-        if (!bind) { return cb(current) }
+        if (!bind) {
+          scheduler.batchIndex = frameIndex
+          return cb(current)
+        }
 
         try {
           current = bind(current.get())
@@ -762,7 +782,10 @@ function ioGenericRunLoop(
         }
       } else {
         const bind = _ioFindErrorHandler(bFirst, bRest)
-        if (!bind) { return cb(current) }
+        if (!bind) {
+          scheduler.batchIndex = frameIndex
+          return cb(current)
+        }
 
         try {
           current = bind(current.failed().get())
@@ -778,6 +801,7 @@ function ioGenericRunLoop(
         frameIndex = nextIndex
       } else {
         const ctx = context || new IOContext(scheduler)
+        /* istanbul ignore next */
         const boxed = current instanceof Try ? new IOPure(current) : current
         ioRestartAsync(boxed, ctx, cb, rcb, bFirst, bRest)
         return ctx.connection
@@ -853,7 +877,10 @@ function taskToFutureRunLoop(
     if (current instanceof Try) {
       if (current.isSuccess()) {
         const bind = _ioPopNextBind(bFirst, bRest)
-        if (!bind) { return Future.pure(current.get()) }
+        if (!bind) {
+          scheduler.batchIndex = frameIndex
+          return Future.pure(current.get())
+        }
 
         try {
           current = bind(current.get())
@@ -863,7 +890,10 @@ function taskToFutureRunLoop(
       } else {
         const err = current.failed().get()
         const bind = _ioFindErrorHandler(bFirst, bRest)
-        if (!bind) { return Future.raise(err) }
+        if (!bind) {
+          scheduler.batchIndex = frameIndex
+          return Future.raise(err)
+        }
 
         try {
           current = bind(err)
