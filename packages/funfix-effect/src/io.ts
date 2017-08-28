@@ -28,7 +28,7 @@ import {
   Cancelable,
   StackedCancelable,
   Scheduler,
-  Future
+  Future, ExecutionModel
 } from "funfix-exec"
 
 /**
@@ -176,6 +176,27 @@ import {
  * `ExecutionModel`. If you want a different behavior, you need to
  * execute the `IO` reference with a different scheduler.
  *
+ * In order to configure a different execution model, this config
+ * can be injected by means of a custom scheduler:
+ *
+ * ```typescript
+ * import { Scheduler, ExecutionModel } from "funfix"
+ *
+ * const ec = Scheduler.global.get()
+ *   .withExecutionModel(ExecutionModel.alwaysAsync())
+ *
+ * // ...
+ * io.run(ec)
+ * ```
+ *
+ * Or you can configure an `IO` reference to execute with a certain
+ * execution model that overrides the configuration of the injected
+ * scheduler, by means of {@link IO.executeWithModel}:
+ *
+ * ```typescript
+ * io.executeWithModel(ExecutionModel.batched(256))
+ * ```
+ *
  * @final
  */
 export class IO<A> {
@@ -236,6 +257,36 @@ export class IO<A> {
   }
 
   /**
+   * Introduces an asynchronous boundary at the current stage in the
+   * asynchronous processing pipeline (after the source has been
+   * evaluated).
+   *
+   * Consider the following example:
+   *
+   * ```typescript
+   * const readPath: () => "path/to/file"
+   *
+   * const io = IO.of(readPath)
+   *   .asyncBoundary()
+   *   .map(fs.readFileSync)
+   * ```
+   *
+   * Between reading the path and then reading the file from that
+   * path, we schedule an async boundary (it usually happens with
+   * JavaScript's `setTimeout` under the hood).
+   *
+   * Also see {@link IO.shift} and {@link IO.fork}.
+   *
+   * @param ec is an optional `Scheduler` implementation that can
+   *        be used for scheduling the async boundary, however if
+   *        not specified, the `IO`'s default scheduler (the one
+   *        passed to `run()`) gets used
+   */
+  asyncBoundary(ec?: Scheduler): IO<A> {
+    return this.flatMap(a => IO.shift(ec).map(_ => a))
+  }
+
+  /**
    * Alias for {@link IO.flatMap .flatMap}.
    */
   chain<B>(f: (a: A) => IO<B>): IO<B> {
@@ -273,6 +324,35 @@ export class IO<A> {
    */
   forEach(cb: (a: A) => void): IO<void> {
     return this.map(cb)
+  }
+
+  /**
+   * Ensures that an asynchronous boundary happens before the
+   * execution, managed by the provided scheduler.
+   *
+   * Alias for `IO.fork(this)`.
+   *
+   * See {@link IO.fork}, {@link IO.asyncBoundary} and {@link IO.shift}.
+   */
+  executeForked(ec?: Scheduler): IO<A> {
+    return IO.fork(this, ec)
+  }
+
+  /**
+   * Override the `ExecutionModel` of the default scheduler.
+   *
+   * ```typescript
+   * import { ExecutionModel } from "funfix"
+   *
+   * io.executeWithModel(ExecutionModel.alwaysAsync())
+   * ```
+   */
+  executeWithModel(em: ExecutionModel): IO<A> {
+    return IO.asyncUnsafe<A>((ctx, cb) => {
+      const ec = ctx.scheduler.withExecutionModel(em)
+      const ctx2 = new IOContext(ec, ctx.connection, ctx.options)
+      ec.trampoline(() => IO.unsafeStart(this, ctx2, cb))
+    })
   }
 
   /**
@@ -587,7 +667,9 @@ export class IO<A> {
    * lazy thunks that produce future results.
    */
   static fromFuture<A>(fa: Future<A>): IO<A> {
-    if (!fa.value().isEmpty()) return IO.fromTry(fa.value().get() as any)
+    if (!fa.value().isEmpty())
+      return IO.fromTry<A>(fa.value().get() as any)
+
     return IO.asyncUnsafe<A>((ctx, cb) => {
       ctx.connection.push(fa)
       fa.onComplete(result => {
@@ -602,6 +684,35 @@ export class IO<A> {
    * given `Try<A>` reference upon evaluation.
    */
   static fromTry<A>(a: Try<A>): IO<A> { return new IOPure(a) }
+
+  /**
+   * Mirrors the given source `IO`, but before execution trigger
+   * an asynchronous boundary (usually by means of `setTimeout` on
+   * top of JavaScript, depending on the provided `Scheduler`
+   * implementation).
+   *
+   * If a `Scheduler` is not explicitly provided, the implementation
+   * ends up using the one provided in {@link IO.run}.
+   *
+   * Note that {@link IO.executeForked} is the method version of this
+   * function (e.g. `io.executeForked() == IO.fork(this)`).
+   *
+   * ```typescript
+   * IO.of(() => fs.readFileSync(path))
+   *   .executeForked()
+   * ```
+   *
+   * Also see {@link IO.shift} and {@link IO.asyncBoundary}.
+   *
+   * @param fa is the task that will get executed asynchronously
+   *
+   * @param ec is the `Scheduler` used for triggering the async
+   *        boundary, or if not provided it will default to the
+   *        scheduler passed on evaluation in {@link IO.run}
+   */
+  static fork<A>(fa: IO<A>, ec?: Scheduler): IO<A> {
+    return IO.shift(ec).flatMap(_ => fa)
+  }
 
   /**
    * Returns an `IO` that on execution is always successful,
@@ -643,6 +754,56 @@ export class IO<A> {
    * emitting the specified exception.
    */
   static raise<A = never>(e: Throwable): IO<A> { return new IOPure(Failure(e)) }
+
+  /**
+   * Shifts the bind continuation of the `IO` onto the specified
+   * scheduler, for triggering asynchronous execution.
+   *
+   * Asynchronous actions cannot be shifted, since they are scheduled
+   * rather than run. Also, no effort is made to re-shift synchronous
+   * actions which *follow* asynchronous actions within a bind chain;
+   * those actions will remain on the continuation call stack inherited
+   * from their preceding async action.  The only computations which
+   * are shifted are those which are defined as synchronous actions and
+   * are contiguous in the bind chain *following* the `shift`.
+   *
+   * For example this sample forces an asynchronous boundary
+   * (which usually means that the continuation is scheduled
+   * for asynchronous execution with `setTimeout`) before the
+   * file will be read synchronously:
+   *
+   * ```typescript
+   * IO.shift().flatMap(_ => fs.readFileSync(path))
+   * ```
+   *
+   * On the other hand in this example the asynchronous boundary
+   * is inserted *after* the file has been read:
+   *
+   * ```typescript
+   * IO.of(() => fs.readFileSync(path)).flatMap(content =>
+   *   IO.shift().map(_ => content))
+   * ```
+   *
+   * The definition of {@link IO.async} is literally:
+   *
+   * ```typescript
+   * source.flatMap(a => IO.shift(ec).map(_ => a))
+   * ```
+   *
+   * And the definition of {@link IO.fork} is:
+   *
+   * ```typescript
+   * IO.shift(ec).flatMap(_ => source)
+   * ```
+   *
+   * @param ec is the `Scheduler` used for triggering the async
+   *        boundary, or if not provided it will default to the
+   *        scheduler passed on evaluation in {@link IO.run}
+   */
+  static shift(ec?: Scheduler): IO<void> {
+    if (!ec) return ioShiftDefaultRef
+    return ioShift(ec)
+  }
 
   /**
    * Promote a `thunk` function generating `IO` results to an `IO`
@@ -908,6 +1069,16 @@ export class IOContext {
 export type IOOptions = {
   autoCancelableRunLoops: boolean
 }
+
+/** @hidden */
+function ioShift(ec?: Scheduler): IO<void> {
+  return IO.asyncUnsafe<void>((ctx, cb) => {
+    (ec || ctx.scheduler).executeAsync(() => cb(Try.unit()))
+  })
+}
+
+/** @hidden */
+const ioShiftDefaultRef: IO<void> = ioShift()
 
 /** @hidden */
 type Current = IO<any>

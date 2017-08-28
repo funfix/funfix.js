@@ -17,6 +17,7 @@
 
 /* @flow */
 
+import type { Throwable } from "funfix-core"
 import { Duration } from "./time"
 import { Cancelable } from "./cancelable"
 import { DynamicRef } from "./ref"
@@ -31,7 +32,7 @@ declare export class Scheduler {
   executeAsync(runnable: () => void): void;
   trampoline(runnable: () => void): void;
 
-  reportFailure(e: any): void;
+  reportFailure(e: Throwable): void;
   currentTimeMillis(): number;
 
   scheduleOnce(delay: number | Duration, runnable: () => void): Cancelable;

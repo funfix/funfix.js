@@ -862,6 +862,16 @@ describe("IO run-loop", () => {
     asyncEC.tick()
     assert.equal(f2.value(), Some(Success(1)))
   })
+
+  it("can override the execution model", () => {
+    const ec = scheduler()
+    const f = IO.pure(1).map(x => x + 1)
+      .executeWithModel(ExecutionModel.alwaysAsync())
+      .run(ec)
+
+    assert.equal(f.value(), None); ec.tick()
+    assert.equal(f.value(), Some(Success(2)))
+  })
 })
 
 describe("IO.memoize", () => {
@@ -1128,6 +1138,76 @@ describe("IO.memoizeOnSuccess", () => {
     assert.equal(f3.value(), Some(Success(3)))
     const f4 = io.run(ec); ec.tick()
     assert.equal(f4.value(), Some(Success(3)))
+  })
+})
+
+describe("IO.shift", () => {
+  it("can shift before evaluation", () => {
+    const ec = scheduler()
+    let effect = 0
+
+    const io = IO.of(() => { effect += 1; return effect })
+      .executeForked()
+
+    const f = io.run(ec)
+    assert.equal(effect, 0)
+    assert.equal(f.value(), None)
+
+    ec.tickOne()
+    assert.equal(f.value(), Some(Success(1)))
+  })
+
+  it("fa.executeForked <-> IO.fork(fa)", () => {
+    const ec = scheduler()
+    let effect = 0
+
+    const io = IO.fork(IO.of(() => { effect += 1; return effect }))
+
+    const f = io.run(ec)
+    assert.equal(effect, 0)
+    assert.equal(f.value(), None)
+
+    ec.tickOne()
+    assert.equal(f.value(), Some(Success(1)))
+  })
+
+  it("can do fork for real", () => {
+    let effect = 0
+
+    const io = IO.of(() => { effect += 1; return effect })
+      .executeForked()
+      .run()
+
+    return io.then(value => {
+      assert.equal(value, 1)
+    })
+  })
+
+  it("can shift after evaluation", () => {
+    const ec = scheduler()
+    let effect = 0
+
+    const io = IO.of(() => { effect += 1; return effect })
+      .asyncBoundary(ec)
+
+    const f = io.run(ec)
+    assert.equal(effect, 1)
+    assert.equal(f.value(), None)
+
+    ec.tickOne()
+    assert.equal(f.value(), Some(Success(1)))
+  })
+
+  it("can do async boundary for real", () => {
+    let effect = 0
+
+    const io = IO.of(() => { effect += 1; return effect })
+      .asyncBoundary()
+      .run()
+
+    return io.then(value => {
+      assert.equal(value, 1)
+    })
   })
 })
 

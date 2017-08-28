@@ -19,16 +19,19 @@
 
 import type { Throwable } from "funfix-core"
 import { Either, Try } from "funfix-core";
-import { ICancelable, StackedCancelable, Scheduler, Future } from "funfix-exec";
+import { ICancelable, StackedCancelable, Scheduler, Future, ExecutionModel } from "funfix-exec";
 
 declare export class IO<+A> {
   run<A>(ec?: Scheduler): Future<A>;
   runOnComplete<A>(cb: (result: Try<A>) => void, ec?: Scheduler): ICancelable;
 
   attempt(): IO<Either<Throwable, A>>;
+  asyncBoundary(ec?: Scheduler): IO<A>;
   chain<B>(f: (a: A) => IO<B>): IO<B>;
   flatMap<B>(f: (a: A) => IO<B>): IO<B>;
   forEachL(cb: (a: A) => void): IO<void>;
+  executeForked(ec?: Scheduler): IO<A>;
+  executeWithModel(em: ExecutionModel): IO<A>;
   executeWithOptions(set: IOOptions): IO<A>;
   map<B>(f: (a: A) => B): IO<B>;
   memoize(): IO<A>;
@@ -51,11 +54,13 @@ declare export class IO<+A> {
   static deferFutureAction<A>(f: (ec: Scheduler) => Future<A>): IO<A>;
   static fromFuture<A>(fa: Future<A>): IO<A>;
   static fromTry<A>(a: Try<A>): IO<A>;
+  static fork<A>(fa: IO<A>, ec?: Scheduler): IO<A>;
   static now<A>(value: A): IO<A>;
   static of<A>(thunk: () => A): IO<A>;
   static once<A>(thunk: () => A): IO<A>;
   static pure<A>(value: A): IO<A>;
   static raise(e: Throwable): IO<empty>;
+  static shift(ec?: Scheduler): IO<void>;
   static suspend<A>(thunk: () => IO<A>): IO<A>;
   static tailRecM<A, B>(a: A, f: (a: A) => IO<Either<A, B>>): IO<B>;
   static unit(): IO<void>;

@@ -19,7 +19,7 @@
 
 import type { Throwable } from "funfix-core"
 import { Try, Either, Left, Right, Success } from "funfix-core"
-import { ICancelable, Future, Scheduler, StackedCancelable } from "funfix-exec"
+import { ICancelable, Future, Scheduler, StackedCancelable, ExecutionModel } from "funfix-exec"
 import { IO, IOContext } from "../../src/"
 
 const ec = Scheduler.global.get()
@@ -104,6 +104,7 @@ const async3: IO<number> =
 
 const opt1: IO<number> = t1.executeWithOptions({ autoCancelableRunLoops: true })
 const c: ICancelable | void = IO.unsafeStart(opt1, new IOContext(ec), r => console.info(r.getOrElse(0)))
+const em1: IO<number> = t1.executeWithModel(ExecutionModel.alwaysAsync())
 
 const f: Future<number> = Future.pure(1)
 const ff1: IO<number> = IO.fromFuture(f)
@@ -112,3 +113,13 @@ const ff3: IO<number> = IO.deferFutureAction((ec: Scheduler) => f)
 
 const mem1: IO<number> = ff1.memoize()
 const mem2: IO<number> = ff1.memoizeOnSuccess()
+
+const fork1: IO<number> = ff1.executeForked()
+const fork2: IO<number> = ff1.executeForked(ec)
+const fork3: IO<number> = IO.fork(ff1)
+const fork4: IO<number> = IO.fork(ff1, ec)
+
+const ab1: IO<number> = ff1.asyncBoundary()
+const ab2: IO<number> = ff1.asyncBoundary()
+const ab3: IO<number> = IO.shift().flatMap(_ => ff1)
+const ab4: IO<number> = IO.shift(ec).flatMap(_ => ff1)

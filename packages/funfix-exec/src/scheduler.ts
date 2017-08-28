@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { IEquals, hashCodeOfString, NotImplementedError } from "funfix-core"
+import { IEquals, hashCodeOfString, NotImplementedError, Throwable } from "funfix-core"
 import { Duration } from "./time"
 import { ICancelable, Cancelable, IAssignCancelable, MultiAssignCancelable } from "./cancelable"
 import { DynamicRef } from "./ref"
@@ -129,7 +129,7 @@ export abstract class Scheduler {
   public abstract trampoline(runnable: () => void): void
 
   /** Reports that an asynchronous computation failed. */
-  public abstract reportFailure(e: any): void
+  public abstract reportFailure(e: Throwable): void
 
   /**
    * Returns the current time in milliseconds.  Note that while the
@@ -186,9 +186,6 @@ export abstract class Scheduler {
    *  2. the implementation should wrap the source efficiently, such
    *     that the result mirrors the implementation of the source
    *     `Scheduler` in every way except for the execution model
-   *  3. the implementation must not mirror any state of the source
-   *     scheduler, so for example it will not copy any pending
-   *     tasks that need to be executed
    *
    * Sample:
    *
@@ -428,14 +425,14 @@ export class ExecutionModel implements IEquals<ExecutionModel> {
  * @hidden
  */
 class Trampoline {
-  private readonly _parent: Scheduler
+  private readonly _reporter: (e: Throwable) => void
   private readonly _queue: (() => void)[]
   private _isActive: boolean
 
-  constructor(parent: Scheduler) {
+  constructor(reporter: (e: Throwable) => void) {
     this._isActive = false
     this._queue = []
-    this._parent = parent
+    this._reporter = reporter
   }
 
   execute(r: () => void) {
@@ -451,7 +448,7 @@ class Trampoline {
     try {
       let cursor: (() => void) | undefined = r
       while (cursor) {
-        try { cursor() } catch (e) { this._parent.reportFailure(e) }
+        try { cursor() } catch (e) { this._reporter(e) }
         cursor = this._queue.pop()
       }
     } finally {
@@ -487,10 +484,18 @@ export class GlobalScheduler extends Scheduler {
    * @param em the {@link ExecutionModel} to use for
    *        {@link Scheduler.executionModel}, should default to
    *        {@link ExecutionModel.global}
+   *
+   * @param reporter is the reporter to use for reporting uncaught
+   *        errors, defaults to `console.error`
    */
-  constructor(canUseSetImmediate: boolean = false, em: ExecutionModel = ExecutionModel.global.get()) {
+  constructor(
+    canUseSetImmediate: boolean = false,
+    em: ExecutionModel = ExecutionModel.global.get(),
+    reporter?: (e: Throwable) => void) {
+
     super(em)
-    this._trampoline = new Trampoline(this)
+    if (reporter) this.reportFailure = reporter
+    this._trampoline = new Trampoline(this.reportFailure)
     // tslint:disable:strict-type-predicates
     this._useSetImmediate = (canUseSetImmediate || false) && (typeof setImmediate === "function")
 
@@ -509,7 +514,8 @@ export class GlobalScheduler extends Scheduler {
     return this._trampoline.execute(runnable)
   }
 
-  reportFailure(e: any): void {
+  /* istanbul ignore next */
+  reportFailure(e: Throwable): void {
     console.error(e)
   }
 
@@ -561,11 +567,8 @@ export class GlobalScheduler extends Scheduler {
  */
 export class TestScheduler extends Scheduler {
   private _reporter: (error: any) => void
-  private _clock: number
-  private _triggeredFailures: Array<any>
-  private _tasks: Array<[number, () => void]>
-  private _tasksSearch: (search: number) => number
   private _trampoline: Trampoline
+  private _stateRef?: TestSchedulerState
 
   /**
    * @param reporter is an optional function that will be called
@@ -578,59 +581,67 @@ export class TestScheduler extends Scheduler {
   constructor(reporter?: (error: any) => void, em: ExecutionModel = ExecutionModel.synchronous()) {
     super(em)
     this._reporter = reporter || (_ => {})
-    this._clock = 0
-    this._triggeredFailures = []
-    this._trampoline = new Trampoline(this)
-    this._updateTasks([])
+    this._trampoline = new Trampoline(this.reportFailure.bind(this))
+  }
+
+  private _state() {
+    if (!this._stateRef) {
+      this._stateRef = new TestSchedulerState()
+      this._stateRef.updateTasks([])
+    }
+    return this._stateRef
   }
 
   /**
    * Returns a list of triggered errors, if any happened during
    * the {@link tick} execution.
    */
-  public triggeredFailures(): Array<any> { return this._triggeredFailures }
+  public triggeredFailures(): Array<any> { return this._state().triggeredFailures }
 
   /**
    * Returns `true` if there are any tasks left to execute, `false`
    * otherwise.
    */
-  public hasTasksLeft(): boolean { return this._tasks.length > 0 }
+  public hasTasksLeft(): boolean { return this._state().tasks.length > 0 }
 
   public executeAsync(runnable: () => void): void {
-    this._tasks.push([this._clock, runnable])
+    this._state().tasks.push([this._state().clock, runnable])
   }
 
   public trampoline(runnable: () => void): void {
     this._trampoline.execute(runnable)
   }
 
-  public reportFailure(e: any): void {
-    this._triggeredFailures.push(e)
+  public reportFailure(e: Throwable): void {
+    this._state().triggeredFailures.push(e)
     this._reporter(e)
   }
 
   public currentTimeMillis(): number {
-    return this._clock
+    return this._state().clock
   }
 
   public scheduleOnce(delay: number | Duration, runnable: () => void): ICancelable {
     const d = Math.max(0, Duration.of(delay).toMillis())
-    const scheduleAt = this._clock + d
-    const insertAt = this._tasksSearch(-scheduleAt)
+    const state = this._state()
+    const scheduleAt = state.clock + d
+    const insertAt = state.tasksSearch(-scheduleAt)
     const ref: [number, () => void] = [scheduleAt, runnable]
-    this._tasks.splice(insertAt, 0, ref)
+    state.tasks.splice(insertAt, 0, ref)
 
     return Cancelable.of(() => {
       const filtered: Array<[number, () => void]> = []
-      for (const e of this._tasks) {
+      for (const e of state.tasks) {
         if (e !== ref) filtered.push(e)
       }
-      this._updateTasks(filtered)
+      state.updateTasks(filtered)
     })
   }
 
   public withExecutionModel(em: ExecutionModel): TestScheduler {
-    return new TestScheduler(this._reporter, em)
+    const ec2 = new TestScheduler(this._reporter, em)
+    ec2._stateRef = this._state()
+    return ec2
   }
 
   /**
@@ -667,17 +678,18 @@ export class TestScheduler extends Scheduler {
    * @return the number of executed tasks
    */
   public tick(duration?: number | Duration): number {
+    const state = this._state()
     let toExecute = []
     let jumpMs = Duration.of(duration || 0).toMillis()
     let executed = 0
 
     while (true) {
-      const peek = this._tasks.length > 0
-        ? this._tasks[this._tasks.length - 1]
+      const peek = state.tasks.length > 0
+        ? state.tasks[state.tasks.length - 1]
         : undefined
 
-      if (peek && peek[0] <= this._clock) {
-        toExecute.push(this._tasks.pop())
+      if (peek && peek[0] <= state.clock) {
+        toExecute.push(state.tasks.pop())
       } else if (toExecute.length > 0) {
         // Executing current batch, randomized
         while (toExecute.length > 0) {
@@ -694,9 +706,9 @@ export class TestScheduler extends Scheduler {
           }
         }
       } else if (jumpMs > 0) {
-        const nextTaskJump = peek && (peek[0] - this._clock) || jumpMs
+        const nextTaskJump = peek && (peek[0] - state.clock) || jumpMs
         const add = Math.min(nextTaskJump, jumpMs)
-        this._clock += add
+        state.clock += add
         jumpMs -= add
       } else {
         break
@@ -722,20 +734,34 @@ export class TestScheduler extends Scheduler {
    * ```
    */
   public tickOne(): boolean {
-    const peek = this._tasks.length > 0
-      ? this._tasks[this._tasks.length - 1]
+    const state = this._state()
+    const peek = state.tasks.length > 0
+      ? state.tasks[state.tasks.length - 1]
       : undefined
 
-    if (!peek || peek[0] > this._clock) return false
-    this._tasks.pop()
+    if (!peek || peek[0] > state.clock) return false
+    this._state().tasks.pop()
     this.batchIndex = 0
     try { peek[1]() } catch (e) { this.reportFailure(e) }
     return true
   }
+}
 
-  private _updateTasks(tasks: Array<[number, () => void]>) {
-    this._tasks = tasks
-    this._tasksSearch = arrayBSearchInsertPos(this._tasks, e => -e[0])
+class TestSchedulerState {
+  public clock: number
+  public triggeredFailures: Array<any>
+  public tasks: Array<[number, () => void]>
+  public tasksSearch: (search: number) => number
+
+  constructor() {
+    this.clock = 0
+    this.triggeredFailures = []
+    this.updateTasks([])
+  }
+
+  updateTasks(tasks: Array<[number, () => void]>) {
+    this.tasks = tasks
+    this.tasksSearch = arrayBSearchInsertPos(this.tasks, e => -e[0])
   }
 }
 
