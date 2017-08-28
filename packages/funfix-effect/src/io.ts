@@ -20,7 +20,7 @@ import {
   Try,
   Success,
   Failure,
-  Throwable
+  Throwable, TimeoutError
 } from "funfix-core"
 
 import {
@@ -29,7 +29,7 @@ import {
   StackedCancelable,
   Scheduler,
   Future, ExecutionModel,
-  execInternals
+  execInternals, Duration
 } from "funfix-exec"
 
 /**
@@ -295,36 +295,49 @@ export class IO<A> {
   }
 
   /**
-   * Creates a new `IO` by applying a function to the successful
-   * result of the source, and returns a new instance equivalent to
-   * the result of the function.
+   * Delays the evaluation of this `IO` by the specified duration.
    *
    * ```typescript
-   * const rndInt = IO.of(() => {
-   *   const nr = Math.random() * 1000000
-   *   return nr & nr
-   * })
+   * const fa = IO.of(() => "Hello")
    *
-   * const evenInt = () =>
-   *   rndInt.flatMap(int => {
-   *     if (i % 2 == 0)
-   *       return IO.now(i)
-   *     else // Retry until we have an even number!
-   *       return evenInt()
-   *   })
+   * // Delays the evaluation by 1 second
+   * fa.delayExecution(1000)
    * ```
+   *
+   * @param delay is the duration to wait before signaling the
+   *        final result
    */
-  flatMap<B>(f: (a: A) => IO<B>): IO<B> {
-    return new IOFlatMap(this, f)
+  delayExecution(delay: number | Duration): IO<A> {
+    return IO.delayedTick(delay).flatMap(_ => this)
   }
 
   /**
-   * Returns a new `IO` that upon evaluation will execute the given
-   * function for the generated element, transforming the source into
-   * an `IO<void>`.
+   * Delays signaling the result of this `IO` on evaluation by the
+   * specified duration.
+   *
+   * It works for successful results:
+   *
+   * ```typescript
+   * const fa = IO.of(() => "Alex")
+   *
+   * // Delays the signaling by 1 second
+   * fa.delayResult(1000)
+   * ```
+   *
+   * And for failures as well:
+   *
+   * ```typescript
+   * Future.raise(new TimeoutError()).delayResult(1000)
+   * ```
+   *
+   * @param delay is the duration to wait before signaling the
+   *        final result
    */
-  forEach(cb: (a: A) => void): IO<void> {
-    return this.map(cb)
+  delayResult(delay: number | Duration): IO<A> {
+    return this.transformWith(
+      err => IO.delayedTick(delay).flatMap(_ => IO.raise(err)),
+      a => IO.delayedTick(delay).map(_ => a)
+    )
   }
 
   /**
@@ -375,6 +388,39 @@ export class IO<A> {
       const ctx2 = new IOContext(ec, ctx.connection, set)
       ec.trampoline(() => IO.unsafeStart(this, ctx2, cb))
     })
+  }
+
+  /**
+   * Creates a new `IO` by applying a function to the successful
+   * result of the source, and returns a new instance equivalent to
+   * the result of the function.
+   *
+   * ```typescript
+   * const rndInt = IO.of(() => {
+   *   const nr = Math.random() * 1000000
+   *   return nr & nr
+   * })
+   *
+   * const evenInt = () =>
+   *   rndInt.flatMap(int => {
+   *     if (i % 2 == 0)
+   *       return IO.now(i)
+   *     else // Retry until we have an even number!
+   *       return evenInt()
+   *   })
+   * ```
+   */
+  flatMap<B>(f: (a: A) => IO<B>): IO<B> {
+    return new IOFlatMap(this, f)
+  }
+
+  /**
+   * Returns a new `IO` that upon evaluation will execute the given
+   * function for the generated element, transforming the source into
+   * an `IO<void>`.
+   */
+  forEach(cb: (a: A) => void): IO<void> {
+    return this.map(cb)
   }
 
   /**
@@ -658,6 +704,31 @@ export class IO<A> {
   }
 
   /**
+   * Returns an `IO` that on evaluation will complete after the
+   * given `delay`.
+   *
+   * This can be used to do delayed execution. For example:
+   *
+   * ```typescript
+   * IO.delayedTick(1000).flatMap(_ =>
+   *   IO.of(() => console.info("Hello!"))
+   * )
+   * ```
+   *
+   * @param delay is the duration to wait before signaling the tick
+   */
+  static delayedTick<A>(delay: number | Duration): IO<void> {
+    return IO.asyncUnsafe<void>((ctx, cb) => {
+      const conn = ctx.connection
+      const task = ctx.scheduler.scheduleOnce(delay, () => {
+        conn.pop()
+        cb(Try.unit())
+      })
+      conn.push(task)
+    })
+  }
+
+  /**
    * Converts any strict `Future` value into an {@link IO}.
    *
    * Note that this builder does not suspend any side effects, since
@@ -716,6 +787,183 @@ export class IO<A> {
   }
 
   /**
+   * Maps 2 `IO` values by the mapping function, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   *
+   *
+   * // Yields Success(3)
+   * IO.map2(fa1, fa2, (a, b) => a + b)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.map2(fa1, IO.raise("error"),
+   *   (a, b) => a + b
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map2`.
+   */
+  static map2<A1, A2, R>(
+    fa1: IO<A1>, fa2: IO<A2>,
+    f: (a1: A1, a2: A2) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.sequence([fa1, fa2] as any[])
+    return fl.map(lst => f(lst[0], lst[1]))
+  }
+
+  /**
+   * Maps 3 `IO` values by the mapping function, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   * const fa3 = IO.of(() => 3)
+   *
+   *
+   * // Yields Success(6)
+   * IO.map3(fa1, fa2, fa3, (a, b, c) => a + b + c)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.map3(
+   *   fa1, fa2, IO.raise("error"),
+   *   (a, b, c) => a + b + c
+   * )
+   * ```
+   */
+  static map3<A1, A2, A3, R>(
+    fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>,
+    f: (a1: A1, a2: A2, a3: A3) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.sequence([fa1, fa2, fa3] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2]))
+  }
+
+  /**
+   * Maps 4 `IO` values by the mapping function, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   * const fa3 = IO.of(() => 3)
+   * const fa4 = IO.of(() => 4)
+   *
+   * // Yields Success(10)
+   * IO.map4(fa1, fa2, fa3, fa4, (a, b, c, d) => a + b + c + d)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.map4(
+   *   fa1, fa2, fa3, IO.raise("error"),
+   *   (a, b, c, d) => a + b + c + d
+   * )
+   * ```
+   */
+  static map4<A1, A2, A3, A4, R>(
+    fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.sequence([fa1, fa2, fa3, fa4] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3]))
+  }
+
+  /**
+   * Maps 5 `IO` values by the mapping function, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   * const fa3 = IO.of(() => 3)
+   * const fa4 = IO.of(() => 4)
+   * const fa5 = IO.of(() => 5)
+   *
+   * // Yields Success(15)
+   * IO.map5(fa1, fa2, fa3, fa4, fa5,
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.map5(
+   *   fa1, fa2, fa3, fa4, IO.raise("error"),
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map5`.
+   */
+  static map5<A1, A2, A3, A4, A5, R>(
+    fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.sequence([fa1, fa2, fa3, fa4, fa5] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3], lst[4]))
+  }
+
+  /**
+   * Maps 6 `IO` values by the mapping function, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   * const fa3 = IO.of(() => 3)
+   * const fa4 = IO.of(() => 4)
+   * const fa5 = IO.of(() => 5)
+   * const fa6 = IO.of(() => 6)
+   *
+   * // Yields Success(21)
+   * IO.map6(
+   *   fa1, fa2, fa3, fa4, fa5, fa6,
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.map6(
+   *   fa1, fa2, fa3, fa4, fa5, IO.raise("error"),
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.map6`.
+   */
+  static map6<A1, A2, A3, A4, A5, A6, R>(
+    fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>, fa6: IO<A6>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.sequence([fa1, fa2, fa3, fa4, fa5, fa6] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3], lst[4], lst[5]))
+  }
+
+  /**
    * Returns an `IO` that on execution is always successful,
    * emitting the given strict value.
    */
@@ -741,6 +989,193 @@ export class IO<A> {
    */
   static once<A>(thunk: () => A): IO<A> {
     return new IOOnce(thunk, false)
+  }
+
+  /**
+   * Maps 2 `IO` values evaluated nondeterministically, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.gather} operation. As such
+   * the `IO` operations are potentially executed in parallel
+   * (if the operations are asynchronous) and on cancellation or
+   * failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   *
+   *
+   * // Yields Success(3)
+   * IO.parMap2(fa1, fa2, (a, b) => a + b)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.parMap2(fa1, IO.raise("error"),
+   *   (a, b) => a + b
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.parMap2`.
+   */
+  static parMap2<A1, A2, R>(
+    fa1: IO<A1>, fa2: IO<A2>,
+    f: (a1: A1, a2: A2) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.gather([fa1, fa2] as any[])
+    return fl.map(lst => f(lst[0], lst[1]))
+  }
+
+  /**
+   * Maps 3 `IO` values evaluated nondeterministically, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.gather} operation. As such
+   * the `IO` operations are potentially executed in parallel
+   * (if the operations are asynchronous) and on cancellation or
+   * failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   * const fa3 = IO.of(() => 3)
+   *
+   *
+   * // Yields Success(6)
+   * IO.parMap3(fa1, fa2, fa3, (a, b, c) => a + b + c)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.parMap3(
+   *   fa1, fa2, IO.raise("error"),
+   *   (a, b, c) => a + b + c
+   * )
+   * ```
+   */
+  static parMap3<A1, A2, A3, R>(
+    fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>,
+    f: (a1: A1, a2: A2, a3: A3) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.gather([fa1, fa2, fa3] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2]))
+  }
+
+  /**
+   * Maps 4 `IO` values evaluated nondeterministically, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.gather} operation. As such
+   * the `IO` operations are potentially executed in parallel
+   * (if the operations are asynchronous) and on cancellation or
+   * failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   * const fa3 = IO.of(() => 3)
+   * const fa4 = IO.of(() => 4)
+   *
+   * // Yields Success(10)
+   * IO.parMap4(fa1, fa2, fa3, fa4, (a, b, c, d) => a + b + c + d)
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.parMap4(
+   *   fa1, fa2, fa3, IO.raise("error"),
+   *   (a, b, c, d) => a + b + c + d
+   * )
+   * ```
+   */
+  static parMap4<A1, A2, A3, A4, R>(
+    fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.gather([fa1, fa2, fa3, fa4] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3]))
+  }
+
+  /**
+   * Maps 5 `IO` values evaluated nondeterministically, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.gather} operation. As such
+   * the `IO` operations are potentially executed in parallel
+   * (if the operations are asynchronous) and on cancellation or
+   * failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   * const fa3 = IO.of(() => 3)
+   * const fa4 = IO.of(() => 4)
+   * const fa5 = IO.of(() => 5)
+   *
+   * // Yields Success(15)
+   * IO.parMap5(fa1, fa2, fa3, fa4, fa5,
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.parMap5(
+   *   fa1, fa2, fa3, fa4, IO.raise("error"),
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.parMap5`.
+   */
+  static parMap5<A1, A2, A3, A4, A5, R>(
+    fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.gather([fa1, fa2, fa3, fa4, fa5] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3], lst[4]))
+  }
+
+  /**
+   * Maps 6 `IO` values evaluated nondeterministically, returning a new
+   * `IO` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link IO.gather} operation. As such
+   * the `IO` operations are potentially executed in parallel
+   * (if the operations are asynchronous) and on cancellation or
+   * failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = IO.of(() => 1)
+   * const fa2 = IO.of(() => 2)
+   * const fa3 = IO.of(() => 3)
+   * const fa4 = IO.of(() => 4)
+   * const fa5 = IO.of(() => 5)
+   * const fa6 = IO.of(() => 6)
+   *
+   * // Yields Success(21)
+   * IO.parMap6(
+   *   fa1, fa2, fa3, fa4, fa5, fa6,
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   *
+   * // Yields Failure, because the second arg is a Failure
+   * IO.parMap6(
+   *   fa1, fa2, fa3, fa4, fa5, IO.raise("error"),
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   * ```
+   *
+   * This operation is the `Applicative.parMap6`.
+   */
+  static parMap6<A1, A2, A3, A4, A5, A6, R>(
+    fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>, fa6: IO<A6>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): IO<R> {
+
+    const fl: IO<any[]> = IO.gather([fa1, fa2, fa3, fa4, fa5, fa6] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3], lst[4], lst[5]))
   }
 
   /**
@@ -1543,14 +1978,18 @@ function ioSequence<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
 function ioSequenceLoop<A>(acc: A[], cursor: IteratorLike<IO<A>>): IO<A[]> {
   while (true) {
     const elem = cursor.next()
-    if (elem.done) return IO.pure(acc)
+    const isDone = elem.done
 
     if (elem.value) {
       const io: IO<A> = elem.value
       return io.flatMap(a => {
         acc.push(a)
+        if (isDone) return IO.pure(acc)
         return ioSequenceLoop(acc, cursor)
       })
+    } else {
+      /* istanbul ignore else */
+      if (isDone) return IO.pure(acc)
     }
   }
 }
@@ -1576,8 +2015,9 @@ function ioGather<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
 
         const all = Future.sequence(futures, ctx.scheduler)
         ctx.connection.push(all)
-        all.onComplete(ioSafeCallback(ctx.scheduler, ctx.connection, cb))
+        all.onComplete(ioSafeCallback(ctx.scheduler, ctx.connection, cb) as any)
       } catch (e) {
+        /* istanbul ignore else */
         if (streamErrors) cb(Failure(e))
         else ctx.scheduler.reportFailure(e)
       }
@@ -1620,29 +2060,9 @@ function iteratorOf<A>(list: A[] | Iterable<A>): IteratorLike<A> {
   let cursor = 0
   const next = () => {
     const value = array[cursor++]
-    const done = cursor < array.length
+    const done = cursor >= array.length
     return { done, value }
   }
 
   return { next }
-}
-
-/**
- * Internal utility that builds an iterator out of an `Iterable` or an `Array`.
- *
- * @Hidden
- */
-export function iterableToArray<A>(values: Iterable<A>): A[] {
-  if (!values) return []
-  if (Object.prototype.toString.call(values) === "[object Array]")
-    return values as A[]
-
-  const cursor = values[Symbol.iterator]()
-  const arr: A[] = []
-
-  while (true) {
-    const item = cursor.next()
-    if (item.value) arr.push(item.value)
-    if (item.done) return arr
-  }
 }

@@ -1211,6 +1211,355 @@ describe("IO.shift", () => {
   })
 })
 
+describe("IO.sequence", () => {
+  it("works", () => {
+    const ec = scheduler()
+    const all = [IO.pure(1), IO.pure(2), IO.pure(3)]
+
+    const io = IO.sequence(all).map(lst => {
+      let sum = 0
+      for (let i = 0; i < lst.length; i++) sum += lst[i]
+      return sum
+    })
+
+    assert.equal(io.run(ec).value(), Some(Success(6)))
+  })
+
+  it("map2", () => {
+    const ec = scheduler()
+    const f = IO.map2(
+      IO.pure(1), IO.pure(2),
+      (a, b) => a + b
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(3)))
+  })
+
+  it("map3", () => {
+    const ec = scheduler()
+    const f = IO.map3(
+      IO.pure(1), IO.pure(2), IO.pure(3),
+      (a, b, c) => a + b + c
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(6)))
+  })
+
+  it("map4", () => {
+    const ec = scheduler()
+    const f = IO.map4(
+      IO.pure(1), IO.pure(2), IO.pure(3), IO.pure(4),
+      (a, b, c, d) => a + b + c + d
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(10)))
+  })
+
+  it("map5", () => {
+    const ec = scheduler()
+    const f = IO.map5(
+      IO.pure(1), IO.pure(2), IO.pure(3), IO.pure(4), IO.pure(5),
+      (a, b, c, d, e) => a + b + c + d + e
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(15)))
+  })
+
+  it("map6", () => {
+    const ec = scheduler()
+    const f = IO.map6(
+      IO.pure(1), IO.pure(2), IO.pure(3), IO.pure(4), IO.pure(5), IO.pure(6),
+      (a, b, c, d, e, f) => a + b + c + d + e + f
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(21)))
+  })
+
+  it("works with null list", () => {
+    const ec = scheduler()
+    assert.equal(IO.sequence(null as any).map(x => x.toString()).run(ec).value(), Some(Success("")))
+  })
+
+  it("works with empty list", () => {
+    const ec = scheduler()
+    assert.equal(IO.sequence([]).map(x => x.toString()).run(ec).value(), Some(Success("")))
+  })
+
+  it("works with any iterable", () => {
+    const ec = scheduler()
+    const iter = {
+      [Symbol.iterator]: () => {
+        let done = false
+        return {
+          next: () => {
+            if (!done) {
+              done = true
+              return { done: false, value: IO.pure(1) }
+            } else {
+              return { done: true }
+            }
+          }
+        }
+      }
+    }
+
+    const seq = IO.sequence(iter as any).map(_ => _[0]).run(ec)
+    assert.equal(seq.value(), Some(Success(1)))
+  })
+
+  it("protects against broken iterables", () => {
+    const ec = scheduler()
+    const dummy = new DummyError()
+    const iter = {
+      [Symbol.iterator]: () => { throw dummy }
+    }
+
+    const seq = IO.sequence(iter as any).run(ec)
+    assert.equal(seq.value(), Some(Failure(dummy)))
+  })
+
+  it("executes sequentially", () => {
+    const ec = scheduler()
+
+    const list = [
+      IO.pure(1).delayExecution(3000),
+      IO.pure(1).delayExecution(1000),
+      IO.pure(1).delayExecution(2000)
+    ]
+
+    const all = IO.sequence(list).map(_ => _.toString()).run(ec)
+    ec.tick(3000)
+    assert.equal(all.value(), None)
+    ec.tick(3000)
+    assert.equal(all.value(), Some(Success("1,1,1")))
+  })
+
+  it("cancels everything on cancel", () => {
+    const ec = scheduler()
+
+    const list = [
+      IO.pure(1).delayExecution(3000),
+      IO.pure(1).delayExecution(1000),
+      IO.pure(1).delayExecution(2000)
+    ]
+
+    const all = IO.sequence(list).map(_ => _.toString()).run(ec)
+    assert.ok(ec.hasTasksLeft())
+
+    all.cancel()
+    assert.not(ec.hasTasksLeft())
+  })
+
+  it("cancels everything on failure", () => {
+    const ec = scheduler()
+
+    const list = [
+      IO.pure(1).delayExecution(2000),
+      IO.raise("error").delayExecution(1000),
+      IO.pure(1).delayExecution(2000)
+    ]
+
+    const all = IO.sequence(list).map(_ => _.toString()).run(ec)
+    assert.ok(ec.hasTasksLeft())
+
+    ec.tick(3000)
+    assert.equal(all.value(), Some(Failure("error")))
+    assert.not(ec.hasTasksLeft())
+  })
+})
+
+describe("IO.gather", () => {
+  it("works", () => {
+    const ec = scheduler()
+    const all = [IO.pure(1), IO.pure(2), IO.pure(3)]
+
+    const io = IO.gather(all).map(lst => {
+      let sum = 0
+      for (let i = 0; i < lst.length; i++) sum += lst[i]
+      return sum
+    })
+
+    assert.equal(io.run(ec).value(), Some(Success(6)))
+  })
+
+  it("parMap2", () => {
+    const ec = scheduler()
+    const f = IO.parMap2(
+      IO.pure(1), IO.pure(2),
+      (a, b) => a + b
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(3)))
+  })
+
+  it("parMap3", () => {
+    const ec = scheduler()
+    const f = IO.parMap3(
+      IO.pure(1), IO.pure(2), IO.pure(3),
+      (a, b, c) => a + b + c
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(6)))
+  })
+
+  it("parMap4", () => {
+    const ec = scheduler()
+    const f = IO.parMap4(
+      IO.pure(1), IO.pure(2), IO.pure(3), IO.pure(4),
+      (a, b, c, d) => a + b + c + d
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(10)))
+  })
+
+  it("parMap5", () => {
+    const ec = scheduler()
+    const f = IO.parMap5(
+      IO.pure(1), IO.pure(2), IO.pure(3), IO.pure(4), IO.pure(5),
+      (a, b, c, d, e) => a + b + c + d + e
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(15)))
+  })
+
+  it("parMap6", () => {
+    const ec = scheduler()
+    const f = IO.parMap6(
+      IO.pure(1), IO.pure(2), IO.pure(3), IO.pure(4), IO.pure(5), IO.pure(6),
+      (a, b, c, d, e, f) => a + b + c + d + e + f
+    )
+
+    assert.equal(f.run(ec).value(), Some(Success(21)))
+  })
+
+  it("works with empty list", () => {
+    const ec = scheduler()
+    assert.equal(IO.gather([]).map(x => x.toString()).run(ec).value(), Some(Success("")))
+  })
+
+  it("works with null list", () => {
+    const ec = scheduler()
+    assert.equal(IO.gather(null as any).map(x => x.toString()).run(ec).value(), Some(Success("")))
+  })
+
+  it("works with any iterable", () => {
+    const ec = scheduler()
+    const iter = {
+      [Symbol.iterator]: () => {
+        let done = false
+        return {
+          next: () => {
+            if (!done) {
+              done = true
+              return { done: false, value: IO.pure(1) }
+            } else {
+              return { done: true }
+            }
+          }
+        }
+      }
+    }
+
+    const seq = IO.gather(iter as any).map(_ => _[0]).run(ec)
+    assert.equal(seq.value(), Some(Success(1)))
+  })
+
+  it("protects against broken iterables", () => {
+    const ec = scheduler()
+    const dummy = new DummyError()
+    const iter = {
+      [Symbol.iterator]: () => { throw dummy }
+    }
+
+    const seq = IO.gather(iter as any).run(ec)
+    assert.equal(seq.value(), Some(Failure(dummy)))
+  })
+
+  it("executes in parallel", () => {
+    const ec = scheduler()
+
+    const list = [
+      IO.pure(1).delayExecution(3000),
+      IO.pure(1).delayExecution(1000),
+      IO.pure(1).delayExecution(2000)
+    ]
+
+    const all = IO.gather(list).map(_ => _.toString()).run(ec)
+    ec.tick(3000)
+    assert.equal(all.value(), Some(Success("1,1,1")))
+  })
+
+  it("cancels everything on cancel", () => {
+    const ec = scheduler()
+
+    const list = [
+      IO.pure(1).delayExecution(3000),
+      IO.pure(1).delayExecution(1000),
+      IO.pure(1).delayExecution(2000)
+    ]
+
+    const all = IO.gather(list).map(_ => _.toString()).run(ec)
+    assert.ok(ec.hasTasksLeft())
+
+    all.cancel()
+    assert.not(ec.hasTasksLeft())
+  })
+
+  it("cancels everything on failure", () => {
+    const ec = scheduler()
+
+    const list = [
+      IO.pure(1).delayExecution(2000),
+      IO.raise("error").delayExecution(1000),
+      IO.pure(1).delayExecution(4000)
+    ]
+
+    const all = IO.gather(list).map(_ => _.toString()).run(ec)
+    assert.ok(ec.hasTasksLeft())
+
+    ec.tick(1000)
+    assert.equal(all.value(), Some(Failure("error")))
+    assert.not(ec.hasTasksLeft())
+  })
+})
+
+describe("IO delay", () => {
+  it("delayResult works for successful values", () => {
+    const s = new TestScheduler()
+    let effect = 0
+
+    const f = IO.of(() => { effect += 1; return effect }).delayResult(1000).run(s)
+    assert.equal(effect, 1)
+    assert.equal(f.value(), None)
+
+    s.tick(1000)
+    assert.equal(f.value(), Some(Success(1)))
+  })
+
+  it("delayResult works for failures", () => {
+    const s = new TestScheduler()
+
+    const dummy = new DummyError("dummy")
+    const f = IO.raise(dummy).delayResult(1000).run(s)
+    assert.equal(f.value(), None)
+
+    s.tick(1000)
+    assert.equal(f.value(), Some(Failure(dummy)))
+  })
+
+  it("delayExecution works", () => {
+    const s = new TestScheduler()
+    let effect = 0
+
+    const f = IO.of(() => { effect += 1; return effect }).delayExecution(1000).run(s)
+    assert.equal(effect, 0)
+    assert.equal(f.value(), None)
+
+    s.tick(1000)
+    assert.equal(f.value(), Some(Success(1)))
+  })
+})
+
 function scheduler(): TestScheduler {
   return new TestScheduler(undefined, ExecutionModel.global.get())
 }
