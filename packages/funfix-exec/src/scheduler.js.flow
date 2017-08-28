@@ -55,7 +55,7 @@ declare export class TestScheduler extends Scheduler {
 }
 
 declare export class GlobalScheduler extends Scheduler {
-  constructor(canUseSetImmediate?: boolean, em?: ExecutionModel): GlobalScheduler;
+  constructor(canUseSetImmediate?: boolean, em?: ExecutionModel, reporter?: (e: Throwable) => void): GlobalScheduler;
 }
 
 declare export class ExecutionModel {
