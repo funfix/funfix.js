@@ -28,7 +28,8 @@ import {
   Cancelable,
   StackedCancelable,
   Scheduler,
-  Future, ExecutionModel
+  Future, ExecutionModel,
+  execInternals
 } from "funfix-exec"
 
 /**
@@ -756,6 +757,63 @@ export class IO<A> {
   static raise<A = never>(e: Throwable): IO<A> { return new IOPure(Failure(e)) }
 
   /**
+   * Transforms a list of `IO` values into an `IO` of a list,
+   * ordering both results and side effects.
+   *
+   * This operation would be the equivalent of `Promise.all` or of
+   * `Future.sequence`, however because of the laziness of `IO`
+   * the given values are processed in order.
+   *
+   * Sequencing means that on evaluation the tasks won't get processed
+   * in parallel. If parallelism is desired, see {@link IO.gather}.
+   *
+   * Sample:
+   *
+   * ```typescript
+   * const io1 = IO.of(() => 1)
+   * const io2 = IO.of(() => 2)
+   * const io3 = IO.of(() => 3)
+   *
+   * // Yields [1, 2, 3]
+   * const all: IO<number[]> = IO.sequence([f1, f2, f3])
+   * ```
+   */
+  static sequence<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
+    return ioSequence(list)
+  }
+
+  /**
+   * Nondeterministically gather results from the given collection of
+   * tasks, returning a task that will signal the same type of
+   * collection of results once all tasks are finished.
+   *
+   * This function is the nondeterministic analogue of `sequence`
+   * and should behave identically to `sequence` so long as there is
+   * no interaction between the effects being gathered. However,
+   * unlike `sequence`, which decides on a total order of effects,
+   * the effects in a `gather` are unordered with respect to each
+   * other.
+   *
+   * In other words `gather` can execute `IO` tasks in parallel,
+   * whereas {@link IO.sequence} forces an execution order.
+   *
+   * Although the effects are unordered, the order of results matches
+   * the order of the input sequence.
+   *
+   * ```typescript
+   * const io1 = IO.of(() => 1)
+   * const io2 = IO.of(() => 2)
+   * const io3 = IO.of(() => 3)
+   *
+   * // Yields [1, 2, 3]
+   * const all: IO<number[]> = IO.gather([f1, f2, f3])
+   * ```
+   */
+  static gather<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
+    return ioGather(list)
+  }
+
+  /**
    * Shifts the bind continuation of the `IO` onto the specified
    * scheduler, for triggering asynchronous execution.
    *
@@ -1468,4 +1526,123 @@ function ioStartMemoize<A>(
     : IO.fromFuture(state)
 
   ioGenericRunLoop(io, ec, context, cb, null, bFirstInit, bRestInit)
+}
+
+/** Implementation for `IO.sequence`. */
+function ioSequence<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
+  return IO.of(() => iteratorOf(list))
+    .flatMap(cursor => ioSequenceLoop([], cursor))
+}
+
+/**
+ * Recursive loop that goes through the given `cursor`, element by
+ * element, gathering the results of all generated `IO` elements.
+ *
+ * @hidden
+ */
+function ioSequenceLoop<A>(acc: A[], cursor: IteratorLike<IO<A>>): IO<A[]> {
+  while (true) {
+    const elem = cursor.next()
+    if (elem.done) return IO.pure(acc)
+
+    if (elem.value) {
+      const io: IO<A> = elem.value
+      return io.flatMap(a => {
+        acc.push(a)
+        return ioSequenceLoop(acc, cursor)
+      })
+    }
+  }
+}
+
+/**
+ * Implementation for `IO.gather`.
+ * @hidden
+ */
+function ioGather<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
+  return IO.asyncUnsafe<A[]>((ctx, cb) => {
+    ctx.scheduler.trampoline(() => {
+      let streamErrors = true
+      try {
+        const futures: Future<A>[] = []
+        const array: IO<A>[] = execInternals.iterableToArray(list)
+        streamErrors = false
+
+        for (let i = 0; i < array.length; i++) {
+          const io = array[i]
+          const f = io.run(ctx.scheduler) as Future<A>
+          futures.push(f)
+        }
+
+        const all = Future.sequence(futures, ctx.scheduler)
+        ctx.connection.push(all)
+        all.onComplete(ioSafeCallback(ctx.scheduler, ctx.connection, cb))
+      } catch (e) {
+        if (streamErrors) cb(Failure(e))
+        else ctx.scheduler.reportFailure(e)
+      }
+    })
+  })
+}
+
+/**
+ * We don't need the full power of JS's iterators, just a way
+ * to traverse data structures.
+ *
+ * @hidden
+ */
+interface IteratorLike<A> {
+  next(): { done: boolean, value?: A }
+}
+
+/**
+ * Reusable empty `IteratorLike` reference.
+ *
+ * @hidden
+ */
+const emptyIteratorRef: IteratorLike<never> =
+  { next: () => ({ done: true }) }
+
+/**
+ * Given an array or an `Iterable`, returns a simple iterator type
+ * that we can use to traverse the given list lazily.
+ *
+ * @hidden
+ */
+function iteratorOf<A>(list: A[] | Iterable<A>): IteratorLike<A> {
+  if (!list) return emptyIteratorRef
+  if (Object.prototype.toString.call(list) !== "[object Array]")
+    return list[Symbol.iterator]()
+
+  const array = list as A[]
+  if (array.length === 0) return emptyIteratorRef
+
+  let cursor = 0
+  const next = () => {
+    const value = array[cursor++]
+    const done = cursor < array.length
+    return { done, value }
+  }
+
+  return { next }
+}
+
+/**
+ * Internal utility that builds an iterator out of an `Iterable` or an `Array`.
+ *
+ * @Hidden
+ */
+export function iterableToArray<A>(values: Iterable<A>): A[] {
+  if (!values) return []
+  if (Object.prototype.toString.call(values) === "[object Array]")
+    return values as A[]
+
+  const cursor = values[Symbol.iterator]()
+  const arr: A[] = []
+
+  while (true) {
+    const item = cursor.next()
+    if (item.value) arr.push(item.value)
+    if (item.done) return arr
+  }
 }
