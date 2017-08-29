@@ -22,7 +22,8 @@ import {
   GlobalScheduler,
   TestScheduler,
   Duration,
-  ICancelable
+  ICancelable,
+  ExecutionModel
 } from "../../src/"
 
 const global: Scheduler = Scheduler.global.get()
@@ -59,3 +60,13 @@ Scheduler.global.bind(new TestScheduler(), () => {
 Scheduler.global.bindL(() => new TestScheduler(), () => {
   Scheduler.global.get()
 })
+
+const idx: number = globalRef.batchIndex
+
+const globalRef2 = new GlobalScheduler(
+  false, 
+  ExecutionModel.alwaysAsync(), 
+  err => console.error(err))
+
+const global3 = globalRef2
+  .withExecutionModel(ExecutionModel.batched())

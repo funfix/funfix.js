@@ -90,23 +90,20 @@ describe("GlobalScheduler", () => {
 
   function testErrorReporting(f: (ec: Scheduler, r: () => void) => void): () => Promise<void> {
     return () => {
-      const oldFn = console.error
-      const ec = Scheduler.global.get()
       const dummy = new DummyError("dummy")
       let reported: any = null
 
       const p = new Promise<void>((resolve, _) => {
-        // Overriding console.error
-        console.error = (...args: any[]) => {
-          reported = args && args[0] || null
-          resolve(undefined)
-        }
+        const ec = new GlobalScheduler(true, ExecutionModel.global.get(),
+          (r: any) => {
+            reported = r
+            resolve(undefined)
+          })
 
         f(ec, () => { throw dummy })
       })
 
       return p.then(_ => {
-        console.error = oldFn
         assert.ok(reported, "reported != null")
         assert.equal(reported.message, "dummy")
       })
@@ -556,6 +553,23 @@ describe("TestScheduler", () => {
     assert.equal(s5.executionModel.recommendedBatchSize, 256)
   })
 
+  it("withExecutionModel copies tasks left to execute", () => {
+    let effect = 0
+
+    const ec1 = new TestScheduler()
+    ec1.tick(1000)
+
+    ec1.executeAsync(() => { effect += 1 })
+    ec1.executeAsync(() => { effect += 2 })
+
+    const ec2 = ec1.withExecutionModel(ExecutionModel.alwaysAsync())
+    assert.equal(ec2.currentTimeMillis(), ec1.currentTimeMillis())
+    assert.equal(effect, 0)
+
+    ec2.tick()
+    assert.equal(effect, 3)
+  })
+
   it("executes step by step with tickOne", () => {
     const ec = new TestScheduler()
     let effect = 0
@@ -621,8 +635,10 @@ describe("TestScheduler", () => {
       ec.executeBatched(() => { count += 1 })
 
     assert.equal(count, batchSize - 1)
+    assert.equal(ec.batchIndex, 127)
     ec.tickOne()
     assert.equal(count, batchSize)
+    assert.equal(ec.batchIndex, 0)
     ec.tick()
     assert.equal(count, total)
   })

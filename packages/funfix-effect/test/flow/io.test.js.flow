@@ -1,0 +1,160 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import type { Throwable } from "funfix-core"
+import { Try, Either, Left, Right, Success, Option } from "funfix-core"
+import { ICancelable, Future, Scheduler, StackedCancelable, ExecutionModel, Duration } from "funfix-exec"
+import { IO, IOContext } from "../../src/"
+
+const ec = Scheduler.global.get()
+const t1: IO<number> = IO.now(1)
+
+const f1: Future<number> = t1.run()
+const f2: Future<number> = t1.run(ec)
+const c1: ICancelable = t1.runOnComplete((r: Try<number>) => console.info(r.getOrElse(0)))
+const c2: ICancelable = t1.runOnComplete((r: Try<number>) => console.info(r.getOrElse(0)), ec)
+
+const map1: IO<string> = t1.map(x => String(x))
+const map2: IO<number> = t1.map(x => x + 1)
+const map3: IO<IO<number>> = t1.map(x => IO.pure(x + 1))
+
+const fmap1: IO<string> = t1.flatMap(x => IO.now(String(x)))
+const fmap2: IO<number> = t1.flatMap(x => IO.now(x + 1))
+const fmap3: IO<IO<number>> = t1.flatMap(x => IO.now(IO.now(x + 1)))
+
+const chain1: IO<string> = t1.chain(x => IO.now(String(x)))
+const chain2: IO<number> = t1.chain(x => IO.now(x + 1))
+const chain3: IO<IO<number>> = t1.chain(x => IO.now(IO.now(x + 1)))
+
+const tr1: IO<string> = t1.transform(e => String(e), v => String(v))
+const tr2: IO<IO<number>> = t1.transform(e => IO.now(1), v => IO.now(v))
+const tr3: IO<number> = t1.transformWith(e => IO.now(1), v => IO.now(v))
+const tr4: IO<string | number> = t1.transform(e => String(e), v => v)
+const tr5: IO<string | number> = t1.transformWith(e => IO.now(String(e)), v => IO.pure(v))
+
+const r1: IO<number> = t1.recover(e => 0)
+const r2: IO<number> = t1.recoverWith(e => IO.now(0))
+const r3: IO<string | number> = t1.recover(e => String(e))
+const r4: IO<string | number> = t1.recoverWith(e => IO.now(String(e)))
+
+const at1: IO<Either<Throwable, number>> = t1.attempt()
+const fr1: IO<void> = t1.forEach((x: number) => console.info(x))
+
+const of1: IO<number> = IO.of(() => 1)
+const of2: IO<string> = IO.of(() => "Hello!")
+const of3: IO<number> = IO.always(() => 1)
+const of4: IO<string> = IO.once(() => "Hello!")
+
+const pure1: IO<number> = IO.now(1)
+const pure2: IO<string> = IO.now("Hello!")
+const pure3: IO<number> = IO.pure(1)
+const pure4: IO<string> = IO.pure("Hello!")
+const pure5: IO<void> = IO.unit()
+
+const err1: IO<number> = IO.raise("Error!")
+
+const s1: IO<number> = IO.suspend(() => IO.pure(1))
+const s2: IO<number> = IO.defer(() => IO.pure(1))
+const s3: IO<number> = IO.deferAction((ec: Scheduler) => IO.pure(1))
+
+const rec: IO<string> = IO.tailRecM(10, (a: number) => {
+  if (a <= 0)
+    return IO.of(() => Left(a - 1))
+  else
+    return IO.pure(Right("Done!"))
+})
+
+const async1: IO<number> =
+  IO.asyncUnsafe((context, callback) => {
+    const ec: Scheduler = context.scheduler
+    const conn: StackedCancelable = context.connection
+
+    const task = ec.scheduleOnce(1000, () => {
+      conn.pop()
+      callback(Success(1))
+    })
+
+    conn.push(task)
+  })
+
+const async2: IO<number> =
+  IO.async((ec: Scheduler, cb) => cb(Success(1)))
+
+const async3: IO<number> =
+  IO.async((ec, cb) => {
+    const task: ICancelable = ec.scheduleOnce(10, () => cb(Success(1)))
+    return task
+  })
+
+const opt1: IO<number> = t1.executeWithOptions({ autoCancelableRunLoops: true })
+const c: ICancelable | void = IO.unsafeStart(opt1, new IOContext(ec), r => console.info(r.getOrElse(0)))
+const em1: IO<number> = t1.executeWithModel(ExecutionModel.alwaysAsync())
+
+const f: Future<number> = Future.pure(1)
+const ff1: IO<number> = IO.fromFuture(f)
+const ff2: IO<number> = IO.deferFuture(() => f)
+const ff3: IO<number> = IO.deferFutureAction((ec: Scheduler) => f)
+
+const mem1: IO<number> = ff1.memoize()
+const mem2: IO<number> = ff1.memoizeOnSuccess()
+
+const fork1: IO<number> = ff1.executeForked()
+const fork2: IO<number> = ff1.executeForked(ec)
+const fork3: IO<number> = IO.fork(ff1)
+const fork4: IO<number> = IO.fork(ff1, ec)
+
+const ab1: IO<number> = ff1.asyncBoundary()
+const ab2: IO<number> = ff1.asyncBoundary()
+const ab3: IO<number> = IO.shift().flatMap(_ => ff1)
+const ab4: IO<number> = IO.shift(ec).flatMap(_ => ff1)
+
+const mMap2: IO<number> = IO.map2(IO.pure(1), IO.pure(1), (a, b) => a + b)
+const mMap3: IO<number> = IO.map3(IO.pure(1), IO.pure(1), IO.pure(1), (a, b, c) => a + b + c)
+const mMap4: IO<number> = IO.map4(IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), (a, b, c, d) => a + b + c + d)
+const mMap5: IO<number> = IO.map5(IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), (a, b, c, d, e) => a + b + c + d + e)
+const mMap6: IO<number> = IO.map6(IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), (a, b, c, d, e, f) => a + b + c + d + e + f)
+
+const pMap2: IO<number> = IO.parMap2(IO.pure(1), IO.pure(1), (a, b) => a + b)
+const pMap3: IO<number> = IO.parMap3(IO.pure(1), IO.pure(1), IO.pure(1), (a, b, c) => a + b + c)
+const pMap4: IO<number> = IO.parMap4(IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), (a, b, c, d) => a + b + c + d)
+const pMap5: IO<number> = IO.parMap5(IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), (a, b, c, d, e) => a + b + c + d + e)
+const pMap6: IO<number> = IO.parMap6(IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), IO.pure(1), (a, b, c, d, e, f) => a + b + c + d + e + f)
+
+const arr: IO<number>[] = [IO.pure(1), IO.pure(2), IO.pure(3)]
+const sequence: IO<number[]> = IO.sequence(arr)
+const gather: IO<number[]> = IO.gather(arr)
+
+const delay1: IO<number> = ff1.delayResult(1000)
+const delay2: IO<number> = ff1.delayResult(Duration.of(1000))
+const delay3: IO<number> = ff1.delayExecution(1000)
+const delay4: IO<number> = ff1.delayExecution(Duration.of(1000))
+const delay5: IO<void> = IO.delayedTick(1000)
+
+const do1: IO<number> = ff1.doOnFinish((e: Option<Throwable>) => IO.unit())
+const do2: IO<number> = ff1.doOnCancel(IO.pure())
+
+const time1: IO<number> = ff1.timeout(1000)
+const time2: IO<number> = ff1.timeout(Duration.of(1000))
+const time3: IO<number | string> = ff1.timeoutTo(1000, IO.pure("hello"))
+const time4: IO<number | string> = ff1.timeoutTo(Duration.of(1000), IO.pure("hello"))
+
+const firstOf1: IO<number> = IO.firstCompletedOf([IO.pure(1), IO.pure(2), IO.pure(3)])
+
+const flat1: IO<number> = IO.pure("Hello").followedBy(IO.pure(1))
+const flat2: IO<string> = IO.pure("Hello").forEffect(IO.pure(1))

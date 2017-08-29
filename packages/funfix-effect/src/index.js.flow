@@ -18,3 +18,4 @@
 /* @flow */
 
 declare export * from "./eval";
+declare export * from "./io";

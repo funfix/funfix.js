@@ -362,7 +362,7 @@ export class Eval<A> {
    * Returns an `Eval` that on execution is always finishing in error
    * emitting the specified exception.
    */
-  static raise(e: Throwable): Eval<never> { return new Raise(e) }
+  static raise<A = never>(e: Throwable): Eval<A> { return new Raise(e) }
 
   /**
    * Promote a `thunk` function to an `Eval`, catching exceptions in
@@ -443,7 +443,7 @@ class Now<A> extends Eval<A> {
    * @param value is the value that's going to be returned
    * when `get()` is called.
    */
-  constructor(public value: A) { super() }
+  constructor(public readonly value: A) { super() }
 
   get(): A { return this.value }
   run(): Try<A> { return Try.success(this.value) }
@@ -468,7 +468,7 @@ class Raise extends Eval<never> {
    * @param error is the error value that's going to be
    * throw when `get()` is called.
    */
-  constructor(public error: Throwable) { super() }
+  constructor(public readonly error: Throwable) { super() }
 
   get(): never { throw this.error }
   run(): Try<never> { return Try.failure<never>(this.error) }
@@ -519,7 +519,7 @@ class Once<A> extends Eval<A> {
  * @private
  */
 class Always<A> extends Eval<A> {
-  constructor(public thunk: () => A) { super() }
+  constructor(public readonly thunk: () => A) { super() }
   run(): Try<A> { return Try.of(this.thunk) }
 
   toString(): string { return `Eval.always([thunk])` }
@@ -532,7 +532,7 @@ class Always<A> extends Eval<A> {
  * @private
  */
 class Suspend<A> extends Eval<A> {
-  constructor(public thunk: () => Eval<A>) { super() }
+  constructor(public readonly thunk: () => Eval<A>) { super() }
   toString(): string { return `Eval.suspend([thunk])` }
 }
 
@@ -546,8 +546,8 @@ class Suspend<A> extends Eval<A> {
  */
 class FlatMap<A, B> extends Eval<B> {
   constructor(
-    public source: Eval<A>,
-    public f: (a: A) => Eval<B>) { super() }
+    public readonly source: Eval<A>,
+    public readonly f: (a: A) => Eval<B>) { super() }
 
   toString(): string {
     return `Eval#FlatMap(${String(this.source)}, [function])`

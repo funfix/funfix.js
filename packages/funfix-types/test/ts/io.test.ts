@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-import { Future, Scheduler, TestScheduler, ExecutionModel } from "funfix-exec"
+import {  Scheduler, TestScheduler, ExecutionModel } from "funfix-exec"
+import { IO } from "funfix-effect"
 import * as jv from "jsverify"
 import * as laws from "./laws"
 import * as inst from "./instances"
 import { Eq } from "../../src/"
 
-describe("Future obeys type class laws", () => {
+describe("IO obeys type class laws", () => {
   const ec = new TestScheduler(ex => { throw ex }, ExecutionModel.synchronous())
   const eq = new (
-    class extends Eq<Future<any>> {
-      eqv(lh: Future<any>, rh: Future<any>): boolean {
+    class extends Eq<IO<any>> {
+      eqv(lh: IO<any>, rh: IO<any>): boolean {
+        const f1 = lh.run(ec)
+        const f2 = rh.run(ec)
         ec.tick(1000 * 60 * 60 * 24 * 10)
-        return !lh.value().isEmpty() && lh.value().equals(rh.value())
+        return !f1.value().isEmpty() && f1.value().equals(f2.value())
       }
     })()
 
@@ -39,6 +42,5 @@ describe("Future obeys type class laws", () => {
     Scheduler.global.revert()
   })
 
-  const arbF = inst.arbFuture(ec)
-  laws.testMonadError(Future, jv.number, arbF, jv.string, eq)
+  laws.testMonadError(IO, jv.number, inst.arbIO, jv.string, eq)
 })

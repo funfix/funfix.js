@@ -18,7 +18,8 @@
     "copy-flow": "../../scripts/copy-flow.js ."
   },
   "dependencies": {
-    "funfix-core": "0.0.0-development"
+    "funfix-core": "0.0.0-development",
+    "funfix-exec": "0.0.0-development"
   },
   "files": [
     "dist",

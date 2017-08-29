@@ -17,7 +17,7 @@
 
 import * as jv from "jsverify"
 
-import { Eval } from "funfix-effect"
+import { Eval, IO } from "funfix-effect"
 
 import {
   Future,
@@ -134,3 +134,34 @@ export function arbFuture(ec: Scheduler): jv.Arbitrary<Future<number>> {
     fa => fa.value().getOrElse(Success(0)).getOrElse(0)
   )
 }
+
+export const arbIO: jv.Arbitrary<IO<number>> =
+  jv.pair(jv.number, jv.number).smap(
+    v => {
+      switch (v[0] % 11) {
+        case 0:
+          return IO.now(v[1])
+        case 1:
+          return IO.raise(v[1])
+        case 2:
+          return IO.always(() => v[1])
+        case 3:
+          return IO.once(() => v[1])
+        case 4:
+          return IO.suspend(() => IO.now(v[1]))
+        case 5:
+          return IO.async<number>((ec, cb) => cb(Success(v[1])))
+        case 6:
+          return IO.async<number>((ec, cb) => cb(Failure(v[1])))
+        case 7:
+          return IO.async<number>((ec, cb) => cb(Success(v[1]))).flatMap(IO.now)
+        case 8:
+          return IO.now(0).flatMap(_ => IO.now(v[1]))
+        case 9:
+          return IO.always(() => v[1]).memoizeOnSuccess()
+        default:
+          return IO.suspend(() => IO.pure(v[1])).memoize()
+      }
+    },
+    u => [0, 0]
+  )

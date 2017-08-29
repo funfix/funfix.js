@@ -3,7 +3,6 @@
   "packages": [
     "packages/*"
   ],
-  "version": "5.0.1",
-  "npmClient": "yarn",
+  "version": "0.0.0-development",
   "hoist": true
 }

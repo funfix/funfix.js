@@ -109,7 +109,7 @@ export abstract class Cancelable implements ICancelable {
    * as a group.
    *
    * ```typescript
-   * val list = Cancelable.collection(
+   * const list = Cancelable.collection(
    *   Cancelable.of(() => console.log("Cancelled #1")),
    *   Cancelable.of(() => console.log("Cancelled #2")),
    *   Cancelable.of(() => console.log("Cancelled #3"))
@@ -273,7 +273,7 @@ export abstract class BoolCancelable implements IBoolCancelable {
    * canceled as a group.
    *
    * ```typescript
-   * val list = BoolCancelable.collection(
+   * const list = BoolCancelable.collection(
    *   Cancelable.of(() => console.log("Cancelled #1")),
    *   Cancelable.of(() => console.log("Cancelled #2")),
    *   Cancelable.of(() => console.log("Cancelled #3"))
@@ -319,16 +319,29 @@ class CollectionCancelable extends BoolCancelable {
   public cancel(): void {
     if (!this._isCanceled) {
       this._isCanceled = true
-      const errors = []
-      for (const c of this._refs) {
-        try { c.cancel() } catch (e) { errors.push(e) }
+      try {
+        cancelAll(this._refs)
+      } finally {
+        this._refs = [] // GC purposes
       }
-
-      this._refs = [] // GC purposes
-      if (errors.length === 1) throw errors[0]
-      else if (errors.length > 1) throw new CompositeError(errors)
     }
   }
+}
+
+/**
+ * Internal utility used in {@link CollectionCancelable} and
+ * {@link StackedCancelable}.
+ *
+ * @Hidden
+ */
+function cancelAll(refs: Cancelable[]): void {
+  const errors = []
+  for (const c of refs) {
+    try { c.cancel() } catch (e) { errors.push(e) }
+  }
+
+  if (errors.length === 1) throw errors[0]
+  else if (errors.length > 1) throw new CompositeError(errors)
 }
 
 /**
@@ -741,5 +754,98 @@ export class SingleAssignCancelable implements IAssignCancelable {
     const ref = new SingleAssignCancelable()
     ref.update(Cancelable.of(cb))
     return ref
+  }
+}
+
+/**
+ * Represents a composite of cancelable references that are stacked,
+ * so you can push a new reference, or pop an existing one and when
+ * it gets canceled, then the whole stack gets canceled.
+ *
+ * The references are pushed and popped in a FIFO order.
+ *
+ * Used in the implementation of `Task`.
+ *
+ * @final
+ */
+export class StackedCancelable implements IBoolCancelable {
+  private _isCanceled: boolean
+  private _refs: ICancelable[]
+
+  constructor(initial?: ICancelable[]) {
+    this._refs = initial ? initial.slice(0) : []
+    this._isCanceled = false
+  }
+
+  cancel(): void {
+    if (!this._isCanceled) {
+      this._isCanceled = true
+      try {
+        cancelAll(this._refs)
+      } finally {
+        // GC purposes
+        delete this._refs
+      }
+    }
+  }
+
+  isCanceled(): boolean {
+    return this._isCanceled
+  }
+
+  /**
+   * Pushes a cancelable reference on the stack, to be popped or
+   * cancelled later in FIFO order.
+   */
+  push(value: ICancelable): this {
+    if (this._isCanceled) {
+      value.cancel()
+    } else {
+      this._refs.push(value)
+    }
+    return this
+  }
+
+  /**
+   * Removes a cancelable reference from the stack in FIFO order.
+   *
+   * @return the cancelable reference that was removed.
+   */
+  pop(): ICancelable {
+    if (this._isCanceled) return Cancelable.empty()
+    return this._refs.pop() || Cancelable.empty()
+  }
+
+  /**
+   * Returns a new {@link StackedCancelable} that's empty.
+   */
+  static empty(): StackedCancelable {
+    return new StackedCancelable()
+  }
+
+  /**
+   * Returns a {@link StackedCancelable} that's initialized with
+   * the given list of cancelable references.
+   *
+   * ```typescript
+   * const list = StackedCancelable.collection(
+   *   Cancelable.of(() => console.log("Cancelled #1")),
+   *   Cancelable.of(() => console.log("Cancelled #2")),
+   *   Cancelable.of(() => console.log("Cancelled #3"))
+   * )
+   *
+   * // Popping cancelable no. 3 from the stack
+   * list.pop()
+   *
+   * list.cancel()
+   * //=> Cancelled #1
+   * //=> Cancelled #2
+   * ```
+   *
+   * @param refs is the array of references to cancel when
+   *        cancellation is triggered
+   */
+  static collection(...refs: Array<ICancelable>): StackedCancelable {
+    return new StackedCancelable(refs)
   }
 }

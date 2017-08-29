@@ -53,7 +53,7 @@ declare export class Eval<+A> {
   static pure<A>(value: A): Eval<A>;
   static now<A>(value: A): Eval<A>;
   static unit(): Eval<void>;
-  static raise<A>(e: Throwable): Eval<A>;
+  static raise(e: Throwable): Eval<empty>;
   static always<A>(thunk: () => A): Eval<A>;
   static once<A>(thunk: () => A): Eval<A>;
   static suspend<A>(thunk: () => Eval<A>): Eval<A>;

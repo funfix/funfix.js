@@ -52,7 +52,7 @@ export function arrayBSearchInsertPos<A>(array: Array<A>, f: (a: A) => number):
 /**
  * Internal utility that builds an iterator out of an `Iterable` or an `Array`.
  *
- * @Hidden
+ * @hidden
  */
 export function iterableToArray<A>(values: Iterable<A>): A[] {
   if (!values) return []
@@ -69,12 +69,16 @@ export function iterableToArray<A>(values: Iterable<A>): A[] {
   }
 }
 
-/** Natural log of 2 */
+/**
+ * Natural log of 2.
+ * @hidden
+ */
 export const lnOf2 = Math.log(2)
 
 /**
  * Calculates the base 2 logarithm of the given argument.
  *
+ * @hidden
  * @return a number such that 2^nr^ is equal to our argument.
  */
 export function log2(x: number): number {
@@ -83,6 +87,7 @@ export function log2(x: number): number {
 
 /**
  * The maximum number that can be returned by {@link nextPowerOf2}.
+ * @hidden
  */
 export const maxPowerOf2: number = 1 << 30
 
@@ -93,6 +98,8 @@ export const maxPowerOf2: number = 1 << 30
  *
  * @return an integer that is a power of 2, that is bigger or
  *        equal with our argument and that is "closest" to it.
+ *
+ * @hidden
  */
 export function nextPowerOf2(nr: number): number {
   if (nr < 0) throw new IllegalArgumentError("nr must be positive")
