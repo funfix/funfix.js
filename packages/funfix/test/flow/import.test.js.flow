@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import { Option, Future, Eval, Monad, monadOf } from "../../src/"
+import { Option, Future, Eval, IO, Monad, monadOf } from "../../src/"
 
 const opt: Option<number> = Option.of(10)
 const f: Future<string> = Future.of(() => "Hello!")
