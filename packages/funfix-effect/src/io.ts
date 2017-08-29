@@ -342,7 +342,8 @@ export class IO<A> {
     )
   }
 
-  /** Returns a new `IO` in which `f` is scheduled to be run on
+  /**
+   * Returns a new `IO` in which `f` is scheduled to be run on
    * completion. This would typically be used to release any
    * resources acquired by this `IO`.
    *
@@ -2082,7 +2083,10 @@ function ioStartMemoize<A>(
   ioGenericRunLoop(io, ec, context, cb, null, bFirstInit, bRestInit)
 }
 
-/** Implementation for `IO.sequence`. */
+/**
+ * Implementation for `IO.sequence`.
+ * @hidden
+ */
 function ioSequence<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
   return IO.of(() => iteratorOf(list))
     .flatMap(cursor => ioSequenceLoop([], cursor))
