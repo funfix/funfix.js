@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-import { Try, Either, IllegalStateError, Throwable } from "funfix-core"
+import { Either, Throwable } from "funfix-core"
 
 /**
  * Eval is a monad which controls evaluation.
  *
- * This type wraps a value (or a computation that produces a value)
+ * This type wraps a value (or an expression that produces a value)
  * and can produce it on command via the {@link Eval.get get()}
  * method.
  *
  * There are three basic evaluation strategies:
  *
- *  - {@link Eval.now} and {@link Eval.raise}: for describing strict
- *    values, evaluated immediately
+ *  - {@link Eval.now}: for describing strict values, evaluated
+ *    immediately
  *  - {@link Eval.once}: evaluated only once when the value is needed,
  *    with the result memoized (cached) for subsequent evaluations
  *  - [[Eval.always]]: evaluated every time the value is needed,
@@ -66,11 +66,30 @@ import { Try, Either, IllegalStateError, Throwable } from "funfix-core"
  * const n: number = cached.get()
  * ```
  *
+ * ## Versus IO
+ *
+ * For dealing with lazy evaluation, the other alternative is
+ * the {@link IO} data type.
+ *
+ * Differences between `Eval` and `IO`:
+ *
+ * 1. `IO` is capable of describing asynchronous computations as well
+ * 2. `IO` is capable of error handling (it implements `MonadError`),
+ *    whereas `Eval` does not provide error handling capabilities,
+ *    being meant to be used for pure expressions (it implements
+ *    `Comonad`, which is incompatible with `MonadError`)
+ *
+ * So if you need error handling capabilities
+ * (i.e. `MonadError<Throwable, ?>`), or if you need to describe
+ * asynchronous processes, then {@link IO} is for you. `Eval`
+ * is a simpler data type with the sole purpose of controlling the
+ * evaluation of expressions (i.e. strict versus lazy).
+ *
+ * ## Credits
+ *
  * This type is inspired by `cats.Eval` from
  * {@link http://typelevel.org/cats/|Typelevel Cats}
  * and by `monix.eval.Coeval` from {@link https://monix.io|Monix}.
- * Note that the design of this type follows Monix's `Coeval`, which
- * means that it does error handling (i.e. it's a `MonadError`).
  *
  * @final
  */
@@ -79,69 +98,12 @@ export class Eval<A> {
    * Evaluates the source `Eval` and returns the result.
    *
    * ```typescript
-   * const ref1 = Eval.always(() => 100)
-   * ref1.get() // 100
+   * const ref = Eval.always(() => 100 * 2)
    *
-   * const ref2 = Eval.raise("error")
-   * ref2.get() // throws "error"
-   * ```
-   *
-   * WARNING: this function should be considered partial, as it can
-   * throw exception depending on what gets executed, use with care!
-   */
-  get(): A { return this.run().get() }
-
-  /**
-   * Evaluates the source `Eval` and returns the result as a `Try`,
-   * capturing any thrown exceptions in the process.
-   *
-   * ```typescript
-   * const ref1 = Eval.always(() => 100)
-   * ref1.run() // Success(100)
-   *
-   * const ref2 = Eval.raise("error")
-   * ref2.run() // Failure("error")
+   * ref.get() // 200
    * ```
    */
-  run(): Try<A> { return evalRunLoop(this) }
-
-  /**
-   * Evaluates the source `Eval` and returns its successful result,
-   * otherwise return the given `fallback` if the source ends in
-   * failure.
-   *
-   * ```typescript
-   * const ref1 = Eval.always(() => 100)
-   * ref1.getOrElse(0) // 100
-   *
-   * const ref2 = Eval.raise("error")
-   * ref2.getOrElse(0) // 0
-   * ```
-   *
-   * See [[Eval.getOrElseL]] for a lazy alternative.
-   */
-  getOrElse<AA>(fallback: AA): A | AA {
-    return this.run().getOrElse(fallback)
-  }
-
-  /**
-   * Evaluates the source `Eval` and returns its successful result,
-   * otherwise return the result of the given `thunk` as a fallback,
-   * if the source ends in failure.
-   *
-   * ```typescript
-   * const ref1 = Eval.always(() => 100)
-   * ref1.getOrElseL(() => 0) // 100
-   *
-   * const ref2 = Eval.raise("error")
-   * ref2.getOrElseL(() => 0) // 0
-   * ```
-   *
-   * See [[Eval.getOrElse]] for a strict alternative.
-   */
-  getOrElseL<AA>(thunk: () => AA): A | AA {
-    return this.run().getOrElseL(thunk)
-  }
+  get(): A { return evalRunLoop(this) }
 
   /**
    * Returns a new `Eval` that applies the mapping function to the
@@ -187,116 +149,22 @@ export class Eval<A> {
   }
 
   /**
-   * Creates a new `Eval` by applying the 'success' function to the
-   * successful result of the source, or the 'error' function to the
-   * potential errors that might happen.
-   *
-   * This function is similar with {@link Eval.map .map}, except that
-   * it can also transform errors and not just successful results.
-   *
-   * @param success is a function for transforming a successful result
-   * @param failure is function for transforming failures
-   */
-  transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): Eval<R> {
-    return this.transformWith(
-      e => Eval.now(failure(e)),
-      a => Eval.now(success(a))
-    )
-  }
-
-  /**
-   * Creates a new `Eval` by applying the 'success' function to the
-   * successful result of the source, or the 'error' function to the
-   * potential errors that might happen.
-   *
-   * This function is similar with {@link Eval.flatMap .flatMap},
-   * except that it can also transform errors and not just successful
-   * results.
-   *
-   * @param success is a function for transforming a successful result
-   * @param failure is function for transforming failures
-   */
-  transformWith<R>(failure: (e: Throwable) => Eval<R>, success: (a: A) => Eval<R>): Eval<R> {
-    const f: any = (a: A) => success(a)
-    f.onFailure = failure
-    return new FlatMap(this, f) as any
-  }
-
-  /**
-   * Creates a new `Eval` that will mirror the source on success,
-   * but on failure it will try to recover and yield a successful
-   * result by applying the given function `f` to the thrown error.
-   *
-   * This function is the equivalent of a `try/catch` statement,
-   * or the equivalent of {@link Eval.map .map} for errors.
-   */
-  recover<AA>(f: (e: Throwable) => AA): Eval<A | AA> {
-    return this.recoverWith(a => Eval.now(f(a)))
-  }
-
-  /**
-   * Creates a new `Eval` that will mirror the source on success,
-   * but on failure it will try to recover and yield a successful
-   * result by applying the given function `f` to the thrown error.
-   *
-   * This function is the equivalent of a `try/catch` statement,
-   * or the equivalent of {@link Eval.flatMap .flatMap} for errors.
-   */
-  recoverWith<AA>(f: (e: Throwable) => Eval<AA>): Eval<A | AA> {
-    return this.transformWith(f, Eval.now as any)
-  }
-
-  /**
-   * Handle errors by turning them into `Either` values.
-   *
-   * If there is no error, then a `Right` value will be returned instead.
-   * Errors can be handled by this method.
-   */
-  attempt(): Eval<Either<Throwable, A>> {
-    return this.transform(
-      _ => Either.left<Throwable, A>(_),
-      Either.right)
-  }
-
-  /**
    * Memoizes (caches) the result of the source on the first
    * evaluation and reuses it on subsequent invocations of `get()`.
    *
    * The resulting `Eval` will be idempotent, meaning that
    * evaluating it multiple times will have the same effect
    * as evaluating it once.
-   *
-   * See {@link Eval.memoizeOnSuccess .memoizeOnSuccess} for a version
-   * that only caches successful results.
    */
   memoize(): Eval<A> {
-    if ((this instanceof Now) || (this instanceof Raise) || (this instanceof Once)) {
-      return this
-    } else if (this instanceof Always) {
-      return new Once(this.thunk, false)
-    } else {
-      return new Once(() => this.get(), false)
-    }
-  }
-
-  /**
-   * Memoizes (cache) the successful result of the source and reuses
-   * it on subsequent invocations of `get()`. Thrown exceptions are
-   * not cached.
-   *
-   * The resulting `Eval` will be idempotent, but only if the result
-   * is successful.
-   *
-   * See {@link Eval.memoize .memoize} for a version that caches both
-   * successful results and failures.
-   */
-  memoizeOnSuccess(): Eval<A> {
-    if (this instanceof Now || this instanceof Raise || this instanceof Once) {
-      return this
-    } else if (this instanceof Always) {
-      return new Once(this.thunk, true)
-    } else {
-      return new Once(() => this.get(), true)
+    switch (this._funADType) {
+      case "now":
+      case "once":
+        return this
+      case "always":
+        return new Once(this.get)
+      default:
+        return new Once(() => this.get())
     }
   }
 
@@ -322,6 +190,12 @@ export class Eval<A> {
   forEach(cb: (a: A) => void): void {
     this.forEachL(cb).get()
   }
+
+  /**
+   * Identifies the `Eval` reference type, useful for debugging and
+   * for pattern matching in the implementation.
+   */
+  readonly _funADType: "now" | "always" | "once" | "suspend" | "flatMap"
 
   // Implements HK<F, A>
   readonly _funKindF: Eval<any>
@@ -359,12 +233,6 @@ export class Eval<A> {
   }
 
   /**
-   * Returns an `Eval` that on execution is always finishing in error
-   * emitting the specified exception.
-   */
-  static raise<A = never>(e: Throwable): Eval<A> { return new Raise(e) }
-
-  /**
    * Promote a `thunk` function to an `Eval`, catching exceptions in
    * the process.
    *
@@ -387,7 +255,7 @@ export class Eval<A> {
    * ```
    */
   static once<A>(thunk: () => A): Eval<A> {
-    return new Once(thunk, false)
+    return new Once(thunk)
   }
 
   /**
@@ -417,18 +285,14 @@ export class Eval<A> {
    * Described in `FlatMap.tailRecM`.
    */
   static tailRecM<A, B>(a: A, f: (a: A) => Eval<Either<A, B>>): Eval<B> {
-    try {
-      return f(a).flatMap(either => {
-        if (either.isRight()) {
-          return Eval.now(either.get())
-        } else {
-          // Recursive call
-          return Eval.tailRecM(either.swap().get(), f)
-        }
-      })
-    } catch (e) {
-      return Eval.raise(e)
-    }
+    return f(a).flatMap(either => {
+      if (either.isRight()) {
+        return Eval.now(either.get())
+      } else {
+        // Recursive call
+        return Eval.tailRecM(either.swap().get(), f)
+      }
+    })
   }
 }
 
@@ -439,6 +303,8 @@ export class Eval<A> {
  * @private
  */
 class Now<A> extends Eval<A> {
+  readonly _funADType: "now" = "now"
+
   /**
    * @param value is the value that's going to be returned
    * when `get()` is called.
@@ -446,7 +312,6 @@ class Now<A> extends Eval<A> {
   constructor(public readonly value: A) { super() }
 
   get(): A { return this.value }
-  run(): Try<A> { return Try.success(this.value) }
   toString(): string { return `Eval.now(${JSON.stringify(this.value)})` }
 }
 
@@ -458,24 +323,6 @@ class Now<A> extends Eval<A> {
 const evalUnitRef: Now<void> = new Now(undefined)
 
 /**
- * `Raise` is an internal `Eval` state that wraps any error / failure
- * value in an `Eval` reference. Returned by [[Eval.raise]].
- *
- * @private
- */
-class Raise extends Eval<never> {
-  /**
-   * @param error is the error value that's going to be
-   * throw when `get()` is called.
-   */
-  constructor(public readonly error: Throwable) { super() }
-
-  get(): never { throw this.error }
-  run(): Try<never> { return Try.failure<never>(this.error) }
-  toString(): string { return `Eval.raise(${JSON.stringify(this.error)})` }
-}
-
-/**
  * `Once` is an internal `Eval` state that executes the given `thunk`
  * only once, upon calling `get()` and then memoize its result for
  * subsequent invocations.
@@ -485,28 +332,32 @@ class Raise extends Eval<never> {
  * @private
  */
 class Once<A> extends Eval<A> {
-  private _thunk: () => A
-  public cache: Try<A>
-  public onlyOnSuccess: boolean
+  readonly _funADType: "once" = "once"
 
-  constructor(thunk: () => A, onlyOnSuccess: boolean) {
+  private _thunk: () => A
+  private _cache?: Throwable | A
+  private _isError?: boolean
+
+  constructor(thunk: () => A) {
     super()
     this._thunk = thunk
-    this.onlyOnSuccess = onlyOnSuccess
   }
 
-  run(): Try<A> {
+  get(): A {
     if (this._thunk) {
-      const result = Try.of(this._thunk)
-      if (result.isSuccess() || !this.onlyOnSuccess) {
-        // GC purposes
-        delete this._thunk
-        delete this.onlyOnSuccess
-        this.cache = result
+      try {
+        this._cache = this._thunk()
+        this._isError = false
+      } catch (e) {
+        this._cache = e
+        this._isError = true
       }
-      return result
+      // GC purposes
+      delete this._thunk
     }
-    return this.cache
+
+    if (this._isError) throw this._cache
+    return this._cache as A
   }
 
   toString(): string { return `Eval.once([thunk])` }
@@ -519,8 +370,12 @@ class Once<A> extends Eval<A> {
  * @private
  */
 class Always<A> extends Eval<A> {
-  constructor(public readonly thunk: () => A) { super() }
-  run(): Try<A> { return Try.of(this.thunk) }
+  readonly _funADType: "always" = "always"
+
+  constructor(thunk: () => A) {
+    super()
+    this.get = thunk
+  }
 
   toString(): string { return `Eval.always([thunk])` }
 }
@@ -532,6 +387,8 @@ class Always<A> extends Eval<A> {
  * @private
  */
 class Suspend<A> extends Eval<A> {
+  readonly _funADType: "suspend" = "suspend"
+
   constructor(public readonly thunk: () => Eval<A>) { super() }
   toString(): string { return `Eval.suspend([thunk])` }
 }
@@ -545,6 +402,8 @@ class Suspend<A> extends Eval<A> {
  * @private
  */
 class FlatMap<A, B> extends Eval<B> {
+  readonly _funADType: "flatMap" = "flatMap"
+
   constructor(
     public readonly source: Eval<A>,
     public readonly f: (a: A) => Eval<B>) { super() }
@@ -552,16 +411,6 @@ class FlatMap<A, B> extends Eval<B> {
   toString(): string {
     return `Eval#FlatMap(${String(this.source)}, [function])`
   }
-}
-
-/** @hidden */
-interface Handler<A, R> {
-  (a: A): R
-}
-
-/** @hidden */
-interface FailureHandler<A, R> extends Handler<A, R> {
-  onFailure(e: any): R
 }
 
 /** @hidden */
@@ -579,70 +428,39 @@ function _popNextBind(bFirst: Bind | null, bRest: CallStack | null): Bind | unde
 }
 
 /** @hidden */
-function _findErrorHandler(bFirst: Bind | null, bRest: CallStack | null): FailureHandler<any, Eval<any>> | undefined | null {
-  let cursor: any = bFirst
-
-  while (true) {
-    if (cursor && typeof cursor.onFailure === "function") return cursor
-    if (bRest && bRest.length > 0) cursor = bRest.pop()
-    else return null
-  }
-}
-
-/** @hidden */
-function evalRunLoop<A>(start: Eval<A>): Try<A> {
+function evalRunLoop<A>(start: Eval<A>): A {
   let current: Current = start
   let bFirst: Bind | null = null
   let bRest: CallStack | null = null
 
   while (true) {
-    if (current instanceof Now) {
-      const bind = _popNextBind(bFirst, bRest)
-      if (!bind) return Try.success(current.value)
-      bFirst = null
-      try {
-        current = bind(current.value)
-      } catch (e) {
-        current = new Raise(e)
-      }
-    } else if (current instanceof Always) {
-      try {
-        current = new Now(current.thunk())
-      } catch (e) {
-        current = new Raise(e)
-      }
-    } else if (current instanceof Once) {
-      try {
+    switch (current._funADType) {
+      case "now":
+        const now = current as Now<A>
+        const bind = _popNextBind(bFirst, bRest)
+        if (!bind) return now.value
+        bFirst = null
+        current = bind(now.value)
+        break
+
+      case "always":
+      case "once":
         current = new Now(current.get())
-      } catch (e) {
-        current = new Raise(e)
-      }
-    } else if (current instanceof Suspend) {
-      try {
-        current = current.thunk()
-      } catch (e) {
-        current = new Raise(e)
-      }
-    } else if (current instanceof FlatMap) {
-      if (bFirst) {
-        if (!bRest) bRest = []
-        bRest.push(bFirst)
-      }
-      bFirst = current.f
-      current = current.source
-    } else if (current instanceof Raise) {
-      const bind = _findErrorHandler(bFirst, bRest)
-      if (!bind) return Try.failure<never>(current.error)
-      bFirst = null
-      try {
-        current = bind.onFailure(current.error)
-      } catch (e) {
-        current = new Raise(e)
-      }
-    } else {
-      /* istanbul ignore next */
-      throw new IllegalStateError(
-        "Types got screwed, Eval is a sealed trait, inheritance is forbidden")
+        break
+
+      case "suspend":
+        current = (current as Suspend<A>).thunk()
+        break
+
+      case "flatMap":
+        if (bFirst) {
+          if (!bRest) bRest = []
+          bRest.push(bFirst)
+        }
+        const fm = current as FlatMap<any, any>
+        bFirst = fm.f
+        current = fm.source
+        break
     }
   }
 }

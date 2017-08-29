@@ -20,14 +20,10 @@
 import type { Throwable } from "funfix-core"
 import { Eval } from "funfix-effect"
 import {
-  MonadError,
-  monadErrorOf,
   Monad,
   monadOf,
   FlatMap,
   flatMapOf,
-  ApplicativeError,
-  applicativeErrorOf,
   Applicative,
   applicativeOf,
   Apply,
@@ -49,11 +45,5 @@ const applicative2: Applicative<Eval<any>> = EvalInstances.global
 const flatMap1: FlatMap<Eval<any>> = flatMapOf(Eval)
 const flatMap2: FlatMap<Eval<any>> = EvalInstances.global
 
-const apErr1: ApplicativeError<Eval<any>, any> = applicativeErrorOf(Eval)
-const apErr2: ApplicativeError<Eval<any>, Throwable> = EvalInstances.global
-
 const monad1: Monad<Eval<any>> = monadOf(Eval)
 const monad2: Monad<Eval<any>> = EvalInstances.global
-
-const monadErr1: MonadError<Eval<any>, any> = monadErrorOf(Eval)
-const monadErr2: MonadError<Eval<any>, Throwable> = EvalInstances.global

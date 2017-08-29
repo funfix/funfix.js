@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import { is } from "funfix-core"
 import { Eval } from "funfix-effect"
 import * as jv from "jsverify"
 import * as laws from "./laws"
@@ -25,9 +26,9 @@ describe("Eval obeys type class laws", () => {
   const eq =
     new (class extends Eq<Eval<any>> {
       eqv(lh: Eval<any>, rh: Eval<any>): boolean {
-        return lh.run().equals(rh.run())
+        return is(lh.get(), rh.get())
       }
     })()
 
-  laws.testMonadError(Eval, jv.number, inst.arbEval, jv.string, eq)
+  laws.testMonad(Eval, jv.number, inst.arbEval, eq)
 })
