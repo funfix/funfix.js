@@ -463,12 +463,52 @@ export class IO<A> {
   }
 
   /**
+   * Sequentially compose two `IO` actions, discarding any value
+   * produced by the first.
+   *
+   * So this:
+   *
+   * ```typescript
+   * ioA.followedBy(ioB)
+   * ```
+   *
+   * Is equivalent with this:
+   *
+   * ```typescript
+   * ioA.flatMap(_ => fb)
+   * ```
+   */
+  followedBy<B>(fb: IO<B>): IO<B> {
+    return this.flatMap(_ => fb)
+  }
+
+  /**
    * Returns a new `IO` that upon evaluation will execute the given
    * function for the generated element, transforming the source into
    * an `IO<void>`.
    */
   forEach(cb: (a: A) => void): IO<void> {
     return this.map(cb)
+  }
+
+  /**
+   * Sequentially compose two actions, discarding any value
+   * produced by the second.
+   *
+   * So this:
+   *
+   * ```typescript
+   * ioA.forEffect(ioB)
+   * ```
+   *
+   * Is equivalent with this:
+   *
+   * ```typescript
+   * ioA.flatMap(a => ioB.map(_ => a))
+   * ```
+   */
+  forEffect<B>(fb: IO<B>): IO<A> {
+    return this.flatMap(a => fb.map(_ => a))
   }
 
   /**

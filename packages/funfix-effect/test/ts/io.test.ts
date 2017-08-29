@@ -623,6 +623,26 @@ describe("IO aliases", () => {
       return f1.value().equals(f2.value())
     })
 
+  jv.property("fa.followedBy(fb) <-> fa.flatMap(_ => fb)",
+    inst.arbIO, inst.arbIO,
+    (fa, fb) => {
+      const ec = scheduler()
+      const f1 = fa.followedBy(fb).run(ec)
+      const f2 = fa.flatMap(_ => fb).run(ec)
+      ec.tick()
+      return f1.value().equals(f2.value())
+    })
+
+  jv.property("fa.forEffect(fb) <-> fa.flatMap(a => fb.map(_ => a))",
+    inst.arbIO, inst.arbIO,
+    (fa, fb) => {
+      const ec = scheduler()
+      const f1 = fa.forEffect(fb).run(ec)
+      const f2 = fa.flatMap(a => fb.map(_ => a)).run(ec)
+      ec.tick()
+      return f1.value().equals(f2.value())
+    })
+
   jv.property("of(f) <-> always(f)",
     jv.fun(jv.number),
     (f) => {

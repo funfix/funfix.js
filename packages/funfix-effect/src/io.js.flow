@@ -33,7 +33,9 @@ declare export class IO<+A> {
   doOnFinish(f: (e: Option<Throwable>) => IO<void>): IO<A>;
   doOnCancel(callback: IO<void>): IO<A>;
   flatMap<B>(f: (a: A) => IO<B>): IO<B>;
+  followedBy<B>(fb: IO<B>): IO<B>;
   forEach(cb: (a: A) => void): IO<void>;
+  forEffect<B>(fb: IO<B>): IO<A>;
   executeForked(ec?: Scheduler): IO<A>;
   executeWithModel(em: ExecutionModel): IO<A>;
   executeWithOptions(set: IOOptions): IO<A>;

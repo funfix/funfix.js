@@ -155,3 +155,6 @@ const time3: IO<number | string> = ff1.timeoutTo(1000, IO.pure("hello"))
 const time4: IO<number | string> = ff1.timeoutTo(Duration.of(1000), IO.pure("hello"))
 
 const firstOf1: IO<number> = IO.firstCompletedOf([IO.pure(1), IO.pure(2), IO.pure(3)])
+
+const flat1: IO<number> = IO.pure("Hello").followedBy(IO.pure(1))
+const flat2: IO<string> = IO.pure("Hello").forEffect(IO.pure(1))

@@ -16,7 +16,7 @@
  */
 
 import { Try, Success, Option, Some, Either, Right, applyMixins, Throwable } from "funfix-core"
-import { Eval } from "funfix-effect"
+import { Eval, IO } from "funfix-effect"
 import { Future } from "funfix-exec"
 import { HK, registerTypeClassInstance } from "./kinds"
 import { Monad, MonadError } from "./monad"
@@ -380,3 +380,86 @@ export class FutureInstances implements MonadError<Future<any>, Throwable> {
 applyMixins(FutureInstances, [MonadError])
 // Registering `FutureInstances` as global instances for `Future`
 registerTypeClassInstance(MonadError)(Future, FutureInstances.global)
+
+/**
+ * Alias used for encoding higher-kinded types when implementing
+ * type class instances.
+ */
+export type IOK<A> = HK<IO<any>, A>
+
+/**
+ * Type class instances provided by default for `IO`.
+ */
+export class IOInstances implements MonadError<IO<any>, Throwable> {
+  pure<A>(a: A): IO<A> {
+    return IO.pure(a)
+  }
+
+  flatMap<A, B>(fa: IOK<A>, f: (a: A) => IOK<B>): IO<B> {
+    return (fa as any).flatMap(f)
+  }
+
+  tailRecM<A, B>(a: A, f: (a: A) => IOK<Either<A, B>>): IO<B> {
+    return IO.tailRecM(a, f as any) as any
+  }
+
+  ap<A, B>(fa: IOK<A>, ff: IOK<(a: A) => B>): IO<B> {
+    return (fa as IO<A>).flatMap(a =>
+      (ff as IO<(a: A) => B>).map(f => f(a))
+    )
+  }
+
+  map<A, B>(fa: IOK<A>, f: (a: A) => B): IO<B> {
+    return (fa as IO<A>).map(f)
+  }
+
+  unit(): IO<void> {
+    return IO.unit()
+  }
+
+  raise<A>(e: Throwable): IO<A> {
+    return IO.raise(e)
+  }
+
+  attempt<A>(fa: IOK<A>): IO<Either<Throwable, A>> {
+    return (fa as IO<A>).attempt() as any
+  }
+
+  recoverWith<A>(fa: IOK<A>, f: (e: Throwable) => IOK<A>): IO<A> {
+    return (fa as IO<A>).recoverWith(f as ((e: any) => IO<A>))
+  }
+
+  recover<A>(fa: IOK<A>, f: (e: Throwable) => A): IO<A> {
+    return (fa as IO<A>).recover(f as ((e: any) => A))
+  }
+
+  map2<A, B, Z>(fa: IOK<A>, fb: IOK<B>, f: (a: A, b: B) => Z): IO<Z> {
+    return IO.map2(fa as any, fb as any, f as any) as any
+  }
+
+  followedBy<A, B>(fa: IOK<A>, fb: IOK<B>): IO<B> {
+    return (fa as any).followedBy(fb)
+  }
+
+  followedByL<A, B>(fa: IOK<A>, fb: () => IOK<B>): IO<B> {
+    return (fa as any).followedBy(IO.suspend(fb as any))
+  }
+
+  forEffect<A, B>(fa: IOK<A>, fb: IOK<B>): IO<A> {
+    return (fa as any).forEffect(fb)
+  }
+
+  forEffectL<A, B>(fa: IOK<A>, fb: () => IOK<B>): IO<A> {
+    return (fa as any).forEffect(IO.suspend(fb as any))
+  }
+
+  product<A, B>(fa: IOK<A>, fb: IOK<B>): IO<[A, B]> {
+    return IO.map2(fa as any, fb as any, (a, b) => [a, b]) as any
+  }
+
+  static global: IOInstances =
+    new IOInstances()
+}
+
+// Registering `IOInstances` as global instances for `IO`
+registerTypeClassInstance(MonadError)(IO, IOInstances.global)
