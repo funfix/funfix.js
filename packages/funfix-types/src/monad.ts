@@ -909,9 +909,9 @@ applyMixins(MonadErrorLaws, [MonadLaws, ApplicativeErrorLaws])
  * in case there's no such association.
  *
  * ```typescript
- * import { Eval, MonadError, monadErrorOf } from "funfix"
+ * import { IO, MonadError, monadErrorOf } from "funfix"
  *
- * const F: MonadError<Option<any>> = monadErrorOf(Eval)
+ * const F: MonadError<IO<any>> = monadErrorOf(IO)
  * ```
  */
 export const monadErrorOf: <F, E>(c: Constructor<F>) => MonadError<F, E> =

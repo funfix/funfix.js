@@ -200,6 +200,35 @@ import {
  * io.executeWithModel(ExecutionModel.batched(256))
  * ```
  *
+ * ## Versus IO
+ *
+ * For dealing with lazy evaluation, the other alternative is
+ * the {@link Eval} data type.
+ *
+ * Differences between `Eval` and `IO`:
+ *
+ * 1. `IO` is capable of describing asynchronous computations as well
+ * 2. `IO` is capable of error handling (it implements `MonadError`),
+ *    whereas `Eval` does not provide error handling capabilities,
+ *    being meant to be used for pure expressions (it implements
+ *    `Comonad`, which is incompatible with `MonadError`)
+ * 3. You cannot rely on `IO` to produce a value immediately, since
+ *    we cannot block threads on top of JavaScript engines
+ *
+ * So if you need error handling capabilities
+ * (i.e. `MonadError<Throwable, ?>`), or if you need to describe
+ * asynchronous processes, then `IO` is for you. {@link Eval}
+ * is a simpler data type with the sole purpose of controlling the
+ * evaluation of expressions (i.e. strict versus lazy).
+ *
+ * ## Credits
+ *
+ * This type is inspired by `cats.effect.IO` from
+ * {@link http://typelevel.org/cats/|Typelevel Cats},
+ * by `monix.eval.Task` from {@link https://monix.io|Monix}, by
+ * `scalaz.effect.IO` from [Scalaz](https://github.com/scalaz/scalaz),
+ * which are all inspired by Haskell's `IO` data type.
+ *
  * @final
  */
 export class IO<A> {

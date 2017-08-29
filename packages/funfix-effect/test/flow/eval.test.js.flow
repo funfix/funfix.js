@@ -17,8 +17,8 @@
 
 /* @flow */
 
+import { Right } from "funfix-core"
 import * as ff from "../../src/"
-import { Try, Right, Either } from "funfix-core"
 import { Eval } from "../../src/"
 
 const ref1: ff.Eval<number> = ff.Eval.always(() => 1)
@@ -37,46 +37,11 @@ const animal: Eval<Animal> = Eval.always(() => new Dog())
 const error2: Eval<Dog> = Eval.always(() => new Animal())
 
 const r1: number = ref1.get()
-const tr1: Try<number> = ref1.run()
-const r2: number = ref1.getOrElse(0)
-const r3: number = ref1.getOrElseL(() => 0)
 
 // Covariance for getOrElse and getOrElseL
 const dogEval: Eval<Dog> = Eval.always(() => new Dog())
-const r4: Animal = dogEval.getOrElse(new Animal())
-const r5: Animal = dogEval.getOrElseL(() => new Animal())
-const r6: Animal = dogEval.getOrElse(new Cat())
-const r7: Object = dogEval.getOrElse(new Human())
-
-// $ExpectError
-const super11: Dog = dogEval.getOrElse(new Cat())
-// $ExpectError
-const super21: Dog = dogEval.getOrElseL(() => new Cat())
-// $ExpectError
-const super12: Animal = dogEval.getOrElse(new Human())
-// $ExpectError
-const super22: Animal = dogEval.getOrElseL(() => new Human())
-// $ExpectError
-const super13: Human = dogEval.getOrElse(new Human())
-// $ExpectError
-const super23: Human = dogEval.getOrElseL(() => new Human())
-
-// Covariance for recover and recoverWith
-const recover1: Eval<Animal> = dogEval.recover(_ => new Animal())
-const recover2: Eval<Animal> = dogEval.recoverWith(_ => Eval.now(new Animal()))
-const recover3: Eval<Animal> = dogEval.recover(_ => new Cat())
-const recover4: Eval<Animal> = dogEval.recoverWith(_ => Eval.now(new Cat()))
-const recover5: Eval<Object> = dogEval.recover(_ => new Human())
-const recover6: Eval<Object> = dogEval.recoverWith(_ => Eval.now(new Human()))
-
-// $ExpectError
-const recoverE1: Eval<string> = dogEval.recoverWith(_ => Eval.now(new Human()))
-// $ExpectError
-const recoverE2: Eval<Dog> = dogEval.recover(_ => new Animal())
-
-const a1: Eval<Either<any, Dog>> = dogEval.attempt()
-// $ExpectError
-const a2: Eval<Either<any, Cat>> = dogEval.attempt()
+const cov1: Eval<Animal> = dogEval
+const cov2: Eval<Object> = dogEval
 
 // Map and flatMap
 const r14: Eval<Cat> = dogEval.map(_ => new Cat())
@@ -85,22 +50,10 @@ const r16: Eval<Cat> = dogEval.chain(_ => Eval.now(new Cat()))
 // $ExpectError
 const error5: Eval<Cat> = dogEval.flatMap(_ => new Cat())
 
-// Transform and TransformWith
-const r17: Eval<Cat> = dogEval.transform(
-  (error: any) => new Cat(),
-  (_: Dog) => new Cat()
-)
-const r18: Eval<Cat> = dogEval.transformWith(
-  (error: any) => Eval.now(new Cat()),
-  (_: Dog) => Eval.now(new Cat())
-)
-
 // Builders
 const r19: Eval<Cat> = Eval.of(() => new Cat())
 const r20: Eval<Cat> = Eval.always(() => new Cat())
 const r21: Eval<Cat> = Eval.once(() => new Cat())
-const r22: Eval<Cat> = Eval.raise("error")
-const r23: Eval<empty> = Eval.raise("error")
 const r24: Eval<Cat> = Eval.now(new Cat())
 const r25: Eval<Cat> = Eval.pure(new Cat())
 const r26: Eval<Cat> = Eval.suspend(() => Eval.now(new Cat()))
@@ -120,7 +73,6 @@ const error11: Eval<Dog> = Eval.suspend(() => Eval.now(new Cat()))
 
 // Memoize
 const r27: Eval<Cat> = Eval.of(() => new Cat()).memoize()
-const r28: Eval<Cat> = Eval.of(() => new Cat()).memoizeOnSuccess()
 
 const u: Eval<void> = Eval.unit()
 const a: Eval<number> = Eval.tailRecM("initial", a => Eval.now(Right(1)))

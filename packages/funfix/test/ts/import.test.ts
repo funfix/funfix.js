@@ -16,7 +16,7 @@
  */
 
 import * as assert from "assert"
-import { Option, Future, is, Some, Success, Eval, Monad, monadErrorOf } from "../../src"
+import { Option, Future, is, Some, Success, Eval, Monad, monadOf } from "../../src"
 
 function assertEquals<A>(lh: A, rh: A): void {
   assert.ok(is(lh, rh), `${lh} != ${rh}`)
@@ -36,7 +36,7 @@ describe("funfix module sanity test", () => {
   })
 
   it("works for Monad", () => {
-    const m = monadErrorOf(Eval)
+    const m = monadOf(Eval)
     const v = m.flatMap(Eval.of(() => 1), a => Eval.of(() => a + 1)) as Eval<number>
     assertEquals(v.get(), 2)
   })

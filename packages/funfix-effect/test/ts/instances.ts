@@ -17,21 +17,19 @@
 
 import * as jv from "jsverify"
 import { Eval, IO } from "../../src/"
-import {Failure, Success} from "funfix-core";
+import { Failure, Success } from "funfix-core"
 
 export const arbEval: jv.Arbitrary<Eval<number>> =
   jv.pair(jv.number, jv.number).smap(
     v => {
-      switch (v[0] % 6) {
+      switch (v[0] % 5) {
         case 0:
           return Eval.now(v[1])
         case 1:
-          return Eval.raise(v[1])
-        case 2:
           return Eval.always(() => v[1])
-        case 3:
+        case 2:
           return Eval.once(() => v[1])
-        case 4:
+        case 3:
           return Eval.suspend(() => Eval.now(v[1]))
         default:
           return Eval.now(0).flatMap(_ => Eval.now(v[1]))

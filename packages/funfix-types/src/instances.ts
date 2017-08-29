@@ -249,7 +249,7 @@ export type EvalK<A> = HK<Eval<any>, A>
 /**
  * Type class instances provided by default for `Eval`.
  */
-export class EvalInstances implements MonadError<Eval<any>, Throwable> {
+export class EvalInstances implements Monad<Eval<any>> {
   pure<A>(a: A): Eval<A> {
     return Eval.now(a)
   }
@@ -276,22 +276,6 @@ export class EvalInstances implements MonadError<Eval<any>, Throwable> {
     return Eval.unit()
   }
 
-  raise<A>(e: Throwable): Eval<A> {
-    return Eval.raise(e)
-  }
-
-  attempt<A>(fa: EvalK<A>): Eval<Either<Throwable, A>> {
-    return (fa as Eval<A>).attempt() as any
-  }
-
-  recoverWith<A>(fa: EvalK<A>, f: (e: Throwable) => EvalK<A>): Eval<A> {
-    return (fa as Eval<A>).recoverWith(f as ((e: Throwable) => Eval<A>))
-  }
-
-  recover<A>(fa: EvalK<A>, f: (e: Throwable) => A): Eval<A> {
-    return (fa as Eval<A>).recover(f as ((e: Throwable) => A))
-  }
-
   // Mixed-in
   map2: <A, B, Z>(fa: EvalK<A>, fb: EvalK<B>, f: (a: A, b: B) => Z) => Eval<Z>
   product: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => EvalK<[A, B]>
@@ -305,9 +289,9 @@ export class EvalInstances implements MonadError<Eval<any>, Throwable> {
 }
 
 // Mixins the default implementations
-applyMixins(EvalInstances, [MonadError])
+applyMixins(EvalInstances, [Monad])
 // Registering `EvalInstances` as global instances for `Eval`
-registerTypeClassInstance(MonadError)(Eval, EvalInstances.global)
+registerTypeClassInstance(Monad)(Eval, EvalInstances.global)
 
 /**
  * Alias used for encoding higher-kinded types when implementing
