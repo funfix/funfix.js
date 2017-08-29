@@ -1,0 +1,58 @@
+/*
+ * Copyright (c) 2017 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import type { Constructor } from "./kinds"
+import { HK, Equiv } from "./kinds"
+import { Functor, FunctorLaws } from "./functor"
+
+export interface CoflatMap<F> extends Functor<F> {
+  coflatMap<A, B>(fa: HK<F, A>, ff: (a: HK<F, A>) => B): HK<F, B>;
+  coflatten<A>(fa: HK<F, A>): HK<F, HK<F, A>>;
+
+  static +_funTypeId: string;
+  static +_funSupertypeIds: string[];
+  static +_funErasure: CoflatMap<any>;
+}
+
+export interface CoflatMapLaws<F> extends FunctorLaws<F> {
+  +F: CoflatMap<F>;
+
+  coflatMapAssociativity<A, B, C>(fa: HK<F, A>, f: (a: HK<F, A>) => B, g: (b: HK<F, B>) => C): Equiv<HK<F, C>>;
+  coflattenThroughMap<A>(fa: HK<F, A>): Equiv<HK<F, HK<F, HK<F, A>>>>;
+  coflattenCoherence<A, B>(fa: HK<F, A>, f: (a: HK<F, A>) => B): Equiv<HK<F, B>>;
+  coflatMapIdentity<A>(fa: HK<F, A>): Equiv<HK<F, HK<F, A>>>;
+}
+
+declare export function coflatMapOf<F>(c: Constructor<F>): CoflatMap<F>;
+declare export function coflatMapLawsOf<F>(instance: CoflatMap<F>): CoflatMapLaws<F>;
+
+export interface Comonad<F> extends CoflatMap<F> {
+  extract<A>(fa: HK<F, A>): A;
+
+  static +_funTypeId: string;
+  static +_funSupertypeIds: string[];
+  static +_funErasure: Comonad<any>;
+}
+
+export interface ComonadLaws<F> extends CoflatMapLaws<F> {
+  +F: Comonad<F>;
+}
+
+declare export function comonadOf<F>(c: Constructor<F>): Comonad<F>;
+declare export function comonadLawsOf<F>(instance: Comonad<F>): ComonadLaws<F>;
