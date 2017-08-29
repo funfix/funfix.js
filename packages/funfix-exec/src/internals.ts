@@ -98,7 +98,7 @@ export const maxPowerOf2: number = 1 << 30
  *
  * @return an integer that is a power of 2, that is bigger or
  *        equal with our argument and that is "closest" to it.
- * 
+ *
  * @hidden
  */
 export function nextPowerOf2(nr: number): number {
