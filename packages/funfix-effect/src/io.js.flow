@@ -18,7 +18,7 @@
 /* @flow */
 
 import type { Throwable } from "funfix-core"
-import { Either, Try } from "funfix-core";
+import { Either, Try, Option } from "funfix-core";
 import { ICancelable, StackedCancelable, Scheduler, Future, ExecutionModel, Duration } from "funfix-exec";
 
 declare export class IO<+A> {
@@ -30,6 +30,8 @@ declare export class IO<+A> {
   chain<B>(f: (a: A) => IO<B>): IO<B>;
   delayExecution(delay: number | Duration): IO<A>;
   delayResult(delay: number | Duration): IO<A>;
+  doOnFinish(f: (e: Option<Throwable>) => IO<void>): IO<A>;
+  doOnCancel(callback: IO<void>): IO<A>;
   flatMap<B>(f: (a: A) => IO<B>): IO<B>;
   forEach(cb: (a: A) => void): IO<void>;
   executeForked(ec?: Scheduler): IO<A>;
@@ -40,6 +42,8 @@ declare export class IO<+A> {
   memoizeOnSuccess(): IO<A>;
   recover<AA>(f: (e: Throwable) => AA): IO<A | AA>;
   recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA>;
+  timeout(after: number | Duration): IO<A>;
+  timeoutTo<AA>(after: number | Duration, fallback: IO<AA>): IO<A | AA>;
   transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): IO<R>;
   transformWith<R>(failure: (e: Throwable) => IO<R>, success: (a: A) => IO<R>): IO<R>;
 
@@ -56,6 +60,7 @@ declare export class IO<+A> {
   static deferFuture<A>(thunk: () => Future<A>): IO<A>;
   static deferFutureAction<A>(f: (ec: Scheduler) => Future<A>): IO<A>;
   static delayedTick<A>(delay: number | Duration): IO<void>;
+  static firstCompletedOf<A>(list: Iterable<IO<A>>): IO<A>;
   static fromFuture<A>(fa: Future<A>): IO<A>;
   static fromTry<A>(a: Try<A>): IO<A>;
   static fork<A>(fa: IO<A>, ec?: Scheduler): IO<A>;
@@ -74,8 +79,8 @@ declare export class IO<+A> {
   static parMap6<A1, A2, A3, A4, A5, A6, R>(fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>, fa6: IO<A6>, f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): IO<R>;
   static pure<A>(value: A): IO<A>;
   static raise(e: Throwable): IO<empty>;
-  static sequence<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]>;
-  static gather<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]>;
+  static sequence<A>(list: Iterable<IO<A>>): IO<A[]>;
+  static gather<A>(list: Iterable<IO<A>>): IO<A[]>;
   static shift(ec?: Scheduler): IO<void>;
   static suspend<A>(thunk: () => IO<A>): IO<A>;
   static tailRecM<A, B>(a: A, f: (a: A) => IO<Either<A, B>>): IO<B>;

@@ -20,7 +20,9 @@ import {
   Try,
   Success,
   Failure,
-  Throwable, TimeoutError
+  Throwable,
+  TimeoutError,
+  Option, Some, None
 } from "funfix-core"
 
 import {
@@ -340,6 +342,51 @@ export class IO<A> {
     )
   }
 
+  /** Returns a new `IO` in which `f` is scheduled to be run on
+   * completion. This would typically be used to release any
+   * resources acquired by this `IO`.
+   *
+   * The returned `IO` completes when both the source and the task
+   * returned by `f` complete.
+   *
+   * NOTE: The given function is only called when the task is
+   * complete.  However the function does not get called if the task
+   * gets canceled.  Cancellation is a process that's concurrent with
+   * the execution of a task and hence needs special handling.
+   *
+   * See {@link IO.doOnCancel} for specifying a callback to call on
+   * canceling a task.
+   */
+  doOnFinish(f: (e: Option<Throwable>) => IO<void>): IO<A> {
+    return this.transformWith(
+      e => f(Some(e)).flatMap(_ => IO.raise(e)),
+      a => f(None).map(_ => a)
+    )
+  }
+
+  /**
+   * Returns a new `IO` that will mirror the source, but that will
+   * execute the given `callback` if the task gets canceled before
+   * completion.
+   *
+   * This only works for premature cancellation. See
+   * {@link IO.doOnFinish} for triggering callbacks when the
+   * source finishes.
+   *
+   * @param callback is the `IO` value to execute if the task gets
+   *        canceled prematurely
+   */
+  doOnCancel(callback: IO<void>): IO<A> {
+    return IO.asyncUnsafe<A>((ctx, cb) => {
+      const ec = ctx.scheduler
+      ec.trampoline(() => {
+        const conn = ctx.connection
+        conn.push(Cancelable.of(() => callback.run(ec)))
+        IO.unsafeStart(this, ctx, ioSafeCallback(ec, conn, cb))
+      })
+    })
+  }
+
   /**
    * Ensures that an asynchronous boundary happens before the
    * execution, managed by the provided scheduler.
@@ -509,6 +556,51 @@ export class IO<A> {
    */
   recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA> {
     return this.transformWith(f, IO.now as any)
+  }
+
+  /**
+   * Returns an `IO` that mirrors the source in case the result of
+   * the source is signaled within the required `after` duration
+   * on evaluation, otherwise it fails with a `TimeoutError`,
+   * cancelling the source.
+   *
+   * ```typescript
+   * const fa = IO.of(() => 1).delayResult(10000)
+   *
+   * // Will fail with a TimeoutError on run()
+   * fa.timeout(1000)
+   * ```
+   *
+   * @param after is the duration to wait until it triggers
+   *        the timeout error
+   */
+  timeout(after: number | Duration): IO<A> {
+    const fb = IO.raise(new TimeoutError(Duration.of(after).toString()))
+    return this.timeoutTo(after, fb)
+  }
+
+  /**
+   * Returns an `IO` value that mirrors the source in case the result
+   * of the source is signaled within the required `after` duration
+   * when evaluated (with `run()`), otherwise it triggers the
+   * execution of the given `fallback` after the duration has passed,
+   * cancelling the source.
+   *
+   * This is literally the implementation of {@link IO.timeout}:
+   *
+   * ```typescript
+   * const fa = IO.of(() => 1).delayResult(10000)
+   *
+   * fa.timeoutTo(1000, IO.raise(new TimeoutError()))
+   * ```
+   *
+   * @param after is the duration to wait until it triggers the `fallback`
+   * @param fallback is a fallback `IO` to timeout to
+   */
+  timeoutTo<AA>(after: number | Duration, fallback: IO<AA>): IO<A | AA> {
+    const other = IO.delayedTick(after).flatMap(_ => fallback)
+    const lst: IO<A | AA>[] = [this, other]
+    return IO.firstCompletedOf(lst)
   }
 
   /**
@@ -726,6 +818,33 @@ export class IO<A> {
       })
       conn.push(task)
     })
+  }
+
+  /**
+   * Creates a race condition between multiple `IO` values, on
+   * evaluation returning the result of the first one that completes,
+   * cancelling the rest.
+   *
+   * ```typescript
+   * const failure = IO.raise(new TimeoutError()).delayResult(2000)
+   *
+   * // Will yield 1
+   * const fa1 = IO.of(() => 1).delayResult(1000)
+   * IO.firstCompletedOf([fa1, failure])
+   *
+   * // Will yield a TimeoutError
+   * const fa2 = IO.of(() => 1).delayResult(10000)
+   * IO.firstCompletedOf([fa2, failure])
+   * ```
+   *
+   * @param list is the list of `IO` values for which the
+   *        race is started
+   *
+   * @return a new `IO` that will evaluate to the result of the first
+   *         in the list to complete, the rest being cancelled
+   */
+  static firstCompletedOf<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A> {
+    return ioListToFutureProcess(list, Future.firstCompletedOf)
   }
 
   /**
@@ -1245,7 +1364,7 @@ export class IO<A> {
    * ```
    */
   static gather<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
-    return ioGather(list)
+    return ioListToFutureProcess(list, Future.sequence)
   }
 
   /**
@@ -1994,12 +2113,9 @@ function ioSequenceLoop<A>(acc: A[], cursor: IteratorLike<IO<A>>): IO<A[]> {
   }
 }
 
-/**
- * Implementation for `IO.gather`.
- * @hidden
- */
-function ioGather<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
-  return IO.asyncUnsafe<A[]>((ctx, cb) => {
+/** @hidden */
+function ioListToFutureProcess<A, B>(list: IO<A>[] | Iterable<IO<A>>, f: (list: Future<A>[], ec: Scheduler) => Future<B>): IO<B> {
+  return IO.asyncUnsafe<B>((ctx, cb) => {
     ctx.scheduler.trampoline(() => {
       let streamErrors = true
       try {
@@ -2013,7 +2129,7 @@ function ioGather<A>(list: IO<A>[] | Iterable<IO<A>>): IO<A[]> {
           futures.push(f)
         }
 
-        const all = Future.sequence(futures, ctx.scheduler)
+        const all = f(futures, ctx.scheduler)
         ctx.connection.push(all)
         all.onComplete(ioSafeCallback(ctx.scheduler, ctx.connection, cb) as any)
       } catch (e) {

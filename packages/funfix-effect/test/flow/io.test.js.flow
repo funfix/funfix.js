@@ -18,7 +18,7 @@
 /* @flow */
 
 import type { Throwable } from "funfix-core"
-import { Try, Either, Left, Right, Success } from "funfix-core"
+import { Try, Either, Left, Right, Success, Option } from "funfix-core"
 import { ICancelable, Future, Scheduler, StackedCancelable, ExecutionModel, Duration } from "funfix-exec"
 import { IO, IOContext } from "../../src/"
 
@@ -145,3 +145,13 @@ const delay2: IO<number> = ff1.delayResult(Duration.of(1000))
 const delay3: IO<number> = ff1.delayExecution(1000)
 const delay4: IO<number> = ff1.delayExecution(Duration.of(1000))
 const delay5: IO<void> = IO.delayedTick(1000)
+
+const do1: IO<number> = ff1.doOnFinish((e: Option<Throwable>) => IO.unit())
+const do2: IO<number> = ff1.doOnCancel(IO.pure())
+
+const time1: IO<number> = ff1.timeout(1000)
+const time2: IO<number> = ff1.timeout(Duration.of(1000))
+const time3: IO<number | string> = ff1.timeoutTo(1000, IO.pure("hello"))
+const time4: IO<number | string> = ff1.timeoutTo(Duration.of(1000), IO.pure("hello"))
+
+const firstOf1: IO<number> = IO.firstCompletedOf([IO.pure(1), IO.pure(2), IO.pure(3)])

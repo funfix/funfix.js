@@ -1560,6 +1560,159 @@ describe("IO delay", () => {
   })
 })
 
+describe("IO.doOnFinish", () => {
+  it("works for success", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+
+    const io = IO.of(() => 1).doOnFinish(e => IO.of(() => {
+      if (e.isEmpty()) effect += 1
+    }))
+
+    assert.equal(io.run(ec).value(), Some(Success(1)))
+    assert.equal(effect, 1)
+  })
+
+  it("works for failure", () => {
+    const ec = new TestScheduler()
+    const dummy = new DummyError()
+    let effect = 0
+
+    const io = IO.raise<number>(dummy).doOnFinish(e => IO.of(() => {
+      if (e.nonEmpty() && e.get() === dummy) effect += 1
+    }))
+
+    assert.equal(io.run(ec).value(), Some(Failure(dummy)))
+    assert.equal(effect, 1)
+  })
+})
+
+describe("IO.doOnCancel", () => {
+  it("does not trigger anything on success", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+
+    const io = IO.of(() => 1).doOnCancel(IO.of(() => { effect += 1 }))
+    assert.equal(io.run(ec).value(), Some(Success(1)))
+    assert.equal(effect, 0)
+  })
+
+  it("does not trigger anything on failure", () => {
+    const ec = new TestScheduler()
+    const dummy = new DummyError()
+    let effect = 0
+
+    const io = IO.raise<number>(dummy).doOnCancel(IO.of(() => { effect += 1 }))
+    assert.equal(io.run(ec).value(), Some(Failure(dummy)))
+    assert.equal(effect, 0)
+  })
+
+  it("triggers effect on cancellation", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+
+    const io = IO.pure(1).delayExecution(1000)
+      .doOnCancel(IO.of(() => { effect += 1 }))
+
+    const f = io.run(ec)
+    assert.equal(f.value(), None)
+
+    f.cancel(); ec.tick()
+    assert.equal(effect, 1)
+    assert.not(ec.hasTasksLeft())
+  })
+})
+
+describe("IO.firstCompletedOf", () => {
+  it("picks the winner and cancels the rest", () => {
+    const ec = new TestScheduler()
+    let effect = 0
+
+    const all = IO.firstCompletedOf([
+      IO.pure(1).delayExecution(2000).doOnCancel(IO.of(() => { effect += 1 })),
+      IO.pure(2).delayExecution(1000).doOnCancel(IO.of(() => { effect += 1 })),
+      IO.pure(3).delayExecution(3000).doOnCancel(IO.of(() => { effect += 1 }))
+    ])
+
+    const f = all.run(ec)
+    ec.tick(1000)
+
+    assert.equal(f.value(), Some(Success(2)))
+    assert.equal(effect, 2)
+    assert.not(ec.hasTasksLeft())
+  })
+
+  it("throws error on empty list", () => {
+    const ec = scheduler()
+    const f = IO.firstCompletedOf([]).map(x => x.toString()).run(ec)
+    assert.ok(f.value().nonEmpty() && f.value().get().isFailure())
+  })
+
+  it("throws error on null list", () => {
+    const ec = scheduler()
+    const f = IO.firstCompletedOf(null as any).map(x => x.toString()).run(ec)
+    assert.ok(f.value().nonEmpty() && f.value().get().isFailure())
+  })
+
+  it("works with any iterable", () => {
+    const ec = scheduler()
+    const iter = {
+      [Symbol.iterator]: () => {
+        let done = false
+        return {
+          next: () => {
+            if (!done) {
+              done = true
+              return { done: false, value: IO.pure(1) }
+            } else {
+              return { done: true }
+            }
+          }
+        }
+      }
+    }
+
+    const seq = IO.firstCompletedOf(iter as any).run(ec)
+    assert.equal(seq.value(), Some(Success(1)))
+  })
+
+  it("protects against broken iterables", () => {
+    const ec = scheduler()
+    const dummy = new DummyError()
+    const iter = {
+      [Symbol.iterator]: () => { throw dummy }
+    }
+
+    const seq = IO.firstCompletedOf(iter as any).run(ec)
+    assert.equal(seq.value(), Some(Failure(dummy)))
+  })
+
+  it("mirrors the source on .timeout", () => {
+    const ec = scheduler()
+    const io = IO.pure(1).timeout(1000)
+    assert.equal(io.run(ec).value(), Some(Success(1)))
+  })
+
+  it("triggers error when timespan exceeded", () => {
+    const ec = scheduler()
+    const io = IO.pure(1).delayExecution(10000).timeout(1000)
+    const f = io.run(ec)
+
+    ec.tick(1000)
+    assert.ok(!f.value().isEmpty() && f.value().get().isFailure())
+  })
+
+  it("cancels both on cancel", () => {
+    const ec = scheduler()
+    const io = IO.pure(1).delayExecution(10000).timeout(1000)
+    const f = io.run(ec)
+
+    assert.ok(ec.hasTasksLeft())
+    f.cancel()
+    assert.not(ec.hasTasksLeft())
+  })
+})
+
 function scheduler(): TestScheduler {
   return new TestScheduler(undefined, ExecutionModel.global.get())
 }
