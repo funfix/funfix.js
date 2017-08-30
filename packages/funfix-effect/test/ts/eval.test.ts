@@ -247,3 +247,91 @@ describe("Eval.tailRecM", () => {
     assert.equal(fa.get(), 1000)
   })
 })
+
+describe("Eval.sequence", () => {
+  it("works", () => {
+    const all = [Eval.pure(1), Eval.pure(2), Eval.pure(3)]
+
+    const io = Eval.sequence(all).map(lst => {
+      let sum = 0
+      for (let i = 0; i < lst.length; i++) sum += lst[i]
+      return sum
+    })
+
+    assert.equal(io.get(), 6)
+  })
+
+  it("map2", () => {
+    const f = Eval.map2(
+      Eval.pure(1), Eval.pure(2),
+      (a, b) => a + b
+    )
+
+    assert.equal(f.get(), 3)
+  })
+
+  it("map3", () => {
+    const f = Eval.map3(
+      Eval.pure(1), Eval.pure(2), Eval.pure(3),
+      (a, b, c) => a + b + c
+    )
+
+    assert.equal(f.get(), 6)
+  })
+
+  it("map4", () => {
+    const f = Eval.map4(
+      Eval.pure(1), Eval.pure(2), Eval.pure(3), Eval.pure(4),
+      (a, b, c, d) => a + b + c + d
+    )
+
+    assert.equal(f.get(), 10)
+  })
+
+  it("map5", () => {
+    const f = Eval.map5(
+      Eval.pure(1), Eval.pure(2), Eval.pure(3), Eval.pure(4), Eval.pure(5),
+      (a, b, c, d, e) => a + b + c + d + e
+    )
+
+    assert.equal(f.get(), 15)
+  })
+
+  it("map6", () => {
+    const f = Eval.map6(
+      Eval.pure(1), Eval.pure(2), Eval.pure(3), Eval.pure(4), Eval.pure(5), Eval.pure(6),
+      (a, b, c, d, e, f) => a + b + c + d + e + f
+    )
+
+    assert.equal(f.get(), 21)
+  })
+
+  it("works with null list", () => {
+    assert.equal(Eval.sequence(null as any).map(x => x.toString()).get(), "")
+  })
+
+  it("works with empty list", () => {
+    assert.equal(Eval.sequence([]).map(x => x.toString()).get(), "")
+  })
+
+  it("works with any iterable", () => {
+    const iter = {
+      [Symbol.iterator]: () => {
+        let done = false
+        return {
+          next: () => {
+            if (!done) {
+              done = true
+              return { done: false, value: Eval.pure(1) }
+            } else {
+              return { done: true }
+            }
+          }
+        }
+      }
+    }
+
+    const seq = Eval.sequence(iter as any).map(_ => _[0]).get()
+    assert.equal(seq, 1)
+  })
+})
