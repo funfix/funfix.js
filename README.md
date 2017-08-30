@@ -144,7 +144,7 @@ And also types for expressing durations:
 
 ### funfix-effect
 
-Defines monadic data types for dealing with laziness and side effects.
+Defines monadic data types for controlling laziness, asynchrony and side effects.
 
 **[See JSDoc documentation](https://funfix.org/api/effect/)**.
 
@@ -158,9 +158,8 @@ The exposed data types:
 
 |              |                                                                                        |
 |--------------|--------------------------------------------------------------------------------------- |
-| [Eval](https://funfix.org/api/effect/classes/eval.html) | a lawful, lazy, monadic data type, that can control evaluation, inspired by the `Eval` type in [Typelevel Cats](http://typelevel.org/cats/) and by the `Coeval` type in [Monix](https://monix.io), the equivalent of Haskell's `IO`, but that can only handle immediate execution and not async boundaries. |
-
-N.B. an equivalent `Task` / `IO` type is coming 😉
+| [Eval](https://funfix.org/api/effect/classes/eval.html) | lawful, lazy, monadic data type, that can control evaluation, inspired by the `Eval` type in [Typelevel Cats](http://typelevel.org/cats/) and by the `Coeval` type in [Monix](https://monix.io), a more simple `IO`-like type that can only handle immediate execution, no async boundaries, no error handling, not being meant for suspending side effects. |
+| [IO](https://funfix.org/api/effect/classes/io.html)     | lawful, lazy, monadic data type, capable of expressing and composing side effectful actions, including asynchronous, being the most potent and capable alternative to JavaScript's `Promise`, inspired by Haskell's `IO` and by the [Monix Task](https://monix.io/docs/2x/eval/task.html) |
 
 ### funfix-types
 
@@ -181,14 +180,16 @@ Haskell's standard library and by
 
 |                          |                                                                                                                                                                           |
 |--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [Eq](https://funfix.org/api/types/classes/eq.html)                   | a type class for determining equality between instances of the same type and that obeys the laws defined in [EqLaws](https://funfix.org/api/types/classes/eqlaws.html)                                                |
-| [Functor](https://funfix.org/api/types/classes/functor.html)         | a type class exposing `map` and that obeys the laws defined in [FunctorLaws](https://funfix.org/api/types/classes/functorlaws.html)                                                                                        |
-| [Apply](https://funfix.org/api/types/classes/apply.html)             | a type class that extends `Functor`, exposing `ap` and that obeys the laws defined in [ApplyLaws](https://funfix.org/api/types/classes/applylaws.html)                                                                   |
-| [Applicative](https://funfix.org/api/types/classes/applicative.html) | a type class that extends `Functor` and `Apply`, exposing `pure` and that obeys the laws defined in [ApplicativeLaws](https://funfix.org/api/types/classes/applicativelaws.html)                                               |
+| [Eq](https://funfix.org/api/types/classes/eq.html)                   | type class for determining equality between instances of the same type and that obeys the laws defined in [EqLaws](https://funfix.org/api/types/classes/eqlaws.html)                                                |
+| [Functor](https://funfix.org/api/types/classes/functor.html)         | type class exposing `map` and that obeys the laws defined in [FunctorLaws](https://funfix.org/api/types/classes/functorlaws.html)                                                                                        |
+| [Apply](https://funfix.org/api/types/classes/apply.html)             | type class that extends `Functor`, exposing `ap` and that obeys the laws defined in [ApplyLaws](https://funfix.org/api/types/classes/applylaws.html)                                                                   |
+| [Applicative](https://funfix.org/api/types/classes/applicative.html) | type class that extends `Functor` and `Apply`, exposing `pure` and that obeys the laws defined in [ApplicativeLaws](https://funfix.org/api/types/classes/applicativelaws.html)                                               |
 | [ApplicativeError](https://funfix.org/api/types/classes/applicativeerror.html) | a type class that extends `Applicative`, for applicative types that can raise errors or recover from them and that obeys the laws defined in [ApplicativeErrorLaws](https://funfix.org/api/types/classes/applicativeerrorlaws.html) | 
-| [FlatMap](https://funfix.org/api/types/classes/flatmap.html)         | a type class that extends `Functor` and `Apply`, exposing `flatMap` and `tailRecM` and that obeys the laws defined in [FlatMapLaws](https://funfix.org/api/types/classes/flatmaplaws.html)                                 |
-| [Monad](https://funfix.org/api/types/classes/monad.html)             | a type class that extends `Applicative` and `FlatMap` and that obeys the laws defined in [MonadLaws](https://funfix.org/api/types/classes/monadlaws.html)                                                                |
-| [MonadError](https://funfix.org/api/types/classes/monaderror.html)   | a type class that extends `ApplicativeError` and `Monad`, for monads that can raise or recover from errors and that obeys the laws defined in [MonadErrorLaws](https://funfix.org/api/types/classes/monaderrorlaws.html)      |
+| [FlatMap](https://funfix.org/api/types/classes/flatmap.html)         | type class that extends `Functor` and `Apply`, exposing `flatMap` and `tailRecM` and that obeys the laws defined in [FlatMapLaws](https://funfix.org/api/types/classes/flatmaplaws.html)                                 |
+| [Monad](https://funfix.org/api/types/classes/monad.html)             | type class that extends `Applicative` and `FlatMap` and that obeys the laws defined in [MonadLaws](https://funfix.org/api/types/classes/monadlaws.html)                                                                |
+| [MonadError](https://funfix.org/api/types/classes/monaderror.html)   | type class that extends `ApplicativeError` and `Monad`, for monads that can raise or recover from errors and that obeys the laws defined in [MonadErrorLaws](https://funfix.org/api/types/classes/monaderrorlaws.html)      |
+| [CoflatMap](https://funfix.org/api/types/classes/coflatmap.html)     | type class that extends `Functor`, the dual of `FlatMap`, obeying the laws defined in [CoflatMapLaws](https://funfix.org/api/types/classes/coflatmaplaws.html)      |
+| [Comonad](https://funfix.org/api/types/classes/comonad.html)         | type class that extends `CoflatMap`, the dual of `Monad`, for data types that providing `extract`, obeying the laws defined in [ComonadLaws](https://funfix.org/api/types/classes/comonadlaws.html)      |
   
 More is coming 😉
 

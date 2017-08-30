@@ -26,7 +26,7 @@ npm install --save funfix
 In this case imports are like:
 
 ```typescript
-import { Eval } from "funfix"
+import { Eval, IO } from "funfix"
 ```
 
 Or for finer grained dependency management, the project can depend
@@ -39,19 +39,24 @@ npm install --save funfix-effect
 In this case imports are like:
 
 ```typescript
-import { Future } from "funfix-effect"
+import { Eval, IO } from "funfix-effect"
 ```
 
 Usage sample:
 
 ```typescript
-import { Eval } from "funfix"
+import { IO } from "funfix"
 
-const f1 = Eval.of(() => "hello")
-const f2 = Eval.of(() => "world")
+const f1 = IO.of(() => "hello")
+const f2 = IO.of(() => "world")
 
-const greeting = Eval.map2(f1, f2, (a, b) => a + " " + b)
-console.info(greeting.get())
+const greeting = IO.map2(f1, f2, (a, b) => a + " " + b)
+
+greeting.run().onComplete(result =>
+  result.fold(
+    console.error,
+    console.info
+  ))
 ```
 
 ### Modules: UMD and ES 2015
