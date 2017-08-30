@@ -25,9 +25,7 @@ declare export class Either<+L, +R> {
   getOrElseL<RR>(thunk: () => RR): R | RR;
 
   isLeft(): boolean;
-  left(): Either<L, empty>;
   isRight(): boolean;
-  right(): Either<empty, R>;
   contains(elem: R): boolean;
   exists(p: (r: R) => boolean): boolean;
   filterOrElse<LL>(p: (r: R) => boolean, zero: () => LL): Either<L | LL, R>;
@@ -160,7 +158,8 @@ declare export class Try<+A> {
   static pure<A>(value: A): Try<A>;
   static unit(): Try<void>;
   static success<A>(value: A): Try<A>;
-  static failure<A>(e: Throwable): Try<A>;
+  static failure(e: Throwable): Try<empty>;
+  static raise(e: Throwable): Try<empty>;
 
   static map2<A1,A2,R>(
     fa1: Try<A1>, fa2: Try<A2>,

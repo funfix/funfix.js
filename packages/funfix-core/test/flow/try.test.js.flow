@@ -48,3 +48,6 @@ const r26: Try<Animal> = dogTry.orElse(Success(new Cat()))
 const r27: Try<Animal> = dogTry.orElseL(() => Success(new Cat()))
 const r28: Try<Object> = dogTry.orElse(Success(new Human()))
 const r29: Try<Object> = dogTry.orElseL(() => Success(new Human()))
+
+const fail1: Try<number> = Try.raise("error")
+const fail2: Try<number> = Try.failure("error")

@@ -92,7 +92,7 @@ import {
  *       const box = f(cursor) as Box<Either<A, B>>
  *       const v = box.value
  *       if (v.isRight()) return new Box(v.get())
- *       cursor = v.left().get()
+ *       cursor = v.swap().get()
  *     }
  *   }
  *
@@ -442,7 +442,7 @@ export function flatMapLawsOf<F>(instance: FlatMap<F>): FlatMapLaws<F> {
  *       const box = f(cursor) as Box<Either<A, B>>
  *       const v = box.value
  *       if (v.isRight()) return new Box(v.get())
- *       cursor = v.left().get()
+ *       cursor = v.swap().get()
  *     }
  *   }
  *

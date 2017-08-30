@@ -468,13 +468,18 @@ describe("Try map2, map3, map4, map5, map6", () => {
   })
 })
 
-describe("Try.unit", () => {
-  it("returns the same reference and works", () => {
+describe("Try misc builders", () => {
+  it("unit returns the same reference and works", () => {
     const e1 = Try.unit()
     const e2 = Try.unit()
 
     assert.equal(e1, e2)
     assert.equal(e1.get(), undefined)
+  })
+
+  it("raise is an alias for failure", () => {
+    assert.equal(Try.raise("error"), Try.failure("error"))
+    assert.notEqual(Try.raise("yes"), Try.failure("no"))
   })
 })
 
