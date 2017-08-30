@@ -27,11 +27,11 @@ const sourceMaps = require("rollup-plugin-sourcemaps")
 const libraryName = pkg.name
 
 export default {
-  entry: `dist/index.js`,
-  targets: [
-		{ dest: pkg.main, moduleName: camelCase(libraryName), format: "umd" }
+  input: `dist/index.js`,
+  output: [
+		{ file: pkg.main, moduleName: camelCase(libraryName), format: "umd" }
   ],
-  sourceMap: true,
+  sourcemap: true,
   // Indicate here external modules you don't wanna include in your bundle (i.e.: 'lodash')
   external: [],
   plugins: [

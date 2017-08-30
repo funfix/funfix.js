@@ -27,7 +27,8 @@ const filesToLink = [
   "tslint.json",
   ".flowconfig",
   ".editorconfig",
-  "mocha.opts"
+  "mocha.opts",
+  "index.js.flow"
 ]
 
 for (const p of fs.readdirSync(rootDir)) {

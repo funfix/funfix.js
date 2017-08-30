@@ -1,0 +1,7 @@
+/*
+ * @flow
+ *
+ * Flow needs an "index.js.flow" in the root to work out of the box.
+ */
+
+export * from "./dist/index";
