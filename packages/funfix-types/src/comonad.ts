@@ -73,7 +73,7 @@ import { applyMixins, id } from "funfix-core"
  *   coflatMap<A, B>(fa: BoxK<A>, ff: (a: BoxK<A>) => B): BoxK<B> {
  *     return new Box(Success(ff(fa)))
  *   }
-
+ *
  *   coflatten<A>(fa: BoxK<A>): BoxK<BoxK<A>> {
  *     return new Box(Success(fa))
  *   }
