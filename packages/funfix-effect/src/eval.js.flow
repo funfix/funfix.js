@@ -42,4 +42,11 @@ declare export class Eval<+A> {
   static suspend<A>(thunk: () => Eval<A>): Eval<A>;
   static defer<A>(thunk: () => Eval<A>): Eval<A>;
   static tailRecM<A, B>(a: A, f: (a: A) => Eval<Either<A, B>>): Eval<B>;
+
+  static sequence<A>(list: Iterable<Eval<A>>): Eval<A[]>;
+  static map2<A1, A2, R>(fa1: Eval<A1>, fa2: Eval<A2>, f: (a1: A1, a2: A2) => R): Eval<R>;
+  static map3<A1, A2, A3, R>(fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, f: (a1: A1, a2: A2, a3: A3) => R): Eval<R>;
+  static map4<A1, A2, A3, A4, R>(fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>, f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Eval<R>;
+  static map5<A1, A2, A3, A4, A5, R>(fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>, fa5: Eval<A5>, f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Eval<R>;
+  static map6<A1, A2, A3, A4, A5, A6, R>(fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>, fa5: Eval<A5>, fa6: Eval<A6>, f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Eval<R>;
 }
