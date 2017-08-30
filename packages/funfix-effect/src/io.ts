@@ -34,6 +34,11 @@ import {
   execInternals, Duration
 } from "funfix-exec"
 
+import {
+  IteratorLike,
+  iteratorOf
+} from "./internals"
+
 /**
  * `IO` represents a specification for a possibly lazy or
  * asynchronous computation, which when executed will produce an `A`
@@ -1101,8 +1106,6 @@ export class IO<A> {
    *   (a, b, c, d, e) => a + b + c + d + e
    * )
    * ```
-   *
-   * This operation is the `Applicative.map5`.
    */
   static map5<A1, A2, A3, A4, A5, R>(
     fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>,
@@ -1141,8 +1144,6 @@ export class IO<A> {
    *   (a, b, c, d, e, f) => a + b + c + d + e + f
    * )
    * ```
-   *
-   * This operation is the `Applicative.map6`.
    */
   static map6<A1, A2, A3, A4, A5, A6, R>(
     fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>, fa6: IO<A6>,
@@ -1204,8 +1205,6 @@ export class IO<A> {
    *   (a, b) => a + b
    * )
    * ```
-   *
-   * This operation is the `Applicative.parMap2`.
    */
   static parMap2<A1, A2, R>(
     fa1: IO<A1>, fa2: IO<A2>,
@@ -1314,8 +1313,6 @@ export class IO<A> {
    *   (a, b, c, d, e) => a + b + c + d + e
    * )
    * ```
-   *
-   * This operation is the `Applicative.parMap5`.
    */
   static parMap5<A1, A2, A3, A4, A5, R>(
     fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>,
@@ -1356,8 +1353,6 @@ export class IO<A> {
    *   (a, b, c, d, e, f) => a + b + c + d + e + f
    * )
    * ```
-   *
-   * This operation is the `Applicative.parMap6`.
    */
   static parMap6<A1, A2, A3, A4, A5, A6, R>(
     fa1: IO<A1>, fa2: IO<A2>, fa3: IO<A3>, fa4: IO<A4>, fa5: IO<A5>, fa6: IO<A6>,
@@ -2212,46 +2207,4 @@ function ioListToFutureProcess<A, B>(list: IO<A>[] | Iterable<IO<A>>, f: (list: 
       }
     })
   })
-}
-
-/**
- * We don't need the full power of JS's iterators, just a way
- * to traverse data structures.
- *
- * @hidden
- */
-interface IteratorLike<A> {
-  next(): { done: boolean, value?: A }
-}
-
-/**
- * Reusable empty `IteratorLike` reference.
- *
- * @hidden
- */
-const emptyIteratorRef: IteratorLike<never> =
-  { next: () => ({ done: true }) }
-
-/**
- * Given an array or an `Iterable`, returns a simple iterator type
- * that we can use to traverse the given list lazily.
- *
- * @hidden
- */
-function iteratorOf<A>(list: A[] | Iterable<A>): IteratorLike<A> {
-  if (!list) return emptyIteratorRef
-  if (Object.prototype.toString.call(list) !== "[object Array]")
-    return list[Symbol.iterator]()
-
-  const array = list as A[]
-  if (array.length === 0) return emptyIteratorRef
-
-  let cursor = 0
-  const next = () => {
-    const value = array[cursor++]
-    const done = cursor >= array.length
-    return { done, value }
-  }
-
-  return { next }
 }

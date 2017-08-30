@@ -76,3 +76,16 @@ const r27: Eval<Cat> = Eval.of(() => new Cat()).memoize()
 
 const u: Eval<void> = Eval.unit()
 const a: Eval<number> = Eval.tailRecM("initial", a => Eval.now(Right(1)))
+
+const all: Eval<number[]> = Eval.sequence([
+  Eval.pure(1),
+  Eval.pure(2),
+  Eval.pure(3),
+  Eval.pure(4)
+])
+
+const map2: Eval<number> = Eval.map2(Eval.pure(1), Eval.pure(1), (a, b) => a + b)
+const map3: Eval<number> = Eval.map3(Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c) => a + b + c)
+const map4: Eval<number> = Eval.map4(Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c, d) => a + b + c + d)
+const map5: Eval<number> = Eval.map5(Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c, d, e) => a + b + c + d + e)
+const map6: Eval<number> = Eval.map6(Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c, d, e, f) => a + b + c + d + e + f)

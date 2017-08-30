@@ -16,6 +16,10 @@
  */
 
 import { Either, Throwable } from "funfix-core"
+import {
+  IteratorLike,
+  iteratorOf
+} from "./internals"
 
 /**
  * Eval is a monad which controls evaluation.
@@ -294,6 +298,168 @@ export class Eval<A> {
       }
     })
   }
+
+  /**
+   * Transforms a list of `Eval` values into an `Eval` of a list.
+   *
+   * Sample:
+   *
+   * ```typescript
+   * const io1 = Eval.of(() => 1)
+   * const io2 = Eval.of(() => 2)
+   * const io3 = Eval.of(() => 3)
+   *
+   * // Yields [1, 2, 3]
+   * const all: Eval<number[]> = Eval.sequence([f1, f2, f3])
+   * ```
+   */
+  static sequence<A>(list: Eval<A>[] | Iterable<Eval<A>>): Eval<A[]> {
+    return evalSequence(list)
+  }
+
+  /**
+   * Maps 2 `Eval` values by the mapping function, returning a new
+   * `Eval` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Eval.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Eval.of(() => 1)
+   * const fa2 = Eval.of(() => 2)
+   *
+   *
+   * // Yields Success(3)
+   * Eval.map2(fa1, fa2, (a, b) => a + b)
+   * ```
+   *
+   * This operation is the `Applicative.map2`.
+   */
+  static map2<A1, A2, R>(
+    fa1: Eval<A1>, fa2: Eval<A2>,
+    f: (a1: A1, a2: A2) => R): Eval<R> {
+
+    const fl: Eval<any[]> = Eval.sequence([fa1, fa2] as any[])
+    return fl.map(lst => f(lst[0], lst[1]))
+  }
+
+  /**
+   * Maps 3 `Eval` values by the mapping function, returning a new
+   * `Eval` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Eval.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Eval.of(() => 1)
+   * const fa2 = Eval.of(() => 2)
+   * const fa3 = Eval.of(() => 3)
+   *
+   *
+   * // Yields Success(6)
+   * Eval.map3(fa1, fa2, fa3, (a, b, c) => a + b + c)
+   * ```
+   */
+  static map3<A1, A2, A3, R>(
+    fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>,
+    f: (a1: A1, a2: A2, a3: A3) => R): Eval<R> {
+
+    const fl: Eval<any[]> = Eval.sequence([fa1, fa2, fa3] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2]))
+  }
+
+  /**
+   * Maps 4 `Eval` values by the mapping function, returning a new
+   * `Eval` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Eval.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Eval.of(() => 1)
+   * const fa2 = Eval.of(() => 2)
+   * const fa3 = Eval.of(() => 3)
+   * const fa4 = Eval.of(() => 4)
+   *
+   * // Yields Success(10)
+   * Eval.map4(fa1, fa2, fa3, fa4, (a, b, c, d) => a + b + c + d)
+   * ```
+   */
+  static map4<A1, A2, A3, A4, R>(
+    fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Eval<R> {
+
+    const fl: Eval<any[]> = Eval.sequence([fa1, fa2, fa3, fa4] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3]))
+  }
+
+  /**
+   * Maps 5 `Eval` values by the mapping function, returning a new
+   * `Eval` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Eval.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Eval.of(() => 1)
+   * const fa2 = Eval.of(() => 2)
+   * const fa3 = Eval.of(() => 3)
+   * const fa4 = Eval.of(() => 4)
+   * const fa5 = Eval.of(() => 5)
+   *
+   * // Yields Success(15)
+   * Eval.map5(fa1, fa2, fa3, fa4, fa5,
+   *   (a, b, c, d, e) => a + b + c + d + e
+   * )
+   * ```
+   */
+  static map5<A1, A2, A3, A4, A5, R>(
+    fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>, fa5: Eval<A5>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Eval<R> {
+
+    const fl: Eval<any[]> = Eval.sequence([fa1, fa2, fa3, fa4, fa5] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3], lst[4]))
+  }
+
+  /**
+   * Maps 6 `Eval` values by the mapping function, returning a new
+   * `Eval` reference that completes with the result of mapping that
+   * function to the successful values of the futures, or in failure in
+   * case either of them fails.
+   *
+   * This is a specialized {@link Eval.sequence} operation and as such
+   * on cancellation or failure all pending tasks get cancelled.
+   *
+   * ```typescript
+   * const fa1 = Eval.of(() => 1)
+   * const fa2 = Eval.of(() => 2)
+   * const fa3 = Eval.of(() => 3)
+   * const fa4 = Eval.of(() => 4)
+   * const fa5 = Eval.of(() => 5)
+   * const fa6 = Eval.of(() => 6)
+   *
+   * // Yields Success(21)
+   * Eval.map6(
+   *   fa1, fa2, fa3, fa4, fa5, fa6,
+   *   (a, b, c, d, e, f) => a + b + c + d + e + f
+   * )
+   * ```
+   */
+  static map6<A1, A2, A3, A4, A5, A6, R>(
+    fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>, fa5: Eval<A5>, fa6: Eval<A6>,
+    f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Eval<R> {
+
+    const fl: Eval<any[]> = Eval.sequence([fa1, fa2, fa3, fa4, fa5, fa6] as any[])
+    return fl.map(lst => f(lst[0], lst[1], lst[2], lst[3], lst[4], lst[5]))
+  }
 }
 
 /**
@@ -461,6 +627,40 @@ function evalRunLoop<A>(start: Eval<A>): A {
         bFirst = fm.f
         current = fm.source
         break
+    }
+  }
+}
+
+/**
+ * Implementation for `Eval.sequence`.
+ * @hidden
+ */
+function evalSequence<A>(list: Eval<A>[] | Iterable<Eval<A>>): Eval<A[]> {
+  return Eval.of(() => iteratorOf(list))
+    .flatMap(cursor => evalSequenceLoop([], cursor))
+}
+
+/**
+ * Recursive loop that goes through the given `cursor`, element by
+ * element, gathering the results of all generated `Eval` elements.
+ *
+ * @hidden
+ */
+function evalSequenceLoop<A>(acc: A[], cursor: IteratorLike<Eval<A>>): Eval<A[]> {
+  while (true) {
+    const elem = cursor.next()
+    const isDone = elem.done
+
+    if (elem.value) {
+      const io: Eval<A> = elem.value
+      return io.flatMap(a => {
+        acc.push(a)
+        if (isDone) return Eval.pure(acc)
+        return evalSequenceLoop(acc, cursor)
+      })
+    } else {
+      /* istanbul ignore else */
+      if (isDone) return Eval.pure(acc)
     }
   }
 }
