@@ -70,14 +70,17 @@ import { applyMixins, id } from "funfix-core"
  *     return new Box(f(a))
  *   }
  *
- *   coflat
+ *   coflatMap<A, B>(fa: BoxK<A>, ff: (a: BoxK<A>) => B): BoxK<B> {
+ *     return new Box(Success(ff(fa)))
+ *   }
+
+ *   coflatten<A>(fa: BoxK<A>): BoxK<BoxK<A>> {
+ *     return new Box(Success(fa))
+ *   }
  * }
  *
- * // Call needed in order to implement `map2` and `product` using
- * // the default implementations defined by `CoflatMap`, because
- * // we are using `implements` instead of `extends` above and
- * // because in this sample we want the default implementations,
- * // but note that you can always provide your own definitions
+ * // At the moment of writing, this call is not needed, but it is
+ * // recommended anyway to future-proof the code ;-)
  * applyMixins(BoxCoflatMap, [CoflatMap])
  *
  * // Registering global CoflatMap instance for Box, needed in order
@@ -299,7 +302,15 @@ export function coflatMapLawsOf<F>(instance: CoflatMap<F>): CoflatMapLaws<F> {
  *   coflatten<A>(fa: BoxK<A>): BoxK<BoxK<A>> {
  *     return new Box(fa)
  *   }
+ *
+ *   extract<A>(fa: BoxK<A>): A {
+ *     return (fa as Box<A>).value
+ *   }
  * }
+ *
+ * // At the moment of writing, this call is not needed, but it is
+ * // recommended anyway to future-proof the code ;-)
+ * applyMixins(BoxComonad, [Comonad])
  *
  * // Registering global Comonad instance for Box, needed in order
  * // for the `functorOf(Box)`, `coflatMapOf(Box)` and `comonadOf(Box)`
