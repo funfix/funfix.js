@@ -24,4 +24,5 @@ import { eqOf } from "../../src"
 describe("Try obeys type class laws", () => {
   laws.testEq(Try, inst.arbTry)
   laws.testMonadError(Try, jv.number, inst.arbTry, jv.string, eqOf(Try))
+  laws.testCoflatMap(Try, inst.arbTry, eqOf(Try), undefined, false)
 })

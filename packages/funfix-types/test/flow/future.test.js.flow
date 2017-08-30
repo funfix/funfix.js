@@ -20,6 +20,8 @@
 import type { Throwable } from "funfix-core"
 import { Future } from "funfix-exec"
 import {
+  CoflatMap,
+  coflatMapOf,
   MonadError,
   monadErrorOf,
   Monad,
@@ -57,3 +59,6 @@ const monad2: Monad<Future<any>> = FutureInstances.global
 
 const monadErr1: MonadError<Future<any>, any> = monadErrorOf(Future)
 const monadErr2: MonadError<Future<any>, Throwable> = FutureInstances.global
+
+const coflatMap1: CoflatMap<Future<any>> = coflatMapOf(Future)
+const coflatMap2: CoflatMap<Future<any>> = FutureInstances.global

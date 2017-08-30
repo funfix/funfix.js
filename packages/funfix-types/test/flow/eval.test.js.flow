@@ -17,9 +17,12 @@
 
 /* @flow */
 
-import type { Throwable } from "funfix-core"
 import { Eval } from "funfix-effect"
 import {
+  Comonad,
+  comonadOf,
+  CoflatMap,
+  coflatMapOf,
   Monad,
   monadOf,
   FlatMap,
@@ -47,3 +50,9 @@ const flatMap2: FlatMap<Eval<any>> = EvalInstances.global
 
 const monad1: Monad<Eval<any>> = monadOf(Eval)
 const monad2: Monad<Eval<any>> = EvalInstances.global
+
+const coflatMap1: CoflatMap<Eval<any>> = coflatMapOf(Eval)
+const coflatMap2: CoflatMap<Eval<any>> = EvalInstances.global
+
+const comonad1: Comonad<Eval<any>> = comonadOf(Eval)
+const comonad2: Comonad<Eval<any>> = EvalInstances.global

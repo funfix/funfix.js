@@ -20,6 +20,8 @@
 import type { Throwable } from "funfix-core"
 import { IO } from "funfix-effect"
 import {
+  CoflatMap,
+  coflatMapOf,
   MonadError,
   monadErrorOf,
   Monad,
@@ -57,3 +59,6 @@ const monad2: Monad<IO<any>> = IOInstances.global
 
 const monadErr1: MonadError<IO<any>, any> = monadErrorOf(IO)
 const monadErr2: MonadError<IO<any>, Throwable> = IOInstances.global
+
+const coflatMap1: CoflatMap<IO<any>> = coflatMapOf(IO)
+const coflatMap2: CoflatMap<IO<any>> = IOInstances.global

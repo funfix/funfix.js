@@ -22,6 +22,8 @@ import { Try } from "funfix-core"
 import {
   Eq,
   eqOf,
+  CoflatMap,
+  coflatMapOf,
   MonadError,
   monadErrorOf,
   Monad,
@@ -64,3 +66,6 @@ const monad2: Monad<Try<any>> = TryInstances.global
 
 const monadErr1: MonadError<Try<any>, any> = monadErrorOf(Try)
 const monadErr2: MonadError<Try<any>, Throwable> = TryInstances.global
+
+const coflatMap1: CoflatMap<Try<any>> = coflatMapOf(Try)
+const coflatMap2: CoflatMap<Try<any>> = TryInstances.global

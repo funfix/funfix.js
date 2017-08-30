@@ -16,6 +16,7 @@
  */
 
 import { Constructor, getTypeClassInstance } from "./kinds"
+import { is } from "funfix-core"
 
 /**
  * The `Eq` is a type class used to determine equality between 2
@@ -49,6 +50,21 @@ export abstract class Eq<A> {
   static readonly _funSupertypeIds: string[] = []
   /** @hidden */
   static readonly _funErasure: Eq<any>
+
+  /**
+   * Tests equality for two values of type `A` by using the type's
+   * registered `Eq` instance, falling back to the universal equality
+   * defined by `is` and `IEquals` (in `funfix-core`) in case no such
+   * `Eq<A>` is implemented.
+   */
+  static testEq<A>(lh: A, rh: A): boolean {
+    if (!lh) return is(lh, rh)
+    const types: {[id: string]: any} = (lh as any).constructor["_funTypes"] || {}
+    const instance = types[Eq._funTypeId]
+    if (instance) return instance.eqv(lh, rh)
+    // Fallback to IEquals or reference equality
+    return is(lh, rh)
+  }
 }
 
 /**

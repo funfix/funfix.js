@@ -24,4 +24,5 @@ import { eqOf } from "../../src"
 describe("Option obeys type class laws", () => {
   laws.testEq(Option, inst.arbOpt)
   laws.testMonad(Option, jv.number, inst.arbOpt, eqOf(Option))
+  laws.testCoflatMap(Option, inst.arbOpt, eqOf(Option), undefined, false)
 })

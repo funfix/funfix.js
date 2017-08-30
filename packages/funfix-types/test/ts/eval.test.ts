@@ -26,9 +26,21 @@ describe("Eval obeys type class laws", () => {
   const eq =
     new (class extends Eq<Eval<any>> {
       eqv(lh: Eval<any>, rh: Eval<any>): boolean {
-        return is(lh.get(), rh.get())
+        let left: any = lh.get()
+        let right: any = rh.get()
+
+        while (true) {
+          if (left instanceof Eval) {
+            if (!(right instanceof Eval)) return false
+            left = left.get()
+            right = right.get()
+          } else {
+            return is(left, right)
+          }
+        }
       }
     })()
 
   laws.testMonad(Eval, jv.number, inst.arbEval, eq)
+  laws.testComonad(Eval, inst.arbEval, eq)
 })

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { applyMixins, Either, Try } from "funfix-core"
+import { applyMixins, Either, is, Success, Try } from "funfix-core"
 import {
   Functor,
   Apply,
@@ -24,6 +24,8 @@ import {
   FlatMap,
   Monad,
   MonadError,
+  CoflatMap,
+  Comonad,
   Eq,
   HK,
   registerTypeClassInstance
@@ -32,10 +34,10 @@ import {
 /**
  * Dummy class meant to test global type class operations.
  */
-export class Box<A> implements HK<Box<any>, A> {
+export class Box<A> implements BoxK<A> {
   constructor(public value: Try<A>) {}
 
-  // Implements HK<Box<any>, A>
+  // Implements BoxK<A>
   readonly _funKindF: Box<any>
   readonly _funKindA: A
 }
@@ -44,7 +46,29 @@ export type BoxK<A> = HK<Box<any>, A>
 
 export class BoxEq implements Eq<Box<any>> {
   eqv(lh: Box<any>, rh: Box<any>): boolean {
-    return lh.value.equals(rh.value)
+    let left: any = lh.value
+    let right: any = rh.value
+
+    while (true) {
+      if (left instanceof Box) {
+        left = left.value
+        if (!(right instanceof Box)) return false
+        right = right.value
+      } else if (left instanceof Try) {
+        if (!(right instanceof Try)) return false
+        if (left.isSuccess()) {
+          if (!right.isSuccess()) return false
+          left = left.get()
+          right = right.get()
+        } else {
+          if (right.isSuccess()) return false
+          left = left.failed().get()
+          right = right.failed().get()
+        }
+      } else {
+        return is(left, right)
+      }
+    }
   }
 }
 
@@ -99,11 +123,11 @@ export class BoxApplicativeError implements ApplicativeError<Box<any>, any> {
     return new Box(Try.map2(ta, tf, (a, f) => f(a)))
   }
 
-  raise<A>(e: any): HK<Box<any>, A> {
+  raise<A>(e: any): BoxK<A> {
     return new Box(Try.failure(e))
   }
 
-  recoverWith<A>(fa: BoxK<A>, f: (e: any) => BoxK<A>): HK<Box<any>, A> {
+  recoverWith<A>(fa: BoxK<A>, f: (e: any) => BoxK<A>): BoxK<A> {
     return new Box((fa as Box<A>).value.recoverWith(e => (f(e) as Box<A>).value))
   }
 
@@ -112,8 +136,8 @@ export class BoxApplicativeError implements ApplicativeError<Box<any>, any> {
   map2: <A, B, Z>(fa: BoxK<A>, fb: BoxK<B>, f: (a: A, b: B) => Z) => Box<Z>
   product: <A, B> (fa: BoxK<A>, fb: BoxK<B>) => Box<[A, B]>
   unit: () => Box<void>
-  recover: <A>(fa: HK<Box<any>, A>, f: (e: any) => A) => HK<Box<any>, A>
-  attempt: <A>(fa: HK<Box<any>, A>) => HK<Box<any>, Either<any, A>>
+  recover: <A>(fa: BoxK<A>, f: (e: any) => A) => BoxK<A>
+  attempt: <A>(fa: BoxK<A>) => BoxK<Either<any, A>>
 }
 
 applyMixins(BoxApplicativeError, [ApplicativeError])
@@ -228,11 +252,11 @@ export class BoxMonadError<A> implements MonadError<Box<any>, Error> {
     }
   }
 
-  raise<A>(e: any): HK<Box<any>, A> {
+  raise<A>(e: any): BoxK<A> {
     return new Box(Try.failure(e))
   }
 
-  recoverWith<A>(fa: BoxK<A>, f: (e: any) => BoxK<A>): HK<Box<any>, A> {
+  recoverWith<A>(fa: BoxK<A>, f: (e: any) => BoxK<A>): BoxK<A> {
     return new Box((fa as Box<A>).value.recoverWith(e => (f(e) as Box<A>).value))
   }
 
@@ -246,11 +270,31 @@ export class BoxMonadError<A> implements MonadError<Box<any>, Error> {
   followedByL: <A, B>(fa: BoxK<A>, fb: () => BoxK<B>) => Box<B>
   forEffect: <A, B>(fa: BoxK<A>, fb: BoxK<B>) => Box<A>
   forEffectL: <A, B>(fa: BoxK<A>, fb: () => BoxK<B>) => Box<A>
-  recover: <A>(fa: HK<Box<any>, A>, f: (e: any) => A) => HK<Box<any>, A>
-  attempt: <A>(fa: HK<Box<any>, A>) => HK<Box<any>, Either<any, A>>
+  recover: <A>(fa: BoxK<A>, f: (e: any) => A) => BoxK<A>
+  attempt: <A>(fa: BoxK<A>) => BoxK<Either<any, A>>
 }
 
 applyMixins(BoxMonadError, [MonadError])
+
+export class BoxCoflatMap extends BoxFunctor implements CoflatMap<Box<any>> {
+  coflatMap<A, B>(fa: BoxK<A>, ff: (a: BoxK<A>) => B): BoxK<B> {
+    return new Box(Success(ff(fa)))
+  }
+
+  coflatten<A>(fa: BoxK<A>): BoxK<BoxK<A>> {
+    return new Box(Success(fa))
+  }
+}
+
+applyMixins(BoxCoflatMap, [CoflatMap])
+
+export class BoxComonad extends BoxCoflatMap implements Comonad<Box<any>> {
+  extract<A>(fa: BoxK<A>): A {
+    return (fa as Box<A>).value.get()
+  }
+}
+
+applyMixins(BoxComonad, [Comonad])
 
 // Global instance registration
 registerTypeClassInstance(Eq)(Box, new BoxEq())
@@ -261,3 +305,5 @@ registerTypeClassInstance(ApplicativeError)(Box, new BoxApplicativeError())
 registerTypeClassInstance(FlatMap)(Box, new BoxFlatMap())
 registerTypeClassInstance(Monad)(Box, new BoxMonad())
 registerTypeClassInstance(MonadError)(Box, new BoxMonadError())
+registerTypeClassInstance(CoflatMap)(Box, new BoxCoflatMap())
+registerTypeClassInstance(Comonad)(Box, new BoxComonad())
