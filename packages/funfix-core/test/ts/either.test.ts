@@ -26,24 +26,6 @@ describe("Either", () => {
       inst.arbEither,
       e => e.isRight() === !e.isLeft()
     )
-
-    jv.property("isRight => right() does not throw",
-      inst.arbEither,
-      e => e.isLeft() || e.right().isRight()
-    )
-
-    jv.property("isLeft => left() does not throw",
-      inst.arbEither,
-      e => e.isRight() || e.left().isLeft()
-    )
-
-    it("right.left() throws", () => {
-      assert.throws(() => Either.right(1).left())
-    })
-
-    it("left.right() throws", () => {
-      assert.throws(() => Either.left(1).right())
-    })
   })
 
   describe("Either #get", () => {

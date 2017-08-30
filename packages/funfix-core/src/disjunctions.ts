@@ -72,22 +72,6 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   isLeft(): boolean { return !this._isRight }
 
   /**
-   * If the source is a `left` value, then returns it unchanged
-   * and casted as a `Left`, otherwise throw exception.
-   *
-   * WARNING!
-   *
-   * This function is partial, the reference must be a `Left,
-   * otherwise a runtime exception will get thrown. Use with care.
-   *
-   * @throws NoSuchElementError
-   */
-  left(): Either<L, never> {
-    if (!this._isRight) return this as any
-    throw new NoSuchElementError("either.left")
-  }
-
-  /**
    * Returns `true` if this is a `right`, `false` otherwise.
    *
    * ```typescript
@@ -96,22 +80,6 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * ```
    */
   isRight(): boolean { return this._isRight }
-
-  /**
-   * If the source is a `right` value, then returns it unchanged
-   * and casted as a `Right`, otherwise throw exception.
-   *
-   * WARNING!
-   *
-   * This function is partial, the reference must be a `Right,
-   * otherwise a runtime exception will get thrown. Use with care.
-   *
-   * @throws NoSuchElementError
-   */
-  right(): Either<never, R> {
-    if (this._isRight) return this as any
-    throw new NoSuchElementError("either.right")
-  }
 
   /**
    * Returns true if this is a Right and its value is equal to `elem`
@@ -172,8 +140,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    */
   filterOrElse(p: (r: R) => boolean, zero: () => L): Either<L, R> {
     return this._isRight
-      ? (p(this._rightRef) ? this.right() : Left(zero()))
-      : this.left()
+      ? (p(this._rightRef) ? (this as any) : Left(zero()))
+      : (this as any)
   }
 
   /**
@@ -183,7 +151,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
    * It can be used to *chain* multiple `Either` references.
    */
   flatMap<S>(f: (r: R) => Either<L, S>): Either<L, S> {
-    return this._isRight ? f(this._rightRef) : this.left()
+    return this._isRight ? f(this._rightRef) : (this as any)
   }
 
   /**
@@ -279,7 +247,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   map<C>(f: (r: R) => C): Either<L, C> {
     return this._isRight
       ? Right(f(this._rightRef))
-      : this.left()
+      : (this as any)
   }
 
   /**
@@ -1474,7 +1442,15 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * Returns a [[Try]] reference that represents a failure
    * (i.e. an exception wrapped in [[Failure]]).
    */
-  static failure<A>(e: Throwable): Try<A> {
+  static failure<A = never>(e: Throwable): Try<A> {
+    return Failure(e)
+  }
+
+  /**
+   * Alias for {@link Try.failure} and {@link Failure},
+   * wrapping any throwable into a `Try` value.
+   */
+  static raise<A = never>(e: Throwable): Try<A> {
     return Failure(e)
   }
 
