@@ -53,7 +53,7 @@ export const arbOptNonempty: jv.Arbitrary<Option<number>> =
 export const arbEither: jv.Arbitrary<Either<number, number>> =
   jv.number.smap(
     i => i % 4 < 3 ? Right(i) : Left(i),
-    (fa: Either<number, number>) => fa.isRight() ? fa.get() : fa.left().get()
+    (fa: Either<number, number>) => fa.isRight() ? fa.get() : fa.swap().get()
   )
 
 export const arbSuccess: jv.Arbitrary<Try<number>> =
