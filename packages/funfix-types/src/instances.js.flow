@@ -35,6 +35,8 @@ declare export class OptionInstances {
   product<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<[A, B]>;
   flatMap<A, B>(fa: OptionK<A>, f: (a: A) => OptionK<B>): Option<B>;
   tailRecM<A, B>(a: A, f: (a: A) => OptionK<Either<A, B>>): Option<B>;
+  coflatMap<A, B>(fa: OptionK<A>, ff: (a: OptionK<A>) => B): Option<B>;
+  coflatten<A>(fa: OptionK<A>): Option<Option<A>>;
   followedBy<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<B>;
   followedByL<A, B>(fa: OptionK<A>, fb: () => OptionK<B>): Option<B>;
   forEffect<A, B>(fa: OptionK<A>, fb: OptionK<B>): Option<A>;
@@ -55,6 +57,8 @@ declare export class TryInstances {
   product<A, B>(fa: TryK<A>, fb: TryK<B>): Try<[A, B]>;
   flatMap<A, B>(fa: TryK<A>, f: (a: A) => TryK<B>): Try<B>;
   tailRecM<A, B>(a: A, f: (a: A) => TryK<Either<A, B>>): Try<B>;
+  coflatMap<A, B>(fa: TryK<A>, ff: (a: TryK<A>) => B): Try<B>;
+  coflatten<A>(fa: TryK<A>): Try<Try<A>>;
   followedBy<A, B>(fa: TryK<A>, fb: TryK<B>): Try<B>;
   followedByL<A, B>(fa: TryK<A>, fb: () => TryK<B>): Try<B>;
   forEffect<A, B>(fa: TryK<A>, fb: TryK<B>): Try<A>;
@@ -79,6 +83,8 @@ declare export class EitherInstances<L> {
   product<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, [A, B]>;
   flatMap<A, B>(fa: EitherK<L, A>, f: (a: A) => EitherK<L, B>): Either<L, B>;
   tailRecM<A, B>(a: A, f: (a: A) => EitherK<L, Either<A, B>>): Either<L, B>;
+  coflatMap<A, B>(fa: EitherK<L, A>, ff: (a: EitherK<L, A>) => B): Either<L, B>;
+  coflatten<A>(fa: EitherK<L, A>): Either<L, Either<L, A>>;
   followedBy<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, B>;
   followedByL<A, B>(fa: EitherK<L, A>, fb: () => EitherK<L, B>): Either<L, B>;
   forEffect<A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>): Either<L, A>;
@@ -102,6 +108,9 @@ declare export class EvalInstances {
   followedByL<A, B>(fa: EvalK<A>, fb: () => EvalK<B>): Eval<B>;
   forEffect<A, B>(fa: EvalK<A>, fb: EvalK<B>): Eval<A>;
   forEffectL<A, B>(fa: EvalK<A>, fb: () => EvalK<B>): Eval<A>;
+  coflatMap<A, B>(fa: EvalK<A>, ff: (a: EvalK<A>) => B): Eval<B>;
+  coflatten<A>(fa: EvalK<A>): Eval<Eval<A>>;
+  extract<A>(fa: EvalK<A>): A;
 
   static global: EvalInstances;
 }
@@ -119,6 +128,8 @@ declare export class FutureInstances {
   attempt<A>(fa: FutureK<A>): Future<Either<Throwable, A>>;
   recoverWith<A>(fa: FutureK<A>, f: (e: Throwable) => FutureK<A>): Future<A>;
   recover<A>(fa: FutureK<A>, f: (e: Throwable) => A): Future<A>;
+  coflatMap<A, B>(fa: FutureK<A>, ff: (a: FutureK<A>) => B): Future<B>;
+  coflatten<A>(fa: FutureK<A>): Future<Future<A>>;
   map2: <A, B, Z>(fa: FutureK<A>, fb: FutureK<B>, f: (a: A, b: B) => Z) => Future<Z>;
   product: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => FutureK<[A, B]>;
   followedBy: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => Future<B>;
@@ -142,6 +153,8 @@ declare export class IOInstances {
   attempt<A>(fa: IOK<A>): IO<Either<Throwable, A>>;
   recoverWith<A>(fa: IOK<A>, f: (e: Throwable) => IOK<A>): IO<A>;
   recover<A>(fa: IOK<A>, f: (e: Throwable) => A): IO<A>;
+  coflatMap<A, B>(fa: IOK<A>, ff: (a: IOK<A>) => B): IO<B>;
+  coflatten<A>(fa: IOK<A>): IO<IO<A>>;
   map2: <A, B, Z>(fa: IOK<A>, fb: IOK<B>, f: (a: A, b: B) => Z) => IO<Z>;
   product: <A, B>(fa: IOK<A>, fb: IOK<B>) => IOK<[A, B]>;
   followedBy: <A, B>(fa: IOK<A>, fb: IOK<B>) => IO<B>;

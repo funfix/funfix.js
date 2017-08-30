@@ -30,17 +30,22 @@ describe("IO obeys type class laws", () => {
         const f1 = lh.run(ec)
         const f2 = rh.run(ec)
         ec.tick(1000 * 60 * 60 * 24 * 10)
-        return !f1.value().isEmpty() && f1.value().equals(f2.value())
+        return Eq.testEq(f1.value(), f2.value())
       }
     })()
 
   before(function() {
     Scheduler.global.set(ec)
+    const f: any = IO
+    f["_funTypes"]["eq"] = eq
   })
 
   after(function () {
     Scheduler.global.revert()
+    const f: any = IO
+    delete f["_funTypes"]["eq"]
   })
 
   laws.testMonadError(IO, jv.number, inst.arbIO, jv.string, eq)
+  laws.testCoflatMap(IO, inst.arbIO, eq, undefined, false)
 })

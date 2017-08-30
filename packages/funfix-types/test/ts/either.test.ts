@@ -24,4 +24,5 @@ import { eqOf } from "../../src"
 describe("Either obeys type class laws", () => {
   laws.testEq(Either, inst.arbEither)
   laws.testMonad(Either, jv.number, inst.arbEither, eqOf(Either))
+  laws.testCoflatMap(Either, inst.arbEither, eqOf(Either), undefined, false)
 })

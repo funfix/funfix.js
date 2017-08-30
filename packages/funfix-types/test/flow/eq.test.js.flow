@@ -41,6 +41,10 @@ const eq2 = F.eqv(Some(1), None)
 // $ExpectError
 const err1 = F.eqv(Some(1), "")
 
+const t1: boolean = Eq.testEq("value", "value")
+const t2: boolean = Eq.testEq(1, 2)
+const t3: boolean = Eq.testEq(Some(1), Some(2))
+
 // $ExpectError
 const err2: EqLaws<string> = eqLawsOf(F)
 

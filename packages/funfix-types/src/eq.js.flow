@@ -26,6 +26,8 @@ export interface Eq<A> {
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
   static +_funErasure: Eq<any>;
+
+  static testEq<A>(lh: A, rh: A): boolean;
 }
 
 export interface EqLaws<A> {

@@ -20,6 +20,7 @@ import { Eval, IO } from "funfix-effect"
 import { Future } from "funfix-exec"
 import { HK, registerTypeClassInstance } from "./kinds"
 import { Monad, MonadError } from "./monad"
+import { Comonad, CoflatMap } from "./comonad"
 import { Eq } from "./eq"
 
 /**
@@ -31,12 +32,15 @@ export type OptionK<A> = HK<Option<any>, A>
 /**
  * Type class instances provided by default for `Option`.
  */
-export class OptionInstances implements Monad<Option<any>>, Eq<Option<any>> {
+export class OptionInstances implements Monad<Option<any>>, Eq<Option<any>>, CoflatMap<Option<any>> {
   // tslint:disable-next-line:variable-name
   private __unit: Option<void> = Some(undefined)
 
   eqv(lh: Option<any>, rh: Option<any>): boolean {
-    return lh.equals(rh)
+    if (lh === rh) return true
+    if (lh.isEmpty()) return rh.isEmpty()
+    if (rh.isEmpty()) return false
+    return Eq.testEq(lh.get(), rh.get())
   }
 
   pure<A>(a: A): Option<A> {
@@ -71,6 +75,14 @@ export class OptionInstances implements Monad<Option<any>>, Eq<Option<any>> {
     return Option.tailRecM(a, f as any) as any
   }
 
+  coflatMap<A, B>(fa: OptionK<A>, ff: (a: OptionK<A>) => B): Option<B> {
+    return Some(ff(fa))
+  }
+
+  coflatten<A>(fa: OptionK<A>): Option<Option<A>> {
+    return Some(fa as Option<A>)
+  }
+
   // Mixed-in
   followedBy: <A, B>(fa: OptionK<A>, fb: OptionK<B>) => Option<B>
   followedByL: <A, B>(fa: OptionK<A>, fb: () => OptionK<B>) => Option<B>
@@ -87,6 +99,7 @@ applyMixins(OptionInstances, [Monad])
 // Registering `OptionInstances` as global instances for Option
 registerTypeClassInstance(Eq)(Option, OptionInstances.global)
 registerTypeClassInstance(Monad)(Option, OptionInstances.global)
+registerTypeClassInstance(CoflatMap)(Option, OptionInstances.global)
 
 /**
  * Alias used for encoding higher-kinded types when implementing
@@ -97,9 +110,18 @@ export type TryK<A> = HK<Try<any>, A>
 /**
  * Type class instances provided by default for `Option`.
  */
-export class TryInstances implements MonadError<Try<any>, Throwable>, Eq<Try<any>> {
+export class TryInstances
+  implements MonadError<Try<any>, Throwable>, Eq<Try<any>>, CoflatMap<Try<any>> {
+
   eqv(lh: Try<any>, rh: Try<any>): boolean {
-    return lh.equals(rh)
+    if (lh === rh) return true
+    if (lh.isSuccess()) {
+      if (rh.isFailure()) return false
+      return Eq.testEq(lh.get(), rh.get())
+    } else {
+      if (rh.isSuccess()) return false
+      return Eq.testEq(lh.failed().get(), rh.failed().get())
+    }
   }
 
   pure<A>(a: A): Try<A> {
@@ -153,6 +175,14 @@ export class TryInstances implements MonadError<Try<any>, Throwable>, Eq<Try<any
     return (fa as Try<A>).recover(f as ((e: Throwable) => A))
   }
 
+  coflatMap<A, B>(fa: TryK<A>, ff: (a: TryK<A>) => B): Try<B> {
+    return Success(ff(fa))
+  }
+
+  coflatten<A>(fa: TryK<A>): Try<Try<A>> {
+    return Success(fa as Try<A>)
+  }
+
   // Mixed-in
   followedBy: <A, B>(fa: TryK<A>, fb: TryK<B>) => Try<B>
   followedByL: <A, B>(fa: TryK<A>, fb: () => TryK<B>) => Try<B>
@@ -169,6 +199,7 @@ applyMixins(TryInstances, [MonadError])
 // Registering `TryInstances` as global instances for Try
 registerTypeClassInstance(Eq)(Try, TryInstances.global)
 registerTypeClassInstance(MonadError)(Try, TryInstances.global)
+registerTypeClassInstance(CoflatMap)(Try, TryInstances.global)
 
 /**
  * Alias used for encoding higher-kinded types when implementing
@@ -179,12 +210,20 @@ export type EitherK<L, R> = HK<Either<L, any>, R>
 /**
  * Type class instances provided by default for `Either`.
  */
-export class EitherInstances<L> implements Monad<Either<L, any>>, Eq<Either<L, any>> {
+export class EitherInstances<L>
+  implements Monad<Either<L, any>>, Eq<Either<L, any>>, CoflatMap<Either<L, any>> {
   // tslint:disable-next-line:variable-name
   private __unit: Either<L, void> = Right(undefined)
 
   eqv(lh: Either<L, any>, rh: Either<L, any>): boolean {
-    return ((lh as any) as Either<L, any>).equals(rh as any)
+    if (lh === rh) return true
+    if (lh.isRight()) {
+      if (rh.isLeft()) return false
+      return Eq.testEq(lh.get(), rh.get())
+    } else {
+      if (rh.isRight()) return false
+      return Eq.testEq(lh.swap().get(), rh.swap().get())
+    }
   }
 
   pure<A>(a: A): Either<L, A> {
@@ -224,6 +263,14 @@ export class EitherInstances<L> implements Monad<Either<L, any>>, Eq<Either<L, a
     return Either.tailRecM(a, f as any) as any
   }
 
+  coflatMap<A, B>(fa: EitherK<L, A>, ff: (a: EitherK<L, A>) => B): Either<L, B> {
+    return Right(ff(fa))
+  }
+
+  coflatten<A>(fa: EitherK<L, A>): Either<L, Either<L, A>> {
+    return Right(fa as Either<L, A>)
+  }
+
   // Mixed-in
   followedBy: <A, B>(fa: EitherK<L, A>, fb: EitherK<L, B>) => Either<L, B>
   followedByL: <A, B>(fa: EitherK<L, A>, fb: () => EitherK<L, B>) => Either<L, B>
@@ -239,6 +286,7 @@ applyMixins(EitherInstances, [Monad])
 // Registering `TryInstances` as global instances for Try
 registerTypeClassInstance(Eq)(Either, EitherInstances.global)
 registerTypeClassInstance(Monad)(Either, EitherInstances.global)
+registerTypeClassInstance(CoflatMap)(Either, EitherInstances.global)
 
 /**
  * Alias used for encoding higher-kinded types when implementing
@@ -249,7 +297,7 @@ export type EvalK<A> = HK<Eval<any>, A>
 /**
  * Type class instances provided by default for `Eval`.
  */
-export class EvalInstances implements Monad<Eval<any>> {
+export class EvalInstances implements Monad<Eval<any>>, Comonad<Eval<any>> {
   pure<A>(a: A): Eval<A> {
     return Eval.now(a)
   }
@@ -276,6 +324,18 @@ export class EvalInstances implements Monad<Eval<any>> {
     return Eval.unit()
   }
 
+  coflatMap<A, B>(fa: EvalK<A>, ff: (a: EvalK<A>) => B): Eval<B> {
+    return Eval.now(ff(fa))
+  }
+
+  coflatten<A>(fa: EvalK<A>): Eval<Eval<A>> {
+    return Eval.now(fa as Eval<A>)
+  }
+
+  extract<A>(fa: EvalK<A>): A {
+    return (fa as Eval<A>).get()
+  }
+
   // Mixed-in
   map2: <A, B, Z>(fa: EvalK<A>, fb: EvalK<B>, f: (a: A, b: B) => Z) => Eval<Z>
   product: <A, B>(fa: EvalK<A>, fb: EvalK<B>) => EvalK<[A, B]>
@@ -289,9 +349,10 @@ export class EvalInstances implements Monad<Eval<any>> {
 }
 
 // Mixins the default implementations
-applyMixins(EvalInstances, [Monad])
+applyMixins(EvalInstances, [Monad, Comonad])
 // Registering `EvalInstances` as global instances for `Eval`
 registerTypeClassInstance(Monad)(Eval, EvalInstances.global)
+registerTypeClassInstance(Comonad)(Eval, EvalInstances.global)
 
 /**
  * Alias used for encoding higher-kinded types when implementing
@@ -302,7 +363,7 @@ export type FutureK<A> = HK<Future<any>, A>
 /**
  * Type class instances provided by default for `Future`.
  */
-export class FutureInstances implements MonadError<Future<any>, Throwable> {
+export class FutureInstances implements MonadError<Future<any>, Throwable>, CoflatMap<Future<any>> {
   pure<A>(a: A): Future<A> {
     return Future.pure(a)
   }
@@ -349,6 +410,14 @@ export class FutureInstances implements MonadError<Future<any>, Throwable> {
     return Future.map2(fa as any, fb as any, f as any) as any
   }
 
+  coflatMap<A, B>(fa: FutureK<A>, ff: (a: FutureK<A>) => B): Future<B> {
+    return Future.pure(ff(fa))
+  }
+
+  coflatten<A>(fa: FutureK<A>): Future<Future<A>> {
+    return Future.pure(fa as Future<A>)
+  }
+
   // Mixed-in
   product: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => FutureK<[A, B]>
   followedBy: <A, B>(fa: FutureK<A>, fb: FutureK<B>) => Future<B>
@@ -361,9 +430,10 @@ export class FutureInstances implements MonadError<Future<any>, Throwable> {
 }
 
 // Mixins the default implementations
-applyMixins(FutureInstances, [MonadError])
+applyMixins(FutureInstances, [MonadError, CoflatMap])
 // Registering `FutureInstances` as global instances for `Future`
 registerTypeClassInstance(MonadError)(Future, FutureInstances.global)
+registerTypeClassInstance(CoflatMap)(Future, FutureInstances.global)
 
 /**
  * Alias used for encoding higher-kinded types when implementing
@@ -374,7 +444,7 @@ export type IOK<A> = HK<IO<any>, A>
 /**
  * Type class instances provided by default for `IO`.
  */
-export class IOInstances implements MonadError<IO<any>, Throwable> {
+export class IOInstances implements MonadError<IO<any>, Throwable>, CoflatMap<IO<any>> {
   pure<A>(a: A): IO<A> {
     return IO.pure(a)
   }
@@ -441,9 +511,20 @@ export class IOInstances implements MonadError<IO<any>, Throwable> {
     return IO.map2(fa as any, fb as any, (a, b) => [a, b]) as any
   }
 
+  coflatMap<A, B>(fa: IOK<A>, ff: (a: IOK<A>) => B): IO<B> {
+    return IO.pure(ff(fa))
+  }
+
+  coflatten<A>(fa: IOK<A>): IO<IO<A>> {
+    return IO.pure(fa as IO<A>)
+  }
+
   static global: IOInstances =
     new IOInstances()
 }
 
+// Mixins the default implementations
+applyMixins(IOInstances, [MonadError, CoflatMap])
 // Registering `IOInstances` as global instances for `IO`
 registerTypeClassInstance(MonadError)(IO, IOInstances.global)
+registerTypeClassInstance(CoflatMap)(IO, IOInstances.global)

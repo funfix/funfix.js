@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
+import { is } from "funfix-core"
 import * as jv from "jsverify"
+
 import {
   HK, Equiv, Constructor,
   Eq, EqLaws, eqLawsOf, eqOf,
@@ -25,7 +27,9 @@ import {
   ApplicativeErrorLaws, applicativeErrorLawsOf, applicativeErrorOf,
   FlatMapLaws, flatMapLawsOf, flatMapOf,
   MonadLaws, monadLawsOf, monadOf,
-  MonadErrorLaws, monadErrorLawsOf, monadErrorOf
+  MonadErrorLaws, monadErrorLawsOf, monadErrorOf,
+  CoflatMapLaws, coflatMapOf, coflatMapLawsOf,
+  ComonadLaws, comonadOf, comonadLawsOf
 } from "../../src/"
 
 export function testEq<A>(
@@ -346,6 +350,95 @@ export function testMonadError<F, A, B, E>(
 
   for (const key of Object.keys(tests)) {
     it(`MonadError<${(type as any).name}>.${key}`, () => {
+      jv.assert(tests[key])
+    })
+  }
+}
+
+export function testCoflatMap<F, A>(
+  type: Constructor<F>,
+  arbFA: jv.Arbitrary<HK<F, A>>,
+  eqF: Eq<HK<F, any>>,
+  laws: CoflatMapLaws<F> = coflatMapLawsOf(coflatMapOf(type)),
+  includeSupertypes: boolean = true): void {
+
+  // Tests functor first
+  if (includeSupertypes) {
+    testFunctor(type, arbFA, eqF, laws)
+  }
+
+  const equivToBool = (ref: Equiv<HK<F, any>>) =>
+    eqF.eqv(ref.lh, ref.rh)
+
+  const tests: any = {
+    coflatMapAssociativity: jv.forall(
+      arbFA, jv.fun(jv.number), jv.fun(jv.number),
+      (fa, f, g) => equivToBool(laws.coflatMapAssociativity(fa, f, g))
+    ),
+    coflattenThroughMap: jv.forall(
+      arbFA,
+      (fa) => equivToBool(laws.coflattenThroughMap(fa))
+    ),
+    coflattenCoherence: jv.forall(
+      arbFA, jv.fun(jv.number),
+      (fa, f) => equivToBool(laws.coflattenCoherence(fa, f))
+    ),
+    coflatMapIdentity: jv.forall(
+      arbFA,
+      (fa) => equivToBool(laws.coflatMapIdentity(fa))
+    )
+  }
+
+  for (const key of Object.keys(tests)) {
+    it(`CoflatMap<${(type as any).name}>.${key}`, () => {
+      jv.assert(tests[key])
+    })
+  }
+}
+
+export function testComonad<F, A>(
+  type: Constructor<F>,
+  arbFA: jv.Arbitrary<HK<F, A>>,
+  eqF: Eq<HK<F, any>>,
+  laws: ComonadLaws<F> = comonadLawsOf(comonadOf(type)),
+  includeSupertypes: boolean = true): void {
+
+  // Tests functor first
+  if (includeSupertypes) {
+    testCoflatMap(type, arbFA, eqF, laws)
+  }
+
+  const equivToBool = (ref: Equiv<HK<F, any>>) =>
+    eqF.eqv(ref.lh, ref.rh)
+
+  const tests: any = {
+    extractCoflattenIdentity: jv.forall(
+      arbFA,
+      fa => equivToBool(laws.extractCoflattenIdentity(fa))
+    ),
+    mapCoflattenIdentity: jv.forall(
+      arbFA,
+      fa => equivToBool(laws.mapCoflattenIdentity(fa))
+    ),
+    mapCoflatMapCoherence: jv.forall(
+      arbFA, jv.fun(jv.number),
+      (fa, f) => equivToBool(laws.mapCoflatMapCoherence(fa, f))
+    ),
+    comonadLeftIdentity: jv.forall(
+      arbFA,
+      (fa) => equivToBool(laws.comonadLeftIdentity(fa))
+    ),
+    comonadRightIdentity: jv.forall(
+      arbFA, jv.fun(jv.number),
+      (fa, f) => {
+        const e = laws.comonadRightIdentity(fa, f)
+        return is(e.lh, e.rh)
+      }
+    )
+  }
+
+  for (const key of Object.keys(tests)) {
+    it(`Comonad<${(type as any).name}>.${key}`, () => {
       jv.assert(tests[key])
     })
   }

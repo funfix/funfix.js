@@ -60,6 +60,14 @@ describe("MonadError<Box> obeys laws", () => {
   laws.testMonadError(Box, jv.number, arbBox, jv.string, eqOf(Box))
 })
 
+describe("CoflatMap<Box> obeys laws", () => {
+  laws.testCoflatMap(Box, arbBox, eqOf(Box))
+})
+
+describe("Comonad<Box> obeys laws", () => {
+  laws.testComonad(Box, arbBox, eqOf(Box))
+})
+
 describe("Type class registration", () => {
   it("should not throw error if registering the same instance", () => {
     const ap = applicativeOf(Box)

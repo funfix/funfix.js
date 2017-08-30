@@ -21,6 +21,8 @@ import { Option } from "funfix-core"
 import {
   Eq,
   eqOf,
+  CoflatMap,
+  coflatMapOf,
   Monad,
   monadOf,
   FlatMap,
@@ -53,3 +55,6 @@ const flatMap2: FlatMap<Option<any>> = OptionInstances.global
 
 const monad1: Monad<Option<any>> = monadOf(Option)
 const monad2: Monad<Option<any>> = OptionInstances.global
+
+const coflatMap1: CoflatMap<Option<any>> = coflatMapOf(Option)
+const coflatMap2: CoflatMap<Option<any>> = OptionInstances.global

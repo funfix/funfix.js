@@ -27,18 +27,23 @@ describe("Future obeys type class laws", () => {
     class extends Eq<Future<any>> {
       eqv(lh: Future<any>, rh: Future<any>): boolean {
         ec.tick(1000 * 60 * 60 * 24 * 10)
-        return !lh.value().isEmpty() && lh.value().equals(rh.value())
+        return Eq.testEq(lh.value(), rh.value())
       }
     })()
 
   before(function() {
     Scheduler.global.set(ec)
+    const f: any = Future
+    f["_funTypes"]["eq"] = eq
   })
 
   after(function () {
     Scheduler.global.revert()
+    const f: any = Future
+    delete f["_funTypes"]["eq"]
   })
 
   const arbF = inst.arbFuture(ec)
   laws.testMonadError(Future, jv.number, arbF, jv.string, eq)
+  laws.testCoflatMap(Future, inst.arbFuture(ec), eq, undefined, false)
 })

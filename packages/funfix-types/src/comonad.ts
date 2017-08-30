@@ -236,7 +236,6 @@ export function coflatMapLawsOf<F>(instance: CoflatMap<F>): CoflatMapLaws<F> {
   return new (class extends CoflatMapLaws<F> { public readonly F = instance })()
 }
 
-// ---
 /**
  * `Comonad` is the dual of {@link Monad}.
  *
@@ -348,7 +347,7 @@ export abstract class Comonad<F> implements CoflatMap<F> {
   /** @hidden */
   static readonly _funTypeId: string = "comonad"
   /** @hidden */
-  static readonly _funSupertypeIds: string[] = ["functor", "apply"]
+  static readonly _funSupertypeIds: string[] = ["functor", "coflatMap"]
   /** @hidden */
   static readonly _funErasure: Comonad<any>
 }
@@ -382,6 +381,71 @@ export abstract class ComonadLaws<F> implements CoflatMapLaws<F> {
    */
   public readonly F: Comonad<F>
 
+  /**
+   * ```
+   * fa.coflatten.extract <-> fa
+   * ```
+   */
+  extractCoflattenIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(
+      F.extract(F.coflatten(fa)),
+      fa
+    )
+  }
+
+  /**
+   * ```
+   * fa.coflatten.map(_.extract) <-> fa
+   * ```
+   */
+  mapCoflattenIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(
+      F.map(F.coflatten(fa), F.extract),
+      fa
+    )
+  }
+
+  /**
+   * ```
+   * fa.map(f) <-> fa.coflatMap(fa0 => f(fa0.extract))
+   * ```
+   */
+  mapCoflatMapCoherence<A, B>(fa: HK<F, A>, f: (a: A) => B): Equiv<HK<F, B>> {
+    const F = this.F
+    return Equiv.of(
+      F.map(fa, f),
+      F.coflatMap(fa, fa0 => f(F.extract(fa0)))
+    )
+  }
+
+  /**
+   * ```
+   * fa.coflatMap(_.extract) <-> fa
+   * ```
+   */
+  comonadLeftIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>> {
+    const F = this.F
+    return Equiv.of(
+      F.coflatMap(fa, F.extract),
+      fa
+    )
+  }
+
+  /**
+   * ```
+   * fa.coflatMap(f).extract <-> f(fa)
+   * ```
+   */
+  comonadRightIdentity<A, B>(fa: HK<F, A>, f: (a: HK<F, A>) => B): Equiv<B> {
+    const F = this.F
+    return Equiv.of(
+      F.extract(F.coflatMap(fa, f)),
+      f(fa)
+    )
+  }
+
   /** Mixed-in from {@link CoflatMapLaws.coflatMapAssociativity}. */
   coflatMapAssociativity: <A, B, C>(fa: HK<F, A>, f: (a: HK<F, A>) => B, g: (b: HK<F, B>) => C) => Equiv<HK<F, C>>
   /** Mixed-in from {@link CoflatMapLaws.coflattenThroughMap}. */
@@ -395,13 +459,6 @@ export abstract class ComonadLaws<F> implements CoflatMapLaws<F> {
   covariantIdentity: <A>(fa: HK<F, A>) => Equiv<HK<F, A>>
   /** Mixed-in from {@link FunctorLaws.covariantComposition}. */
   covariantComposition: <A, B, C>(fa: HK<F, A>, f: (a: A) => B, g: (b: B) => C) => Equiv<HK<F, C>>
-
-  /** Mixed-in from {@link CoflatMapLaws.applyComposition}. */
-  applyComposition: <A, B, C>(fa: HK<F, A>, fab: HK<F, (a: A) => B>, fbc: HK<F, (b: B) => C>) => Equiv<HK<F, C>>
-  /** Mixed-in from {@link CoflatMapLaws.applyProductConsistency}. */
-  applyProductConsistency: <A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
-  /** Mixed-in from {@link CoflatMapLaws.applyMap2Consistency}. */
-  applyMap2Consistency: <A, B>(fa: HK<F, A>, f: HK<F, (a: A) => B>) => Equiv<HK<F, B>>
 }
 
 applyMixins(ComonadLaws, [CoflatMapLaws])

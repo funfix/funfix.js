@@ -21,6 +21,8 @@ import { Either } from "funfix-core"
 import {
   Eq,
   eqOf,
+  CoflatMap,
+  coflatMapOf,
   Monad,
   monadOf,
   FlatMap,
@@ -53,3 +55,6 @@ const flatMap2: FlatMap<Either<any, any>> = EitherInstances.global
 
 const monad1: Monad<Either<any, any>> = monadOf(Either)
 const monad2: Monad<Either<any, any>> = EitherInstances.global
+
+const coflatMap1: CoflatMap<Either<any, any>> = coflatMapOf(Either)
+const coflatMap2: CoflatMap<Either<any, any>> = EitherInstances.global

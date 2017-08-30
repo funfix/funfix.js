@@ -52,6 +52,12 @@ export interface Comonad<F> extends CoflatMap<F> {
 
 export interface ComonadLaws<F> extends CoflatMapLaws<F> {
   +F: Comonad<F>;
+
+  extractCoflattenIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>>;
+  mapCoflattenIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>>;
+  mapCoflatMapCoherence<A, B>(fa: HK<F, A>, f: (a: A) => B): Equiv<HK<F, B>>;
+  comonadLeftIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>>;
+  comonadRightIdentity<A, B>(fa: HK<F, A>, f: (a: HK<F, A>) => B): Equiv<B>;
 }
 
 declare export function comonadOf<F>(c: Constructor<F>): Comonad<F>;
