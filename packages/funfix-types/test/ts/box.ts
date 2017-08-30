@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {applyMixins, Either, is, Success, Try} from "funfix-core"
+import { applyMixins, Either, is, Success, Try } from "funfix-core"
 import {
   Functor,
   Apply,
