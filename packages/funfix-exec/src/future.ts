@@ -486,11 +486,11 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
   }
 
   // Implements HK<F, A>
-  readonly _funKindF: Future<any>
-  readonly _funKindA: A
+  /** @hidden */ readonly _funKindF: Future<any>
+  /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  static readonly _funErasure: Future<any>
+  /** @hidden */ static readonly _funErasure: Future<any>
 
   /**
    * Given a function that executes immediately, executes it asynchronously

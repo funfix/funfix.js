@@ -12,6 +12,7 @@ before_script:
 script:
   - npm run build && npm run test:prod
 after_success:
+  - openssl aes-256-cbc -K $encrypted_013a0bf39638_key -iv $encrypted_013a0bf39638_iv -in common/npmrc.enc -out ~/.npmrc -d
   - ./scripts/upload-coverage.sh
+  - ./scripts/npm-publish.js
   - ./scripts/gh-pages-publish.js
-

@@ -46,21 +46,24 @@ import {
  *
  * Compared with Funfix's
  * [Future](https://funfix.org/api/exec/classes/future.html) (see
- * `funfix-exec`) or JavaScript's `Promise`, `IO` does not represent a
- * running computation or a value detached from time, as `IO` does not
- * execute anything when working with its builders or operators and it
- * does not submit any work into the `Scheduler` or any run-loop for
- * execution, the execution eventually taking place only after {@link
- * IO.run} is called and not before that.
+ * [funfix-exec](https://funfix.org/api/exec/)) or JavaScript's
+ * [Promise](https://promisesaplus.com/),
+ * `IO` does not represent a running computation or a value detached
+ * from time, as `IO` does not execute anything when working with its
+ * builders or operators and it does not submit any work into the
+ * [Scheduler](https://funfix.org/api/exec/classes/scheduler.html) or any
+ * run-loop for execution, the execution eventually
+ * taking place only after {@link IO.run} is called and not before
+ * that.
  *
  * In order to understand `IO`, here's the design space:
  *
- * |                  | Strict                     | Lazy                              |
- * |------------------|:--------------------------:|:---------------------------------:|
- * | **Synchronous**  | `A`                        | `() => A`                         |
- * |                  |                            | [Eval&lt;A&gt;]{@link Eval}       |
- * | **Asynchronous** | `(Try<A> => void) => void` | `() => ((Try<A> => void) => void` |
- * |                  | `Future<A>` / `Promise`    | [IO&lt;A&gt;]{@link IO}           |
+ * |                  | Strict                     | Lazy                               |
+ * |------------------|:--------------------------:|:----------------------------------:|
+ * | **Synchronous**  | `A`                        | `() => A`                          |
+ * |                  |                            | [Eval&lt;A&gt;]{@link Eval}        |
+ * | **Asynchronous** | `(Try<A> => void) => void` | `() => ((Try<A> => void) => void)` |
+ * |                  | `Future<A>` / `Promise`    | [IO&lt;A&gt;]{@link IO}            |
  *
  * JavaScript is a language (and runtime) that's strict by default,
  * meaning that expressions are evaluated immediately instead of
@@ -125,11 +128,102 @@ import {
  * [Future](https://funfix.org/api/exec/classes/future.html), a value
  * that can be completed already or might be completed at some point
  * in the future, once the running asynchronous process finishes.
+ * It's the equivalent of JavaScript's `Promise`, only better and
+ * cancelable, see next topic.
+ *
+ * ## Laziness
+ *
+ * The fact that `IO` is lazy, whereas `Future` and `Promise` are not
+ * has real consequences. For example with `IO` you can do this:
+ *
+ * ```typescript
+ * function retryOnFailure<A>(times: number, io: IO<A>): IO<A> {
+ *   return source.recoverWith(err => {
+ *     // No more retries left? Re-throw error:
+ *     if (times <= 0) return IO.raise(err)
+ *     // Recursive call, yes we can!
+ *     return retryOnFailure(times - 1, io)
+ *       // Adding 500 ms delay for good measure
+ *       .delayExecution(500)
+ *   })
+ * }
+ * ```
+ *
+ * `Future` being a strict value-wannabe means that the actual value
+ * gets "memoized" (means cached), however `IO` is basically a function
+ * that can be repeated for as many times as you want. `IO` can also
+ * do memoization of course:
+ *
+ * ```typescript
+ * io.memoize()
+ * ```
+ *
+ * The difference between this and just calling `run()` is that
+ * `memoize()` still returns an `IO` and the actual memoization
+ * happens on the first `run()` (with idempotency guarantees of
+ * course).
+ *
+ * But here's something else that `Future` or your favorite
+ * `Promise`-like data type cannot do:
+ *
+ * ```typescript
+ * io.memoizeOnSuccess()
+ * ```
+ *
+ * This keeps repeating the computation for as long as the result is a
+ * failure and caches it only on success. Yes we can!
+ *
+ * ### Parallelism
+ *
+ * Because of laziness, invoking {@link IO.sequence} will not work like
+ * it does for `Future.sequence` or `Promise.all`, the given `IO` values
+ * being evaluated one after another, in *sequence*, not in *parallel*.
+ * If you want parallelism, then you need to use {@link IO.gather} and
+ * thus be explicit about it.
+ *
+ * This is great because it gives you the possibility of fine tuning the
+ * execution. For example, say you want to execute things in parallel,
+ * but with a maximum limit of 30 tasks being executed in parallel.
+ * One way of doing that is to process your list in batches.
+ *
+ * This sample assumes you have [lodash](https://lodash.com/) installed,
+ * for manipulating our array:
+ *
+ * ```typescript
+ * import * as _ from "lodash"
+ * import { IO } from "funfix"
+ *
+ * // Some array of IOs, you come up with something good :-)
+ * const list: IO<string>[] = ???
+ *
+ * // Split our list in chunks of 30 items per chunk,
+ * // this being the maximum parallelism allowed
+ * const chunks = _.chunks(list, 30)
+ * // Specify that each batch should process stuff in parallel
+ * const batchedIOs = _.map(chunks, chunk => Task.gather(chunk))
+ * // Sequence the batches
+ * const allBatches = Task.sequence(batchedIOs)
+ *
+ * // Flatten the result, within the context of IO
+ * const all: IO<string[]> =
+ *   allBatches.map(batches => _.flatten(batches))
+ * ```
+ *
+ * Note that the built `IO` reference is just a specification at this point,
+ * or you can view it as a function, as nothing has executed yet, you need
+ * to call {@link IO.run .run} explicitly.
+ *
+ * ## Cancellation
+ *
+ * The logic described by an `IO` task could be cancelable, depending
+ * on how the `IO` gets built. This is where the `IO`-`Future`
+ * symbiosis comes into play.
  *
  * Futures can also be canceled, in case the described computation can
- * be canceled. Not in this case (since there's nothing that can be
- * cancelled when building tasks with `IO.of`), but, we can build
- * cancelable tasks with {@link IO.async}:
+ * be canceled. When describing `IO` tasks with `IO.of` nothing can be
+ * cancelled, since there's nothing about a plain function that you
+ * can cancel, but, we can build cancelable tasks with
+ * {@link IO.async}:
  *
  * ```typescript
  * import { Cancelable, Success, IO } from "funfix"
@@ -166,6 +260,27 @@ import {
  *
  * // If we change our mind before the timespan has passed:
  * f.cancel()
+ * ```
+ *
+ * Also, given an `IO` task, we can specify actions that need to be
+ * triggered in case of cancellation:
+ *
+ * ```typescript
+ * const io = IO.of(() => console.info("Hello!"))
+ *   .executeForked()
+ *
+ * io.doOnCancel(IO.of(() => {
+ *   console.info("A cancellation attempt was made!")
+ * })
+ *
+ * const f: Future<void> = io.run()
+ *
+ * // Note that in this case cancelling the resulting Future
+ * // will not stop the actual execution, since it doesn't know
+ * // how, but it will trigger our on-cancel callback:
+ *
+ * f.cancel()
+ * //=> A cancellation attempt was made!
  * ```
  *
  * ## Note on the ExecutionModel
@@ -205,7 +320,7 @@ import {
  * io.executeWithModel(ExecutionModel.batched(256))
  * ```
  *
- * ## Versus IO
+ * ## Versus Eval
  *
  * For dealing with lazy evaluation, the other alternative is
  * the {@link Eval} data type.
@@ -243,6 +358,29 @@ export class IO<A> {
    * Without invoking `run` on a `IO`, nothing gets evaluated, as an
    * `IO` has lazy behavior.
    *
+   * ```typescript
+   * // Describing a side effect
+   * const io = IO.of(() => console.log("Hello!"))
+   *   // Delaying it for 1 second, for didactical purposes
+   *   .delayExecution(1000)
+   *
+   * // Nothing executes until we call run on it, which gives
+   * // us a Future in return:
+   * const f: Future<void> = io.run()
+   *
+   * // The given Future is cancelable, in case the logic
+   * // decribed by our IO is cancelable, so we can do this:
+   * f.cancel()
+   * ```
+   *
+   * Note that `run` takes a
+   * [Scheduler](https://funfix.org/api/exec/classes/scheduler.html)
+   * as an optional parameter and if one isn't provided, then the
+   * default scheduler gets used. The `Scheduler` is in charge
+   * of scheduling asynchronous boundaries, executing tasks
+   * with a delay (e.g. `setTimeout`) or of reporting failures
+   * (with `console.error` by default).
+   *
    * Also see {@link IO.runOnComplete} for a version that takes a
    * callback as parameter.
    *
@@ -258,6 +396,52 @@ export class IO<A> {
    *
    * Without invoking `run` on a `IO`, nothing gets evaluated, as an
    * `IO` has lazy behavior.
+   *
+   * `runComplete` starts the evaluation and takes a callback which
+   * will be triggered when the computation is complete.
+   *
+   * Compared with JavaScript's `Promise.then` the provided callback
+   * is a function that receives a
+   * [Try](https://funfix.org/api/core/classes/try.html) value, a data
+   * type which is what's called a "logical disjunction", or a "tagged
+   * union type", a data type that can represent both successful
+   * results and failures. This is because in Funfix we don't work
+   * with `null`.
+   *
+   * Also the returned value is an
+   * [ICancelable](https://funfix.org/api/exec/interfaces/icancelable.html)
+   * reference, which can be used to cancel the running computation,
+   * in case the logic described by our `IO` is cancelable (note that
+   * some procedures cannot be cancelled, it all depends on how the
+   * `IO` value was described, see {@link IO.async} for how cancelable
+   * `IO` values can be built).
+   *
+   * Example:
+   *
+   * ```typescript
+   * // Describing a side effect
+   * const io = IO.of(() => console.log("Hello!"))
+   *   .delayExecution(1000)
+   *
+   * // Nothing executes until we explicitly run our `IO`:
+   * const c: ICancelable = io.runOnComplete(r =>
+   *   r.fold(
+   *     err => console.error(err),
+   *     _ => console.info("Done!")
+   *   ))
+   *
+   * // In case we change our mind and the logic described by
+   * // our `IO` is cancelable, we can cancel it:
+   * c.cancel()
+   * ```
+   *
+   * Note that `runOnComplete` takes a
+   * [Scheduler](https://funfix.org/api/exec/classes/scheduler.html)
+   * as an optional parameter and if one isn't provided, then the
+   * default scheduler gets used. The `Scheduler` is in charge
+   * of scheduling asynchronous boundaries, executing tasks
+   * with a delay (e.g. `setTimeout`) or of reporting failures
+   * (with `console.error` by default).
    *
    * Also see {@link IO.run} for a version that returns a `Future`,
    * which might be easier to work with, especially since a `Future`
@@ -282,10 +466,37 @@ export class IO<A> {
   }
 
   /**
-   * Handle errors by turning them into `Either` values.
+   * Handle errors by lifting results into `Either` values.
    *
-   * If there is no error, then a `Right` value will be returned instead.
-   * Errors can be handled by this method.
+   * If there's an error, then a `Left` value will be signaled. If
+   * there is no error, then a `Right` value will be signaled instead.
+   *
+   * The returned type is an
+   * [Either](https://funfix.org/api/core/classes/either.html) value,
+   * which is what's called a "logical disjunction" or a "tagged union
+   * type", representing a choice between two values, in this case
+   * errors on the "Left" and successful results on the "Right".
+   *
+   * ```typescript
+   * // Describing an IO that can fail on execution:
+   * const io: IO<number> = IO.of(() => {
+   *   const n = Math.random() * 1000
+   *   const m = n & n // to integer
+   *   if (m % 2) throw new Error("No odds please!")
+   *   return m
+   * })
+   *
+   * // By using attempt() we can observe and use errors
+   * // in `map` and `flatMap` transformations:
+   * io.attempt().map(either =>
+   *   either.fold(
+   *     err => "odd",
+   *     val => "even"
+   *   ))
+   * ```
+   *
+   * For other error handling capabilities, see {@link IO.recoverWith}
+   * and {@link IO.transformWith}.
    */
   attempt(): IO<Either<Throwable, A>> {
     return this.transform(
@@ -311,6 +522,16 @@ export class IO<A> {
    * Between reading the path and then reading the file from that
    * path, we schedule an async boundary (it usually happens with
    * JavaScript's `setTimeout` under the hood).
+   *
+   * This is equivalent with:
+   *
+   * ```typescript
+   * self.flatMap(a => IO.shift(ec).map(_ => a))
+   *
+   * // ... or ...
+   *
+   * self.forEffect(IO.shift(ec))
+   * ```
    *
    * Also see {@link IO.shift} and {@link IO.fork}.
    *
@@ -386,7 +607,7 @@ export class IO<A> {
    *
    * NOTE: The given function is only called when the task is
    * complete.  However the function does not get called if the task
-   * gets canceled.  Cancellation is a process that's concurrent with
+   * gets canceled. Cancellation is a process that's concurrent with
    * the execution of a task and hence needs special handling.
    *
    * See {@link IO.doOnCancel} for specifying a callback to call on
@@ -426,7 +647,17 @@ export class IO<A> {
    * Ensures that an asynchronous boundary happens before the
    * execution, managed by the provided scheduler.
    *
-   * Alias for `IO.fork(this)`.
+   * Alias for {@link IO.fork}.
+   *
+   * Calling this is equivalent with:
+   *
+   * ```typescript
+   * IO.shift(ec).flatMap(_ => self)
+   *
+   * // ... or ...
+   *
+   * IO.shift(ec).followedBy(self)
+   * ```
    *
    * See {@link IO.fork}, {@link IO.asyncBoundary} and {@link IO.shift}.
    */
@@ -552,6 +783,12 @@ export class IO<A> {
    * ```typescript
    * IO.now(111).map(_ => _ * 2).get() // 222
    * ```
+   *
+   * Note there's a correspondence between `flatMap` and `map`:
+   *
+   * ```typescript
+   * fa.map(f) <-> fa.flatMap(x => IO.pure(f(x)))
+   * ```
    */
   map<B>(f: (a: A) => B): IO<B> {
     return new IOFlatMap(this, (a: A) => IO.now(f(a)))
@@ -585,7 +822,7 @@ export class IO<A> {
   }
 
   /**
-   * Memoizes (cache) the successful result of the source task
+   * Memoizes (caches) the successful result of the source task
    * and reuses it on subsequent invocations of `run`.
    * Thrown exceptions are not cached.
    *
@@ -616,6 +853,13 @@ export class IO<A> {
    *
    * This function is the equivalent of a `try/catch` statement,
    * or the equivalent of {@link IO.map .map} for errors.
+   *
+   * ```typescript
+   * io.recover(err => {
+   *   console.error(err)
+   *   fallback
+   * })
+   * ```
    */
   recover<AA>(f: (e: Throwable) => AA): IO<A | AA> {
     return this.recoverWith(a => IO.now(f(a)))
@@ -628,6 +872,22 @@ export class IO<A> {
    *
    * This function is the equivalent of a `try/catch` statement,
    * or the equivalent of {@link IO.flatMap .flatMap} for errors.
+   *
+   * Note that because of `IO`'s laziness, this can describe retry
+   * loop:
+   *
+   * ```typescript
+   * function retryOnFailure<A>(times: number, io: IO<A>): IO<A> {
+   *   return source.recoverWith(err => {
+   *     // No more retries left? Re-throw error:
+   *     if (times <= 0) return IO.raise(err)
+   *     // Recursive call, yes we can!
+   *     return retryOnFailure(times - 1, io)
+   *       // Adding 500 ms delay for good measure
+   *       .delayExecution(500)
+   *   })
+   * }
+   * ```
    */
   recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA> {
     return this.transformWith(f, IO.now as any)
@@ -687,7 +947,7 @@ export class IO<A> {
    * it can also transform errors and not just successful results.
    *
    * @param success is a function for transforming a successful result
-   * @param failure is function for transforming failures
+   * @param failure is a function for transforming failures
    */
   transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): IO<R> {
     return this.transformWith(
@@ -706,7 +966,7 @@ export class IO<A> {
    * results.
    *
    * @param success is a function for transforming a successful result
-   * @param failure is function for transforming failures
+   * @param failure is a function for transforming failures
    */
   transformWith<R>(failure: (e: Throwable) => IO<R>, success: (a: A) => IO<R>): IO<R> {
     return new IOFlatMap(this, success, failure)
@@ -715,15 +975,17 @@ export class IO<A> {
   /**
    * Identifies the `IO` reference type, useful for debugging and
    * for pattern matching in the implementation.
+   *
+   * @hidden
    */
   readonly _funADType: "pure" | "always" | "once" | "flatMap" | "async" | "memoize"
 
   // Implements HK<F, A>
-  readonly _funKindF: IO<any>
-  readonly _funKindA: A
+  /** @hidden */ readonly _funKindF: IO<any>
+  /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  static readonly _funErasure: IO<any>
+  /** @hidden */ static readonly _funErasure: IO<any>
 
   /**
    * Promote a `thunk` function to an `IO`, catching exceptions in
@@ -731,6 +993,17 @@ export class IO<A> {
    *
    * Note that since `IO` is not memoized by global, this will
    * recompute the value each time the `IO` is executed.
+   *
+   * ```typescript
+   * const io = IO.always(() => { console.log("Hello!") })
+   *
+   * io.run()
+   * //=> Hello!
+   * io.run()
+   * //=> Hello!
+   * io.run()
+   * //=> Hello!
+   * ```
    */
   static always<A>(thunk: () => A): IO<A> {
     return new IOAlways(thunk)
@@ -769,8 +1042,8 @@ export class IO<A> {
   }
 
   /**
-   * Constructs a lazy [[IO]] instance whose result
-   * will be computed asynchronously.
+   * Constructs a lazy [[IO]] instance whose result will be computed
+   * asynchronously.
    *
    * **WARNING:** Unsafe to use directly, only use if you know
    * what you're doing. For building `IO` instances safely

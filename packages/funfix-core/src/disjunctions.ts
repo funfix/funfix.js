@@ -304,11 +304,11 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   }
 
   // Implements HK<F, A>
-  readonly _funKindF: Either<L, any>
-  readonly _funKindA: R
+  /** @hidden */ readonly _funKindF: Either<L, any>
+  /** @hidden */ readonly _funKindA: R
 
   // Implements Constructor<T>
-  static readonly _funErasure: Either<any, any>
+  /** @hidden */ static readonly _funErasure: Either<any, any>
 
   static left<L, R>(value: L): Either<L, R> {
     return Left(value)
@@ -778,11 +778,11 @@ export class Option<A> implements std.IEquals<Option<A>> {
   }
 
   // Implements HK<F, A>
-  readonly _funKindF: Option<any>
-  readonly _funKindA: A
+  /** @hidden */ readonly _funKindF: Option<any>
+  /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  static readonly _funErasure: Option<any>
+  /** @hidden */ static readonly _funErasure: Option<any>
 
   /**
    * Builds an [[Option]] reference that contains the given value.
@@ -1389,11 +1389,11 @@ export class Try<A> implements std.IEquals<Try<A>> {
   }
 
   // Implements HK<F, A>
-  readonly _funKindF: Try<any>
-  readonly _funKindA: A
+  /** @hidden */ readonly _funKindF: Try<any>
+  /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  static readonly _funErasure: Try<any>
+  /** @hidden */ static readonly _funErasure: Try<any>
 
   /**
    * Evaluates the given `thunk` and returns either a [[Success]],

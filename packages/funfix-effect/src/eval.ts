@@ -198,15 +198,17 @@ export class Eval<A> {
   /**
    * Identifies the `Eval` reference type, useful for debugging and
    * for pattern matching in the implementation.
+   *
+   * @hidden
    */
   readonly _funADType: "now" | "always" | "once" | "suspend" | "flatMap"
 
   // Implements HK<F, A>
-  readonly _funKindF: Eval<any>
-  readonly _funKindA: A
+  /** @hidden */ readonly _funKindF: Eval<any>
+  /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  static readonly _funErasure: Eval<any>
+  /** @hidden */ static readonly _funErasure: Eval<any>
 
   /**
    * Alias for {@link Eval.always}.
