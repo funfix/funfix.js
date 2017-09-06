@@ -60,7 +60,7 @@ universally available, belonging into a standard library.
 For an à la carte install:
 
 ```
-npm install --safe funfix-core
+npm install --save funfix-core
 ```
 
 Exposes types for expressing disjunctions:
@@ -112,7 +112,7 @@ building higher level concurrency tools.
 For an à la carte install:
 
 ```
-npm install --safe funfix-exec
+npm install --save funfix-exec
 ```
 
 Scheduling tasks for asynchronous execution:
@@ -151,7 +151,7 @@ Defines monadic data types for controlling laziness, asynchrony and side effects
 For an à la carte install:
 
 ```
-npm install --safe funfix-effect
+npm install --save funfix-effect
 ```
 
 The exposed data types:
@@ -171,7 +171,7 @@ by [Typelevel Cats](https://typelevel.org/cats/).
 For an à la carte install:
 
 ```
-npm install --safe funfix-types
+npm install --save funfix-types
 ```
 
 [Type classes](https://en.wikipedia.org/wiki/Type_class) inspired by
