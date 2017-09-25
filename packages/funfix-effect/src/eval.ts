@@ -325,9 +325,6 @@ export class Eval<A> {
    * function to the successful values of the futures, or in failure in
    * case either of them fails.
    *
-   * This is a specialized {@link Eval.sequence} operation and as such
-   * on cancellation or failure all pending tasks get cancelled.
-   *
    * ```typescript
    * const fa1 = Eval.of(() => 1)
    * const fa2 = Eval.of(() => 2)
@@ -353,9 +350,6 @@ export class Eval<A> {
    * function to the successful values of the futures, or in failure in
    * case either of them fails.
    *
-   * This is a specialized {@link Eval.sequence} operation and as such
-   * on cancellation or failure all pending tasks get cancelled.
-   *
    * ```typescript
    * const fa1 = Eval.of(() => 1)
    * const fa2 = Eval.of(() => 2)
@@ -380,9 +374,6 @@ export class Eval<A> {
    * function to the successful values of the futures, or in failure in
    * case either of them fails.
    *
-   * This is a specialized {@link Eval.sequence} operation and as such
-   * on cancellation or failure all pending tasks get cancelled.
-   *
    * ```typescript
    * const fa1 = Eval.of(() => 1)
    * const fa2 = Eval.of(() => 2)
@@ -406,9 +397,6 @@ export class Eval<A> {
    * `Eval` reference that completes with the result of mapping that
    * function to the successful values of the futures, or in failure in
    * case either of them fails.
-   *
-   * This is a specialized {@link Eval.sequence} operation and as such
-   * on cancellation or failure all pending tasks get cancelled.
    *
    * ```typescript
    * const fa1 = Eval.of(() => 1)
@@ -436,9 +424,6 @@ export class Eval<A> {
    * `Eval` reference that completes with the result of mapping that
    * function to the successful values of the futures, or in failure in
    * case either of them fails.
-   *
-   * This is a specialized {@link Eval.sequence} operation and as such
-   * on cancellation or failure all pending tasks get cancelled.
    *
    * ```typescript
    * const fa1 = Eval.of(() => 1)
