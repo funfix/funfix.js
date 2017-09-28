@@ -16,8 +16,8 @@
     "option",
     "either"
   ],
-  "main": "dist/index.umd.js",
-  "module": "dist/index.js",
+  "main": "dist/umd.js",
+  "module": "dist/es5.js",
   "typings": "dist/types/index.d.ts",
   "files": [
     "dist",

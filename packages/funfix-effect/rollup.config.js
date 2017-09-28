@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-const babel = require("rollup-plugin-babel")
 const resolve = require("rollup-plugin-node-resolve")
 const commonjs = require("rollup-plugin-commonjs")
 const path = require("path")
@@ -29,7 +28,8 @@ const libraryName = pkg.name
 export default {
   entry: `dist/index.js`,
   targets: [
-    { dest: pkg.main, moduleName: camelCase(libraryName), format: "umd" }
+    { dest: pkg.main, moduleName: camelCase(libraryName), format: "umd" },
+    { file: pkg.module, format: "es" }
   ],
   sourceMap: true,
   // Indicate here external modules you don't wanna include in your bundle (i.e.: 'lodash')
@@ -41,11 +41,6 @@ export default {
     // Allow node_modules resolution, so you can use 'external' to control
     // which external modules to include in the bundle
     resolve(),
-    // Don't transpile node_modules. You may change this if you wanna transpile something in there
-    babel({
-      exclude: "node_modules/**",
-      shouldPrintComment: _ => false
-    }),
     // Keeps the original source maps
     sourceMaps()
   ]
