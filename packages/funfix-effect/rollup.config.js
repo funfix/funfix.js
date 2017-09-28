@@ -29,8 +29,7 @@ const libraryName = pkg.name
 export default {
   entry: `dist/index.js`,
   targets: [
-    { dest: pkg.main, moduleName: camelCase(libraryName), format: "umd" },
-    { file: pkg.module, format: "es" }
+    { dest: pkg.main, moduleName: camelCase(libraryName), format: "umd" }
   ],
   sourceMap: true,
   // Indicate here external modules you don't wanna include in your bundle (i.e.: 'lodash')
