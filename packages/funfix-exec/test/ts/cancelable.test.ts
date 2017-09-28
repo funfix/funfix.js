@@ -25,7 +25,8 @@ import {
   MultiAssignCancelable,
   SingleAssignCancelable,
   SerialCancelable,
-  StackedCancelable
+  StackedCancelable,
+  ChainedCancelable
 } from "../../src/"
 
 class TestCancelable extends BoolCancelable {
@@ -616,5 +617,191 @@ describe("StackedCancelable", () => {
     assert.ok(sc.isCanceled())
     assert.ok(c1.isCanceled())
     assert.ok(c4.isCanceled())
+  })
+})
+
+describe("ChainedCancelable", () => {
+  it("cancel()", () => {
+    let effect = 0
+    const sub = BoolCancelable.of(() => effect += 1)
+    const mSub = new ChainedCancelable(sub)
+
+    assert.equal(effect, 0)
+    assert.not(sub.isCanceled())
+    assert.not(mSub.isCanceled())
+
+    mSub.cancel()
+    assert.ok(sub.isCanceled() && mSub.isCanceled())
+    assert.equal(effect, 1)
+
+    mSub.cancel()
+    assert.ok(sub.isCanceled() && mSub.isCanceled())
+    assert.equal(effect, 1)
+  })
+
+  it("cancel() after second assignment", () => {
+    let effect = 0
+    const sub = BoolCancelable.of(() => effect += 1)
+    const mSub = new ChainedCancelable(sub)
+
+    const sub2 = BoolCancelable.of(() => effect += 10)
+    mSub.update(sub2)
+
+    assert.equal(effect, 0)
+    assert.ok(!sub.isCanceled() && !sub2.isCanceled() && !mSub.isCanceled())
+
+    mSub.cancel()
+    assert.ok(sub2.isCanceled() && mSub.isCanceled() && !sub.isCanceled())
+    assert.equal(effect, 10)
+  })
+
+  it("automatically cancel assigned", () => {
+    const mSub = new ChainedCancelable()
+    mSub.cancel()
+
+    let effect = 0
+    const sub = BoolCancelable.of(() => effect += 1)
+
+    assert.equal(effect, 0)
+    assert.ok(!sub.isCanceled() && mSub.isCanceled())
+
+    mSub.update(sub)
+    assert.equal(effect, 1)
+    assert.ok(sub.isCanceled())
+  })
+
+  it("update() throws on null", () => {
+    const c = new ChainedCancelable()
+    assert.throws(() => c.update(null as any))
+  })
+
+  it("chain once", () => {
+    const c1 = BoolCancelable.empty()
+    const c2 = BoolCancelable.empty()
+
+    const source = ChainedCancelable.empty()
+    const child1 = ChainedCancelable.empty()
+
+    child1.chainTo(source)
+    child1.update(c1)
+
+    assert.not(c1.isCanceled(), "!c1.isCanceled")
+    source.cancel()
+
+    assert.ok(c1.isCanceled(), "c1.isCanceled")
+    assert.ok(source.isCanceled(), "source.isCanceled")
+    assert.ok(child1.isCanceled(), "child1.isCanceled")
+
+    child1.update(c2)
+    assert.ok(c2.isCanceled(), "c2.isCanceled")
+  })
+
+  it("chain twice", () => {
+    const c1 = BoolCancelable.empty()
+    const c2 = BoolCancelable.empty()
+
+    const source = ChainedCancelable.empty()
+    const child1 = ChainedCancelable.empty()
+    const child2 = ChainedCancelable.empty()
+
+    child1.chainTo(source)
+    child2.chainTo(child1)
+
+    child2.update(c1)
+    assert.not(c1.isCanceled(), "!c1.isCanceled")
+
+    source.cancel()
+
+    assert.ok(c1.isCanceled(), "c1.isCanceled")
+    assert.ok(source.isCanceled(), "source.isCanceled")
+    assert.ok(child1.isCanceled(), "child1.isCanceled")
+    assert.ok(child2.isCanceled(), "child2.isCanceled")
+
+    child2.update(c2)
+    assert.ok(c2.isCanceled(), "c2.isCanceled")
+  })
+
+  it("chain after source cancel", () => {
+    const c1 = BoolCancelable.empty()
+    const c2 = BoolCancelable.empty()
+
+    const source = new ChainedCancelable(c1)
+    const child1 = ChainedCancelable.empty()
+
+    source.cancel()
+    assert.ok(c1.isCanceled(), "c1.isCanceled")
+
+    child1.chainTo(source)
+    assert.ok(child1.isCanceled(), "child1.isCanceled")
+
+    child1.update(c2)
+    assert.ok(c2.isCanceled(), "c2.isCanceled")
+  })
+
+  it("chain after child cancel", () => {
+    const c1 = BoolCancelable.empty()
+    const c2 = BoolCancelable.empty()
+
+    const source1 = new ChainedCancelable(c1)
+    const source2 = ChainedCancelable.empty()
+    const child = ChainedCancelable.empty()
+
+    child.cancel()
+    assert.not(c1.isCanceled(), "!c1.isCanceled")
+
+    child.chainTo(source1)
+    assert.ok(child.isCanceled(), "child1.isCanceled")
+    assert.ok(source1.isCanceled(), "source.isCanceled")
+    assert.ok(c1.isCanceled(), "c1.isCanceled")
+
+    child.update(c2)
+    assert.ok(c2.isCanceled(), "c2.isCanceled")
+    assert.ok(child.isCanceled(), "child.isCanceled")
+
+    child.chainTo(source2)
+    assert.ok(child.isCanceled(), "child.isCanceled")
+    assert.ok(source2.isCanceled(), "source2.isCanceled")
+  })
+
+  it("chainTo(source) transfers the underlying to `source`", () => {
+    const c = BoolCancelable.empty()
+
+    const source = ChainedCancelable.empty()
+    const child = new ChainedCancelable(c)
+
+    child.chainTo(source)
+    child.cancel()
+
+    assert.ok(c.isCanceled())
+  })
+
+  it("throws exception on chainTo(null)", () => {
+    const c = ChainedCancelable.empty()
+    assert.throws(() => c.chainTo(null as any))
+  })
+
+  it("ref.chainTo(ref) is a no-op", () => {
+    const c = BoolCancelable.empty()
+    const cc = new ChainedCancelable(c)
+    cc.chainTo(cc)
+
+    cc.cancel()
+    assert.ok(c.isCanceled())
+  })
+
+  it("short-circuits cycles", () => {
+    const c = BoolCancelable.empty()
+    const cc1 = new ChainedCancelable()
+    const cc2 = new ChainedCancelable()
+    const cc3 = new ChainedCancelable()
+
+    cc1.chainTo(cc2)
+    cc2.chainTo(cc3)
+    cc3.chainTo(cc1)
+
+    cc1.update(c)
+    cc3.cancel()
+
+    assert.ok(c.isCanceled())
   })
 })

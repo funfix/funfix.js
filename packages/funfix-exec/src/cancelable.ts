@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
-import { CompositeError, IllegalStateError } from "funfix-core"
+import {
+  CompositeError,
+  IllegalStateError,
+  IllegalArgumentError
+} from "funfix-core"
 
 /**
  * `ICancelable` represents a one-time idempotent action that can be
@@ -36,7 +40,7 @@ import { CompositeError, IllegalStateError } from "funfix-core"
  *
  * In case some API requires the return of an `ICancelable` reference,
  * but there isn't anything that can be canceled, then
- * [[Cancelable.empty]] can be used to return a reusable reference
+ * {@link Cancelable.empty} can be used to return a reusable reference
  * that doesn't do anything when canceled.
  *
  * ```typescript
@@ -156,6 +160,20 @@ class WrapFn extends Cancelable {
 }
 
 /**
+ * A `DummyCancelable` is for {@link ICancelable} references that
+ * don't do anything on `cancel()` and thus can be ignored.
+ *
+ * The common supertype of {@link Cancelable.empty} and
+ * {@link BoolCancelable.alreadyCanceled}.
+ */
+export class DummyCancelable implements ICancelable {
+  protected readonly _funIsDummy = true
+
+  cancel(): void {
+  }
+}
+
+/**
  * Reusable [[Cancelable]] reference that doesn't do anything on
  * cancel.
  *
@@ -164,11 +182,8 @@ class WrapFn extends Cancelable {
  *
  * @Hidden
  */
-const Empty: Cancelable =
-  new (//noinspection JSUnusedLocalSymbols
-    class Empty extends Cancelable {
-      cancel() {}
-    })()
+const Empty: ICancelable =
+  new DummyCancelable()
 
 /**
  * `IBoolCancelable` represents a {@link ICancelable} that can be queried
@@ -264,7 +279,7 @@ export abstract class BoolCancelable implements IBoolCancelable {
    * The implementation returns the same reusable reference.
    */
   public static alreadyCanceled(): BoolCancelable {
-    return AlreadyCanceled
+    return AlreadyCanceledRef
   }
 
   /**
@@ -337,7 +352,11 @@ class CollectionCancelable extends BoolCancelable {
 function cancelAll(refs: Cancelable[]): void {
   const errors = []
   for (const c of refs) {
-    try { c.cancel() } catch (e) { errors.push(e) }
+    try {
+      c.cancel()
+    } catch (e) {
+      errors.push(e)
+    }
   }
 
   if (errors.length === 1) throw errors[0]
@@ -353,7 +372,9 @@ function cancelAll(refs: Cancelable[]): void {
  * @Hidden
  */
 class BoolWrapFn extends WrapFn implements BoolCancelable {
-  isCanceled() { return this.thunk === null }
+  isCanceled() {
+    return this.thunk === null
+  }
 }
 
 /**
@@ -369,8 +390,26 @@ class BoolWrapFn extends WrapFn implements BoolCancelable {
 class BoolEmpty extends BoolCancelable {
   private canceled: boolean = false
 
-  isCanceled(): boolean { return this.canceled }
-  public cancel(): void { this.canceled = true }
+  isCanceled(): boolean {
+    return this.canceled
+  }
+
+  public cancel(): void {
+    this.canceled = true
+  }
+}
+
+/**
+ * Implementation for {@link BoolCancelable.alreadyCanceled}.
+ *
+ * @Hidden
+ */
+class AlreadyCanceledBoolCancelable
+  extends DummyCancelable implements IBoolCancelable {
+
+  isCanceled() {
+    return true
+  }
 }
 
 /**
@@ -381,12 +420,8 @@ class BoolEmpty extends BoolCancelable {
  *
  * @Hidden
  */
-const AlreadyCanceled: BoolCancelable =
-  new (//noinspection JSUnusedLocalSymbols
-    class AlreadyCanceled extends BoolCancelable {
-      isCanceled() { return true }
-      cancel() {}
-    })()
+const AlreadyCanceledRef: BoolCancelable =
+  new AlreadyCanceledBoolCancelable()
 
 /**
  * Represents a type of [[ICancelable]] that can hold
@@ -438,7 +473,7 @@ export abstract class AssignCancelable implements IAssignCancelable {
    * The implementation returns the same reusable reference.
    */
   public static alreadyCanceled(): AssignCancelable {
-    return AlreadyCanceledAssignable
+    return AlreadyCanceledAssignCancelableRef
   }
 
   /**
@@ -475,16 +510,31 @@ export abstract class AssignCancelable implements IAssignCancelable {
 }
 
 /**
- * Internal reusable reference for [[AssignCancelable]].
+ * Internal reusable class for an {@link IAssignCancelable} that
+ * is already cancelled.
+ *
  * @Hidden
  */
-const AlreadyCanceledAssignable: AssignCancelable =
-  new (//noinspection JSUnusedLocalSymbols
-    class AlreadyCanceledAssignable extends AssignCancelable {
-      isCanceled() { return true }
-      cancel() {}
-      update(value: ICancelable) { value.cancel(); return this }
-    })()
+class AlreadyCanceledAssignCancelable
+  extends DummyCancelable implements IAssignCancelable {
+
+  isCanceled() { return true }
+  cancel() {}
+
+  update(value: ICancelable) {
+    value.cancel()
+    return this
+  }
+}
+
+/**
+ * Internal reusable reference for an {@link IAssignCancelable} that
+ * is already cancelled.
+ *
+ * @Hidden
+ */
+const AlreadyCanceledAssignCancelableRef: AssignCancelable =
+  new AlreadyCanceledAssignCancelable()
 
 /**
  * The `MultiAssignCancelable` is an {@link IAssignCancelable} whose
@@ -521,7 +571,9 @@ export class MultiAssignCancelable implements IAssignCancelable {
   }
 
   /** @inheritdoc */
-  public isCanceled(): boolean { return this._canceled }
+  public isCanceled(): boolean {
+    return this._canceled
+  }
 
   /** @inheritdoc */
   public cancel(): void {
@@ -634,7 +686,9 @@ export class SerialCancelable implements IAssignCancelable {
     return this
   }
 
-  public isCanceled(): boolean { return this._canceled }
+  public isCanceled(): boolean {
+    return this._canceled
+  }
 
   public cancel(): void {
     if (!this._canceled) {
@@ -713,7 +767,9 @@ export class SingleAssignCancelable implements IAssignCancelable {
   }
 
   /** @inheritdoc */
-  public isCanceled(): boolean { return this._canceled }
+  public isCanceled(): boolean {
+    return this._canceled
+  }
 
   /** @inheritdoc */
   public cancel(): void {
@@ -847,5 +903,196 @@ export class StackedCancelable implements IBoolCancelable {
    */
   static collection(...refs: Array<ICancelable>): StackedCancelable {
     return new StackedCancelable(refs)
+  }
+}
+
+/**
+ * Represents an {@link IAssignCancelable} whose underlying
+ * cancelable reference can be swapped for another. It can
+ * be "chained" to another `ChainedCancelable`, forwarding all
+ * operations to it.
+ *
+ * For most purposes it works like a {@link MultiAssignCancelable}:
+ *
+ * ```typescript
+ *   const s = ChainedCancelable.empty()
+ *   s.update(c1) // sets the underlying cancelable to c1
+ *   s.update(c2) // swaps the underlying cancelable to c2
+ *
+ *   s.cancel() // also cancels c2
+ *   s.update(c3) // also cancels c3, because s is already canceled
+ * ```
+ *
+ * However it can also be linked to another `ChainedCancelable`
+ * reference, forwarding all requests to it:
+ *
+ * ```typescript
+ *   const source = ChainedCancelable.empty()
+ *   const child1 = ChainedCancelable.empty()
+ *   const child2 = ChainedCancelable.empty()
+ *
+ *   // Hence forth forwards all operations on `child1` to `source`
+ *   child1.chainTo(source)
+ *
+ *   // Also forwarding all `child2` operations to `source`.
+ *   // This happens because `child1` was linked to `source` first
+ *   // but order matters, as `child2` will be linked directly
+ *   // to `source` and not to `child1`, in order for `child1` to
+ *   // be garbage collected if it goes out of scope ;-)
+ *   child2.chainTo(child1)
+ *
+ *   // Source will be updated with a new Cancelable ref
+ *   child1.update(Cancelable.from(() => println("Cancelling (1)")))
+ *
+ *   // Source will be updated with another Cancelable ref
+ *   child2.update(Cancelable.from(() => println("Cancelling (2)")))
+ *
+ *   source.cancel()
+ *   //=> Cancelling (2)
+ * ```
+ *
+ * This implementation is a special purpose {@link IAssignCancelable},
+ * much like {@link StackedCancelable}, to be used in `flatMap`
+ * implementations that need it.
+ *
+ * The problem that it solves in Funfix's codebase is that various
+ * `flatMap` implementations need to be memory safe.
+ * By "chaining" cancelable references, we allow the garbage collector
+ * to get rid of references created in a `flatMap` loop, the goal
+ * being to consume a constant amount of memory. Thus this
+ * implementation is used for the {@link Future} implementation.
+ *
+ * If unsure about what to use, then you probably don't need
+ * {@link ChainedCancelable}. Use {@link MultiAssignCancelable} or
+ * {@link SingleAssignCancelable} for most purposes.
+ */
+export class ChainedCancelable implements IAssignCancelable {
+  private _underlying?: ICancelable
+  private _chained: boolean
+
+  constructor(initial?: ICancelable) {
+    // Reference cannot be null, because that signals a cancelled `this`
+    this._underlying = initial || Empty
+    this._chained = false
+  }
+
+  update(value: ICancelable): this {
+    if (!value) throw new IllegalArgumentError(`cannot update to null value`)
+    // A null underlying value signals a canceled `this`
+    if (!this._underlying) {
+      value.cancel()
+      return this
+    }
+    else if (this._chained) {
+      (this._underlying as ChainedCancelable).update(value)
+      return this
+    }
+    else {
+      this._underlying = value
+      return this
+    }
+  }
+
+  cancel(): void {
+    if (this._underlying) {
+      this._underlying.cancel()
+      this._chained = false
+      delete this._underlying
+    }
+  }
+
+  /**
+   * Clears the underlying reference, resetting it to a dummy
+   * reference.
+   *
+   * To be used for garbage collecting purposes.
+   */
+  clear(): void {
+    if (this._underlying) {
+      this._underlying = Empty
+      this._chained = false
+    }
+  }
+
+  isCanceled(): boolean {
+    return !this._underlying || (
+      this._chained && (this._underlying as ChainedCancelable).isCanceled())
+  }
+
+  /**
+   * Chains this `ChainedCancelable` to another reference,
+   * such that all operations are forwarded to `other`.
+   *
+   * ```typescript
+   * const source = ChainedCancelable.empty()
+   * const child1 = ChainedCancelable.empty()
+   * const child2 = ChainedCancelable.empty()
+   *
+   * // Hence forth forwards all operations on `child1` to `source`
+   * child1.chainTo(source)
+   *
+   * // Also forwarding all `child2` operations to `source`
+   * // (this happens because `child1` was linked to `source` first
+   * // but order matters ;-))
+   * child2.chainTo(child1)
+   *
+   * // Source will be updated with a new Cancelable ref
+   * child1.update( Cancelable.of(() => console.log("Cancelling (1)")) )
+   *
+   * // Source will be updated with another Cancelable ref
+   * child2.update( Cancelable.of (() => console.log("Cancelling (2)")) )
+   *
+   * source.cancel()
+   * //=> Cancelling (2)
+   * ```
+   */
+  chainTo(other: ChainedCancelable): this {
+    if (!other) throw new IllegalArgumentError(`cannot chain to null value`)
+    // Short-circuit in case we have the same reference
+    if (other === this) return this
+
+    if (!this._underlying) {
+      other.cancel()
+      return this
+    }
+
+    // Getting the last ChainedCancelable reference in the
+    // chain, since that's the reference that we care about!
+    let ref: ChainedCancelable | undefined = other
+    let keepSearching = true
+
+    while (ref && keepSearching) {
+      if (ref._chained) {
+        const ref2: ICancelable | undefined = ref._underlying
+        // Interrupt infinite loop if we see the same reference
+        if (ref2 === this) return this
+        ref = ref2 as ChainedCancelable
+        keepSearching = !!ref2
+      } else {
+        if (!ref._underlying) ref = undefined
+        keepSearching = false
+      }
+    }
+
+    // A null or undefined reference means that `other` is already
+    // cancelled, therefore we are cancelling `this` as well
+    if (!ref) {
+      this.cancel()
+    } else {
+      const prev = this._underlying
+      this._underlying = ref
+      this._chained = true
+
+      if (!(prev instanceof DummyCancelable))
+        ref.update(prev)
+    }
+    return this
+  }
+
+  /**
+   * Returns a new, empty [[ChainedCancelable]].
+   */
+  public static empty(): ChainedCancelable {
+    return new ChainedCancelable()
   }
 }

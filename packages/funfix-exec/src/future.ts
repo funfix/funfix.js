@@ -22,7 +22,7 @@ import {
 
 import { Scheduler } from "./scheduler"
 import { Duration } from "./time"
-import { ICancelable, Cancelable, MultiAssignCancelable } from "./cancelable"
+import { ICancelable, Cancelable, ChainedCancelable, DummyCancelable } from "./cancelable"
 import { iterableToArray } from "./internals"
 
 /**
@@ -127,6 +127,17 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * @protected
    */
   protected readonly _scheduler: Scheduler
+
+  /**
+   * Reference to the current {@link ICancelable} available for
+   * subsequent data transformations.
+   *
+   * Protected, because it shouldn't be public API, being meant for
+   * `Future` implementations.
+   *
+   * @protected
+   */
+  protected _cancelable?: ICancelable
 
   /**
    * Extracts the completed value for this `Future`, returning `Some(result)`
@@ -1030,7 +1041,9 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
 }
 
 class PureFuture<A> extends Future<A> {
-  constructor(private readonly _value: Try<A>, protected readonly _scheduler: Scheduler) { super() }
+  constructor(
+    private readonly _value: Try<A>,
+    protected readonly _scheduler: Scheduler) { super() }
 
   cancel(): void {}
   value(): Option<Try<A>> { return Some(this._value) }
@@ -1056,7 +1069,8 @@ class PureFuture<A> extends Future<A> {
 class FutureBuilder<A> extends Future<A> {
   private _result: Option<Try<A>>
   private _listeners: ((a: Try<A>) => void)[]
-  private _cancelable: ICancelable
+
+  protected _cancelable?: ICancelable
   protected readonly _scheduler: Scheduler
 
   constructor(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec: Scheduler) {
@@ -1136,7 +1150,7 @@ function genericTransformWith<A, B>(
 
   return new FutureBuilder<B>(
     cb => {
-      const cRef = new MultiAssignCancelable(cancelable)
+      const cRef = new ChainedCancelable(cancelable)
 
       self.onComplete(tryA => {
         let fb: Future<B>
@@ -1150,14 +1164,14 @@ function genericTransformWith<A, B>(
         // in treating it as being cancelable
         if (fb.value().isEmpty()) {
           const fbb = fb as any
-          if (fbb._cancelable && fbb._cancelable instanceof MultiAssignCancelable) {
+          const cNext = fbb._cancelable
+
+          if (cNext && cNext instanceof ChainedCancelable) {
             // Trick we are doing to get rid of extraneous memory
             // allocations, otherwise we can leak memory
-            cRef.update(fbb._cancelable).collapse()
-            fbb._cancelable = cRef
-          } else {
-            /* istanbul ignore next */
-            cRef.update((fb as any)._cancelable || fb)
+            cNext.chainTo(cRef)
+          } else if (cNext && !(cNext instanceof DummyCancelable)) {
+            cRef.update(cNext)
           }
         } else {
           // GC purposes

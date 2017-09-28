@@ -510,6 +510,50 @@ describe("FutureBuilder", () => {
     assert.equal(f.value(), Some(Success(1)))
     assert.ok(error instanceof IllegalStateError)
   })
+
+  it("cancels chain", () => {
+    const ec = new TestScheduler()
+    const delay = (r: number) =>
+      Future.create(cb => ec.scheduleOnce(1000, () => cb(Success(r))), ec)
+
+    const gen = () => Future.of(() => 1, ec)
+      .flatMap(x => Future.of(() => x + 1, ec)
+        .flatMap(y => delay(x + y)))
+
+    const f1 = gen()
+    const f2 = gen()
+
+    ec.tick()
+    assert.equal(f1.value(), None)
+    assert.equal(f2.value(), None)
+
+    f2.cancel()
+    ec.tick(1000)
+
+    assert.equal(f1.value(), Some(Success(3)))
+    assert.equal(f2.value(), None)
+    assert.not(ec.hasTasksLeft())
+  })
+
+  it("can yield non-cancelable chain", () => {
+    const ec = new TestScheduler()
+    const delay = (r: number) =>
+      Future.create(cb => {
+        ec.scheduleOnce(1000, () => cb(Success(r)))
+        return Cancelable.empty()
+      }, ec)
+
+    const f = Future.of(() => 1, ec)
+      .flatMap(x => Future.of(() => x + 1, ec)
+        .flatMap(y => delay(x + y)))
+
+    ec.tick()
+    assert.equal(f.value(), None)
+
+    f.cancel()
+    ec.tick(1000)
+    assert.equal(f.value(), Some(Success(3)))
+  })
 })
 
 describe("Future is Promise-like", () => {
@@ -587,7 +631,6 @@ describe("Future is Promise-like", () => {
   })
 
   it("converts to Promise if async error", () => {
-    const s = new TestScheduler()
     const dummy = new DummyError()
     const p = Future.of(() => { throw dummy }).toPromise()
     return p.then(null, err => assert.equal(err, dummy))
@@ -1081,7 +1124,6 @@ describe("Future.traverse", () => {
 
   it("works with actual Iterable", () => {
     const ec = new TestScheduler()
-    let effect = 0
 
     const iter = {
       [Symbol.iterator]: () => {
