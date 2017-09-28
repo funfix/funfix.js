@@ -28,6 +28,7 @@
     "nyc": "^11.1.0",
     "rimraf": "^2.6.1",
     "rollup": "^0.49.2",
+    "rollup-plugin-cleanup": "^1.0.1",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-sourcemaps": "^0.4.2",

@@ -1,4 +1,4 @@
-/*!
+/*
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+const cleanup = require('rollup-plugin-cleanup')
 const resolve = require("rollup-plugin-node-resolve")
 const commonjs = require("rollup-plugin-commonjs")
 const path = require("path")
@@ -42,6 +43,8 @@ export default {
      // which external modules to include in the bundle
     resolve(),
     // Keeps the original source maps
-    sourceMaps()
+    sourceMaps(),
+    // Cleanup comments from the generated bundles
+    cleanup()
   ]
 }

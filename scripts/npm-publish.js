@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/*!
+/*
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
