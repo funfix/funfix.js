@@ -64,8 +64,8 @@ Scheduler.global.bindL(() => new TestScheduler(), () => {
 const idx: number = globalRef.batchIndex
 
 const globalRef2 = new GlobalScheduler(
-  false, 
-  ExecutionModel.alwaysAsync(), 
+  false,
+  ExecutionModel.alwaysAsync(),
   err => console.error(err))
 
 const global3 = globalRef2

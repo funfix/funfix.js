@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const babel = require("rollup-plugin-babel")
+const cleanup = require('rollup-plugin-cleanup')
 const resolve = require("rollup-plugin-node-resolve")
 const commonjs = require("rollup-plugin-commonjs")
 const path = require("path")
@@ -41,12 +41,9 @@ export default {
     // Allow node_modules resolution, so you can use 'external' to control
     // which external modules to include in the bundle
     resolve(),
-    // Don't transpile node_modules. You may change this if you wanna transpile something in there
-    babel({
-      exclude: "node_modules/**",
-      shouldPrintComment: _ => false
-    }),
     // Keeps the original source maps
-    sourceMaps()
+    sourceMaps(),
+    // Cleanup comments from the generated bundles
+    cleanup()
   ]
 }
