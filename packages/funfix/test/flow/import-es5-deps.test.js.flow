@@ -17,7 +17,10 @@
 
 /* @flow */
 
-import { Option, Future, Eval, IO, Monad, monadOf } from "../../src/"
+import { Option } from "funfix-core/dist/es5"
+import { Future } from "funfix-exec/dist/es5"
+import { Eval, IO } from "funfix-effect/dist/es5"
+import { Monad, monadOf } from "funfix-types/dist/es5"
 
 const opt: Option<number> = Option.of(10)
 const f: Future<string> = Future.of(() => "Hello!")
