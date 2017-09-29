@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -29,7 +29,8 @@ const libraryName = pkg.name
 export default {
   input: `dist/index.js`,
   output: [
-		{ file: pkg.main, moduleName: camelCase(libraryName), format: "umd" }
+    { file: pkg.main, name: camelCase(libraryName), format: "umd" },
+    { file: pkg.es5module, format: "es" }
   ],
   sourcemap: true,
   // Indicate here external modules you don't wanna include in your bundle (i.e.: 'lodash')

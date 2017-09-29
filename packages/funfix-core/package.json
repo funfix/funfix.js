@@ -2,20 +2,23 @@
   "name": "funfix-core",
   "description": "Sub-package of Funfix exposing primitive interfaces and data types belonging into a standard library",
   "version": "0.0.0-development",
-  "main": "dist/index.umd.js",
+  "main": "dist/umd.js",
   "module": "dist/index.js",
-  "typings": "dist/types/index.d.ts",
+  "es5module": "dist/es5.js",
+  "typings": "dist/index.d.ts",
   "scripts": {
     "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "doc": "../../scripts/generate-docs.js .",
     "clean": "rimraf dist && rimraf coverage && rimraf .nyc_output",
     "prebuild": "npm run clean",
-    "build": "tsc && rollup -c && npm run copy-flow && npm run doc",
-    "start": "node ../../node_modules/.bin/tsc-watch --onSuccess 'rollup -c'",
+    "build": "tsc && npm run rollup && npm run doc",
+    "start": "node ../../node_modules/.bin/tsc-watch --onSuccess 'npm run rollup'",
     "test": "mocha --opts mocha.opts",
     "test:watch": "mocha --opts mocha.opts --watch",
     "test:prod": "npm run lint && nyc mocha --opts mocha.opts --reporter dot",
-    "copy-flow": "../../scripts/copy-flow.js ."
+    "rollup": "rollup -c && npm run fix-modules && npm run fix-types",
+    "fix-modules": "node ../../scripts/fix-es5.js dist/es5.js",
+    "fix-types": "../../scripts/fix-types.js ."
   },
   "files": [
     "dist",
