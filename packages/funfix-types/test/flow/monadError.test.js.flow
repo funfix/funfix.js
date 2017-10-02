@@ -87,8 +87,8 @@ class MonadErrorLawsForIO implements MonadErrorLaws<IO<any>, any> {
   mapFlatMapCoherence: <A, B>(fa: IOK<A>, f: (a: A) => B) => Equiv<IOK<B>>;
   tailRecMStackSafety: () => Equiv<IOK<number>>;
   // ApplicativeError
-  monadErrorRecoverWith: <A>(e: any, f: (e: any) => IOK<A>) => Equiv<IOK<A>>;
-  monadErrorRecover: <A>(e: any, f: (e: any) => A) => Equiv<IOK<A>>;
+  applicativeErrorRecoverWith: <A>(e: any, f: (e: any) => IOK<A>) => Equiv<IOK<A>>;
+  applicativeErrorRecover: <A>(e: any, f: (e: any) => A) => Equiv<IOK<A>>;
   recoverWithPure: <A>(a: A, f: (e: any) => IOK<A>) => Equiv<IOK<A>>;
   recoverPure: <A>(a: A, f: (e: any) => A) => Equiv<IOK<A>>;
   raiseErrorAttempt: (e: any) => Equiv<IOK<Either<any, void>>>;
