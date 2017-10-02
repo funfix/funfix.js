@@ -15,11 +15,4 @@
  * limitations under the License.
  */
 
-/* @flow */
-
-import { Option, Future, Eval, IO, Monad, monadOf } from "../../src/"
-
-const opt: Option<number> = Option.of(10)
-const f: Future<string> = Future.of(() => "Hello!")
-const ev: Eval<number> = Eval.of(() => 10)
-const m: Monad<Eval<any>> = monadOf(Eval)
+export * from "./index";
