@@ -43,7 +43,7 @@
     "tslint": "^5.5.0",
     "tslint-config-standard": "^6.0.1",
     "tslint-eslint-rules": "^4.1.1",
-    "typedoc": "^0.8.0",
+    "typedoc": "^0.9.0",
     "typescript": "^2.5.3",
     "validate-commit-msg": "^2.14.0"
   },
