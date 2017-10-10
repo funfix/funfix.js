@@ -16,8 +16,8 @@
  */
 
 import * as assert from "./asserts"
-import { id, is, Try, Success, Failure, Some, None, DummyError, Left, Right, IllegalStateError, TimeoutError, IllegalArgumentError } from "funfix-core"
-import { Future, IPromiseLike, TestScheduler, Scheduler, BoolCancelable, Cancelable, Duration, ExecutionModel } from "../../src/"
+import { id, is, Try, Success, Failure, Option, Some, None, DummyError, Left, Right, IllegalStateError, TimeoutError, IllegalArgumentError } from "funfix-core"
+import { Future, Deferred, IPromiseLike, TestScheduler, Scheduler, BoolCancelable, Cancelable, Duration, ExecutionModel } from "../../src/"
 
 describe("PureFuture", () => {
   it("pure", () => {
@@ -509,6 +509,12 @@ describe("FutureBuilder", () => {
 
     assert.equal(f.value(), Some(Success(1)))
     assert.ok(error instanceof IllegalStateError)
+  })
+
+  it("Future.create protects against thrown errors", () => {
+    const dummy = new DummyError()
+    const f = Future.create(_ => { throw dummy })
+    assert.equal(f.value(), Some(Failure(dummy)))
   })
 
   it("cancels chain", () => {
@@ -1198,6 +1204,228 @@ describe("Future.tailRecM", () => {
       }))
 
     assert.ok(is(f.value(), Some(Success(10000))))
+  })
+})
+
+describe("Deferred", () => {
+  it("tryComplete(Success) before any listener", () => {
+    const ref = Future.defer<number>()
+    assert.ok(ref.tryComplete(Success(1)))
+    assert.not(ref.tryComplete(Success(2)))
+    assert.equal(ref.future().value(), Some(Success(1)))
+  })
+
+  it("tryComplete(Failure) before any listener", () => {
+    const ref = Future.defer<number>()
+    assert.ok(ref.tryComplete(Failure(1)))
+    assert.not(ref.tryComplete(Failure(2)))
+    assert.equal(ref.future().value(), Some(Failure(1)))
+  })
+
+  it("complete() before any listener", () => {
+    const ref = Future.defer<number>()
+    ref.complete(Success(1))
+
+    assert.throws(() => ref.complete(Success(2)))
+    assert.equal(ref.future().value(), Some(Success(1)))
+  })
+
+  const testAsyncTryComplete = (r: Try<number>) => () => {
+    const ec = new TestScheduler()
+    const ref = Future.defer<number>(ec)
+    const f1 = ref.future()
+    const f2 = ref.future()
+
+    ec.executeAsync(() => assert.ok(ref.tryComplete(r)))
+
+    let result1: Option<Try<number>> = None
+    f1.onComplete(r => { result1 = Some(r) })
+    let result2: Option<Try<number>> = None
+    f2.onComplete(r => { result2 = Some(r) })
+
+    assert.equal(result1, None)
+    assert.equal(result2, None)
+
+    ec.tick()
+    assert.equal(result1, Some(r))
+    assert.equal(result2, Some(r))
+    assert.not(ref.tryComplete(Success(2)))
+
+    let result3: Option<Try<number>> = None
+    f1.onComplete(r => { result3 = Some(r) })
+    assert.equal(result3, Some(r))
+  }
+
+  it("tryComplete(Success) after listeners subscribe",
+    testAsyncTryComplete(Success(1)))
+  it("tryComplete(Failure) after listeners subscribe",
+    testAsyncTryComplete(Failure(new DummyError())))
+
+  it("chainTo", () => {
+    const ec = new TestScheduler()
+
+    const d0 = Future.defer<number>(ec)
+    const d1 = Future.defer<number>(ec)
+    const d2 = Future.defer<number>(ec)
+
+    d1.chainTo(d0)
+    d2.chainTo(d1)
+
+    assert.ok(d1.tryComplete(Success(1)))
+    assert.equal(d0.future().value(), Some(Success(1)))
+    assert.not(d2.tryComplete(Success(2)))
+    assert.equal(d2.future().value(), Some(Success(1)))
+  })
+
+  it("chainTo, with reversed chain order", () => {
+    const ec = new TestScheduler()
+
+    const d0 = Future.defer<number>(ec)
+    const d1 = Future.defer<number>(ec)
+    const d2 = Future.defer<number>(ec)
+
+    d2.chainTo(d1)
+    d1.chainTo(d0)
+
+    assert.ok(d1.tryComplete(Success(1)))
+    assert.equal(d0.future().value(), Some(Success(1)))
+    assert.not(d2.tryComplete(Success(2)))
+    assert.equal(d2.future().value(), Some(Success(1)))
+  })
+
+  it("chainTo >> value", () => {
+    const ec = new TestScheduler()
+
+    const d0 = Future.defer<number>(ec)
+    const d1 = Future.defer<number>(ec)
+    const d2 = Future.defer<number>(ec)
+
+    d1.chainTo(d0)
+    d2.chainTo(d1)
+
+    assert.equal(d2.future().value(), None)
+    assert.equal(d1.future().value(), None)
+
+    d0.complete(Success(1))
+    assert.equal(d2.future().value(), Some(Success(1)))
+    assert.equal(d1.future().value(), Some(Success(1)))
+  })
+
+  it("chainTo transfers listeners to target", () => {
+    const ec = new TestScheduler()
+
+    const d0 = Future.defer<number>(ec)
+    const d1 = Future.defer<number>(ec)
+    const f1 = d1.future()
+
+    let result0: Option<Try<number>> = None
+    f1.onComplete(r => { result0 = Some(r) })
+    let result1: Option<Try<number>> = None
+    f1.onComplete(r => { result1 = Some(r) })
+
+    // After onComplete
+    d1.chainTo(d0)
+
+    assert.equal(result0, None)
+    assert.equal(result1, None)
+
+    d1.complete(Success(1))
+    assert.equal(result0, Some(Success(1)))
+    assert.equal(result1, Some(Success(1)))
+    assert.equal(d0.future().value(), Some(Success(1)))
+  })
+
+  it("double chainTo", () => {
+    const ec = new TestScheduler()
+
+    const d0 = Future.defer<number>(ec)
+    const d1 = Future.defer<number>(ec)
+    const d2 = Future.defer<number>(ec)
+
+    d2.chainTo(d1)
+    d2.chainTo(d0)
+
+    let r0 = Option.empty<Try<number>>()
+    d0.future().onComplete(r => { r0 = Some(r) })
+    let r1 = Option.empty<Try<number>>()
+    d1.future().onComplete(r => { r1 = Some(r) })
+    let r2 = Option.empty<Try<number>>()
+    d2.future().onComplete(r => { r2 = Some(r) })
+
+    d0.complete(Success(1))
+
+    assert.equal(r2, Some(Success(1)))
+    assert.equal(r1, Some(Success(1)))
+    assert.equal(r0, Some(Success(1)))
+  })
+
+  it("Deferred.successful(x).chainTo(other)", () => {
+    const ec = new TestScheduler()
+
+    const d0 = Deferred.successful(1, ec)
+    const d1 = Future.defer<number>(ec)
+    d1.chainTo(d0)
+
+    assert.not(d1.tryComplete(Success(2)))
+    assert.equal(d1.future().value(), Some(Success(1)))
+  })
+
+  it("Deferred.empty().chainTo(successful)", () => {
+    const ec = new TestScheduler()
+
+    const d0 = Future.defer<number>(ec)
+    const d1 = Deferred.successful(1, ec)
+    d1.chainTo(d0)
+
+    assert.not(d1.tryComplete(Success(2)))
+    assert.equal(d1.future().value(), Some(Success(1)))
+  })
+
+  it("withScheduler", () => {
+    const ec = new TestScheduler().withExecutionModel(ExecutionModel.alwaysAsync())
+    const defRef = Future.defer<number>()
+    const ref = defRef.withScheduler(ec)
+
+    assert.notEqual(defRef, ref)
+    assert.equal(ref.withScheduler(ec), ref)
+
+    let result: Option<Try<number>> = None
+    ref.future().onComplete(r => { result = Some(r) })
+    ref.complete(Success(1))
+
+    assert.equal(result, None)
+    ec.tick()
+    assert.equal(result, Some(Success(1)))
+  })
+
+  it("Deferred.successful yields Future.successful", () => {
+    const ref = Deferred.successful(1)
+    assert.equal(ref.future().value(), Some(Success(1)))
+  })
+
+  it("Deferred.failure yields Future.successful", () => {
+    const ref = Deferred.failure("error")
+    assert.equal(ref.future().value(), Some(Failure("error")))
+  })
+
+  it("Deferred.empty() defaults to Scheduler.global", () => {
+    const defRef = Deferred.empty()
+    assert.equal(defRef.withScheduler(Scheduler.global.get()), defRef)
+  })
+
+  it("Deferred.successful() defaults to Scheduler.global", () => {
+    const defRef = Deferred.successful(1)
+    assert.equal(defRef.withScheduler(Scheduler.global.get()), defRef)
+  })
+
+  it("Deferred.failure() defaults to Scheduler.global", () => {
+    const defRef = Deferred.failure("err")
+    assert.equal(defRef.withScheduler(Scheduler.global.get()), defRef)
+  })
+
+  it("Deferred.fromTry() defaults to Scheduler.global", () => {
+    const defRef = Deferred.fromTry(Success(1))
+    assert.equal(defRef.withScheduler(Scheduler.global.get()), defRef)
   })
 })
 

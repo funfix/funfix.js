@@ -131,6 +131,32 @@ export abstract class Cancelable implements ICancelable {
   static collection(...refs: Array<ICancelable>): Cancelable {
     return new CollectionCancelable(refs)
   }
+
+  /**
+   * Utility that cancels a list of cancelable references, delaying
+   * any thrown exceptions until all references have been cancelled.
+   *
+   * In case multiple exceptions are caught, then the thrown exception
+   * is going to be a {@link CompositeError}.
+   */
+  static cancelAll(refs: Cancelable[]): void {
+    let errors: any[] | null = null
+    for (const c of refs) {
+      try {
+        c.cancel()
+      } catch (e) {
+        if (!errors) errors = [e]
+        else errors.push(e)
+      }
+    }
+
+    if (!errors)
+      return
+    else if (errors.length === 1)
+      throw errors[0]
+    else
+      throw new CompositeError(errors)
+  }
 }
 
 /**
@@ -318,49 +344,25 @@ export abstract class BoolCancelable implements IBoolCancelable {
  * @Hidden
  */
 class CollectionCancelable extends BoolCancelable {
-  private _refs: ICancelable[]
-  private _isCanceled: boolean
+  private _refs?: ICancelable[]
 
   constructor(refs: ICancelable[]) {
     super()
     this._refs = refs
-    this._isCanceled = false
   }
 
   public isCanceled(): boolean {
-    return this._isCanceled
+    return !this._refs
   }
 
   public cancel(): void {
-    if (!this._isCanceled) {
-      this._isCanceled = true
+    if (this._refs)
       try {
-        cancelAll(this._refs)
+        Cancelable.cancelAll(this._refs)
       } finally {
-        this._refs = [] // GC purposes
+        delete this._refs
       }
-    }
   }
-}
-
-/**
- * Internal utility used in {@link CollectionCancelable} and
- * {@link StackedCancelable}.
- *
- * @Hidden
- */
-function cancelAll(refs: Cancelable[]): void {
-  const errors = []
-  for (const c of refs) {
-    try {
-      c.cancel()
-    } catch (e) {
-      errors.push(e)
-    }
-  }
-
-  if (errors.length === 1) throw errors[0]
-  else if (errors.length > 1) throw new CompositeError(errors)
 }
 
 /**
@@ -825,28 +827,23 @@ export class SingleAssignCancelable implements IAssignCancelable {
  * @final
  */
 export class StackedCancelable implements IBoolCancelable {
-  private _isCanceled: boolean
-  private _refs: ICancelable[]
+  private _refs?: ICancelable[]
 
   constructor(initial?: ICancelable[]) {
     this._refs = initial ? initial.slice(0) : []
-    this._isCanceled = false
   }
 
   cancel(): void {
-    if (!this._isCanceled) {
-      this._isCanceled = true
+    if (this._refs)
       try {
-        cancelAll(this._refs)
+        Cancelable.cancelAll(this._refs)
       } finally {
-        // GC purposes
         delete this._refs
       }
-    }
   }
 
   isCanceled(): boolean {
-    return this._isCanceled
+    return !this._refs
   }
 
   /**
@@ -854,10 +851,10 @@ export class StackedCancelable implements IBoolCancelable {
    * cancelled later in FIFO order.
    */
   push(value: ICancelable): this {
-    if (this._isCanceled) {
-      value.cancel()
-    } else {
+    if (this._refs) {
       this._refs.push(value)
+    } else {
+      value.cancel()
     }
     return this
   }
@@ -868,7 +865,7 @@ export class StackedCancelable implements IBoolCancelable {
    * @return the cancelable reference that was removed.
    */
   pop(): ICancelable {
-    if (this._isCanceled) return Cancelable.empty()
+    if (!this._refs) return Cancelable.empty()
     return this._refs.pop() || Cancelable.empty()
   }
 

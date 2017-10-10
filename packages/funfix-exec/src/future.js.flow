@@ -63,6 +63,7 @@ declare export class Future<+A> {
   static pure<A>(a: A, ec?: Scheduler): Future<A>;
   static raise(e: Throwable, ec?: Scheduler): Future<empty>;
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec?: Scheduler): Future<A>;
+  static defer<A>(ec?: Scheduler): Deferred<A>;
   static unit(): Future<void>;
   static delayedTick<A>(delay: number | Duration, ec?: Scheduler): Future<void>;
   static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>, ec?: Scheduler): Future<B>;
@@ -93,3 +94,18 @@ declare export class Future<+A> {
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R,
     ec?: Scheduler): Future<R>;
 }
+
+declare export class Deferred<A> {
+  tryComplete: (result: Try<A>) => boolean;
+  complete: (result: Try<A>) => void;
+  
+  chainTo(target: Deferred<A>): void;
+  future(cancelable?: ICancelable): Future<A>;
+  withScheduler(ec: Scheduler): Deferred<A>;
+
+  static empty<A>(ec?: Scheduler): Deferred<A>;
+  static fromTry<A>(value: Try<A>, ec?: Scheduler): Deferred<A>;
+  static successful<A>(value: A, ec?: Scheduler): Deferred<A>;
+  static failure<A>(e: Throwable, ec?: Scheduler): Deferred<A>;
+}
+

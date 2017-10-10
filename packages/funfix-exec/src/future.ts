@@ -519,10 +519,9 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        local overrides, being a {@link DynamicRef}
    */
   static of<A>(thunk: () => A, ec: Scheduler = Scheduler.global.get()): Future<A> {
-    return new FutureBuilder<A>(
-      cb => ec.executeAsync(() => cb(Try.of(thunk))),
-      ec
-    )
+    const ref = Deferred.empty<A>(ec)
+    ec.executeAsync(() => ref.tryComplete(Try.of(thunk)))
+    return ref.future()
   }
 
   /**
@@ -629,7 +628,23 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        local overrides, being a {@link DynamicRef}
    */
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec: Scheduler = Scheduler.global.get()): Future<A> {
-    return new FutureBuilder(register, ec)
+    const ref = Deferred.empty<A>(ec)
+    try {
+      const cRef = register(ref.complete)
+      return ref.future(cRef || undefined)
+    } catch (e) {
+      return Future.raise(e, ec)
+    }
+  }
+
+  /**
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
+   */
+  static defer<A>(ec: Scheduler = Scheduler.global.get()): Deferred<A> {
+    return Deferred.empty<A>(ec)
   }
 
   /**
@@ -1066,68 +1081,129 @@ class PureFuture<A> extends Future<A> {
   }
 }
 
-class FutureBuilder<A> extends Future<A> {
-  private _result: Option<Try<A>>
-  private _listeners: ((a: Try<A>) => void)[]
+class AsyncFutureState<A> {
+  id: null | "chained" | "complete"
+  ref: null | ((a: Try<A>) => void)[] | AsyncFutureState<A> | Try<A>
 
-  protected _cancelable?: ICancelable
-  protected readonly _scheduler: Scheduler
-
-  constructor(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec: Scheduler) {
-    super()
-    this._result = None
-    this._listeners = []
-    this._scheduler = ec
-
-    const complete = (result: Try<A>) => {
-      if (this._result !== None) {
-        throw new IllegalStateError("Attempt to completing a Future multiple times")
-      } else {
-        this._result = Some(result)
-        const listeners = this._listeners
-        delete this._listeners
-        delete this._cancelable
-
-        for (const f of listeners) {
-          // Forced async boundary
-          ec.executeBatched(() => f(result))
-        }
-      }
-    }
-
-    const cb = register(complete)
-    if (this._result === None && cb) this._cancelable = cb
+  constructor() {
+    this.id = null
+    this.ref = null
   }
 
-  onComplete(f: (a: Try<A>) => void): void {
-    if (this._result !== None) {
-      // Forced async boundary
-      this._scheduler.executeBatched(() => f(this._result.get()))
-    } else {
-      this._listeners.push(f)
+  compressedRoot(): AsyncFutureState<A> {
+    let cursor: AsyncFutureState<A> = this
+    while (cursor.id === "chained") {
+      cursor = cursor.ref as AsyncFutureState<A>
+      this.ref = cursor
     }
+    return cursor
   }
 
   value(): Option<Try<A>> {
-    return this._result
+    switch (this.id) {
+      case null: return None
+      case "complete":
+        return Some(this.ref as Try<A>)
+      case "chained":
+        return this.compressedRoot().value()
+    }
+  }
+
+  tryComplete(r: Try<A>, ec: Scheduler): boolean {
+    switch (this.id) {
+      case null:
+        const xs = (this.ref as (null | ((a: Try<A>) => void)[]))
+        this.ref = r
+        this.id = "complete"
+        if (xs) {
+          for (let i = 0; i < xs.length; i++)
+            ec.executeBatched(() => xs[i](r))
+        }
+        return true
+
+      case "complete":
+        return false
+
+      case "chained":
+        const ref = (this.ref as AsyncFutureState<A>).compressedRoot()
+        const result = ref.tryComplete(r, ec)
+        this.id = "complete"
+        this.ref = result ? r : ref.value().get()
+        return result
+    }
+  }
+
+  chainTo(target: AsyncFutureState<A>, ec: Scheduler): void {
+    switch (this.id) {
+      case null:
+        const xs = (this.ref as (null | ((a: Try<A>) => void)[]))
+        this.id = "chained"
+        this.ref = target.compressedRoot()
+
+        if (xs && xs.length > 0) {
+          // Transferring all listeners to chained future
+          for (let i = 0; i < xs.length; i++)
+            target.onComplete(xs[i], ec)
+        }
+        break
+
+      case "chained":
+        this.compressedRoot().chainTo(target.compressedRoot(), ec)
+        break
+
+      case "complete":
+        target.tryComplete(this.ref as Try<A>, ec)
+        break
+    }
+  }
+
+  onComplete(f: (a: Try<A>) => void, ec: Scheduler): void {
+    switch (this.id) {
+      case null:
+        if (!this.ref) this.ref = [];
+        (this.ref as ((a: Try<A>) => void)[]).push(f)
+        break
+      case "complete":
+        // Forced async boundary
+        ec.executeBatched(() => f(this.ref as Try<A>))
+        break
+      case "chained":
+        (this.ref as AsyncFutureState<A>).onComplete(f, ec)
+        break
+    }
+  }
+}
+
+class AsyncFuture<A> extends Future<A> {
+  readonly _state: AsyncFutureState<A>
+  readonly _scheduler: Scheduler
+  _cancelable?: ICancelable
+
+  constructor(state: AsyncFutureState<A>, cRef: ICancelable | undefined, ec: Scheduler) {
+    super()
+    this._state = state
+    this._scheduler = ec
+    if (cRef) this._cancelable = cRef
+  }
+
+  value(): Option<Try<A>> {
+    return this._state.value()
+  }
+
+  onComplete(f: (a: Try<A>) => void): void {
+    return this._state.onComplete(f, this._scheduler)
   }
 
   cancel(): void {
-    const cb = this._cancelable
-    if (cb) {
-      cb.cancel()
-      delete this._cancelable
+    if (this._cancelable) {
+      try { this._cancelable.cancel() }
+      finally { delete this._cancelable }
     }
   }
 
   withScheduler(ec: Scheduler): Future<A> {
     if (this._scheduler === ec) return this
-    return new FutureBuilder<A>(
-      cb => {
-        this.onComplete(cb)
-        return this._cancelable
-      },
-      ec)
+    return new AsyncFuture(this._state, this._cancelable, ec)
   }
 
   transformWith<B>(failure: (e: Throwable) => Future<B>, success: (a: A) => Future<B>): Future<B> {
@@ -1135,9 +1211,83 @@ class FutureBuilder<A> extends Future<A> {
   }
 }
 
+export class Deferred<A> {
+  private readonly _state: AsyncFutureState<A>
+  private readonly _scheduler: Scheduler
+
+  private constructor(state: AsyncFutureState<A>, ec: Scheduler) {
+    this["_state"] = state
+    this._scheduler = ec
+  }
+
+  tryComplete: (result: Try<A>) => boolean =
+    r => this["_state"].tryComplete(r, this._scheduler)
+
+  complete: (result: Try<A>) => void =
+    r => {
+      if (!this.tryComplete(r))
+        throw new IllegalStateError("Cannot complete a Deferred twice!")
+    }
+
+  chainTo(target: Deferred<A>): void {
+    this["_state"].chainTo(target["_state"], this._scheduler)
+  }
+
+  future(cancelable?: ICancelable): Future<A> {
+    switch (this._state.id) {
+      case "complete":
+        return new PureFuture(this["_state"].ref as Try<A>, this._scheduler)
+      default:
+        return new AsyncFuture(this["_state"], cancelable, this._scheduler)
+    }
+  }
+
+  /**
+   * Returns a new `Deferred` that mirrors the state of the source,
+   * but that uses the given {@link Scheduler} reference for
+   * managing the required async boundaries.
+   *
+   * The given `Scheduler` reference is used for inserting async
+   * boundaries when the registered listeners are triggered when
+   * [.complete]{@link complete} is called or for data transformations
+   * executed on the future references returned by
+   * [.future]{@link Deferred.future}.
+   *
+   * See {@link Future.withScheduler}.
+   */
+  withScheduler(ec: Scheduler): Deferred<A> {
+    if (this._scheduler === ec) return this
+    return new Deferred(this._state, ec)
+  }
+
+  /**
+   * Returns an empty {@link Deferred} reference awaiting completion.
+   */
+  static empty<A>(ec: Scheduler = Scheduler.global.get()): Deferred<A> {
+    return new Deferred(new AsyncFutureState(), ec)
+  }
+
+  /**
+   * Returns an already completed {@link Deferred} reference.
+   */
+  static fromTry<A>(value: Try<A>, ec: Scheduler = Scheduler.global.get()): Deferred<A> {
+    const state = new AsyncFutureState<A>()
+    state.id = "complete"
+    state.ref = value
+    return new Deferred(state, ec)
+  }
+
+  static successful<A>(value: A, ec: Scheduler = Scheduler.global.get()): Deferred<A> {
+    return Deferred.fromTry(Success(value), ec)
+  }
+
+  static failure<A>(e: Throwable, ec: Scheduler = Scheduler.global.get()): Deferred<A> {
+    return Deferred.fromTry(Failure(e), ec)
+  }
+}
+
 /**
- * Internal, reusable `transformWith` implementation for {@link PureFuture}
- * and {@link FutureBuilder}.
+ * Internal, common `transformWith` implementation.
  *
  * @Hidden
  */
@@ -1148,42 +1298,43 @@ function genericTransformWith<A, B>(
   scheduler: Scheduler,
   cancelable?: ICancelable): Future<B> {
 
-  return new FutureBuilder<B>(
-    cb => {
-      const cRef = new ChainedCancelable(cancelable)
+  const defer = Deferred.empty<B>(scheduler)
+  const cRef = new ChainedCancelable(cancelable)
 
-      self.onComplete(tryA => {
-        let fb: Future<B>
-        try {
-          fb = tryA.fold(failure, success)
-        } catch (e) {
-          fb = Future.raise(e)
-        }
+  self.onComplete(tryA => {
+    let fb: Future<B>
+    try {
+      fb = tryA.fold(failure, success)
+    } catch (e) {
+      fb = Future.raise(e)
+    }
 
-        // If the resulting Future is already completed, there's no point
-        // in treating it as being cancelable
-        if (fb.value().isEmpty()) {
-          const fbb = fb as any
-          const cNext = fbb._cancelable
+    // If the resulting Future is already completed, there's no point
+    // in treating it as being cancelable
+    if (fb.value().isEmpty()) {
+      const fbb = fb as any
+      const cNext = fbb._cancelable
 
-          if (cNext && cNext instanceof ChainedCancelable) {
-            // Trick we are doing to get rid of extraneous memory
-            // allocations, otherwise we can leak memory
-            cNext.chainTo(cRef)
-          } else if (cNext && !(cNext instanceof DummyCancelable)) {
-            cRef.update(cNext)
-          }
-        } else {
-          // GC purposes
-          cRef.clear()
-        }
+      if (cNext && cNext instanceof ChainedCancelable) {
+        // Trick we are doing to get rid of extraneous memory
+        // allocations, otherwise we can leak memory
+        cNext.chainTo(cRef)
+      } else if (cNext && !(cNext instanceof DummyCancelable)) {
+        cRef.update(cNext)
+      }
+    } else {
+      // GC purposes
+      cRef.clear()
+    }
 
-        fb.onComplete(cb)
-      })
+    if (fb instanceof AsyncFuture) {
+      fb._state.chainTo(defer["_state"] as AsyncFutureState<B>, scheduler)
+    } else {
+      (fb as Future<B>).onComplete(defer.tryComplete)
+    }
+  })
 
-      return cRef
-    },
-    scheduler)
+  return defer.future(cRef)
 }
 
 /**
