@@ -67,6 +67,7 @@ declare export class Future<+A> {
   static delayedTick<A>(delay: number | Duration, ec?: Scheduler): Future<void>;
   static tailRecM<A, B>(a: A, f: (a: A) => Future<Either<A, B>>, ec?: Scheduler): Future<B>;
   static fromPromise<A>(ref: IPromiseLike<A>, ec?: Scheduler): Future<A>;
+  static fromTry<A>(value: Try<A>, ec?: Scheduler): Future<A>;
 
   static firstCompletedOf<A>(list: Future<A>[] | Iterable<Future<A>>, ec?: Scheduler): Future<A>;
   static sequence<A>(list: Future<A>[] | Iterable<Future<A>>, ec?: Scheduler): Future<A[]>;
@@ -92,4 +93,21 @@ declare export class Future<+A> {
     fa1: Future<A1>, fa2: Future<A2>, fa3: Future<A3>, fa4: Future<A4>, fa5: Future<A5>, fa6: Future<A6>,
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R,
     ec?: Scheduler): Future<R>;
+}
+
+declare export class FutureMaker<A> {
+  +tryComplete: (result: Try<A>) => boolean;
+  +complete: (result: Try<A>) => void;
+
+  trySuccess(value: A): boolean;
+  success(value: A): void;
+  tryFailure(error: Throwable): boolean;
+  failure(error: Throwable): void;
+
+  chainTo(target: FutureMaker<A>): void;
+  future(cancelable?: ICancelable): Future<A>;
+  withScheduler(ec: Scheduler): FutureMaker<A>;
+
+  static empty<A>(ec?: Scheduler): FutureMaker<A>;
+  static completed<A>(value: Try<A>, ec?: Scheduler): FutureMaker<A>;
 }

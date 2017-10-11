@@ -27,6 +27,7 @@ declare export class Cancelable {
   static of(cb: () => void): Cancelable;
   static empty(): Cancelable;
   static collection(...refs: Array<Cancelable>): Cancelable;
+  static cancelAll(refs: Cancelable[]): void;
 }
 
 export interface IBoolCancelable extends ICancelable {

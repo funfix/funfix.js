@@ -22,7 +22,7 @@ import {
 
 import { Scheduler } from "./scheduler"
 import { Duration } from "./time"
-import { ICancelable, Cancelable, MultiAssignCancelable } from "./cancelable"
+import { ICancelable, Cancelable, ChainedCancelable, DummyCancelable } from "./cancelable"
 import { iterableToArray } from "./internals"
 
 /**
@@ -127,6 +127,17 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * @protected
    */
   protected readonly _scheduler: Scheduler
+
+  /**
+   * Reference to the current {@link ICancelable} available for
+   * subsequent data transformations.
+   *
+   * Protected, because it shouldn't be public API, being meant for
+   * `Future` implementations.
+   *
+   * @protected
+   */
+  protected _cancelable?: ICancelable
 
   /**
    * Extracts the completed value for this `Future`, returning `Some(result)`
@@ -508,10 +519,9 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        local overrides, being a {@link DynamicRef}
    */
   static of<A>(thunk: () => A, ec: Scheduler = Scheduler.global.get()): Future<A> {
-    return new FutureBuilder<A>(
-      cb => ec.executeAsync(() => cb(Try.of(thunk))),
-      ec
-    )
+    const ref = FutureMaker.empty<A>(ec)
+    ec.executeAsync(() => ref.tryComplete(Try.of(thunk)))
+    return ref.future()
   }
 
   /**
@@ -618,7 +628,13 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        local overrides, being a {@link DynamicRef}
    */
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec: Scheduler = Scheduler.global.get()): Future<A> {
-    return new FutureBuilder(register, ec)
+    const ref = FutureMaker.empty<A>(ec)
+    try {
+      const cRef = register(ref.complete)
+      return ref.future(cRef || undefined)
+    } catch (e) {
+      return Future.raise(e, ec)
+    }
   }
 
   /**
@@ -729,6 +745,30 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
         cb => { ref.then(value => cb(Success(value)),err => cb(Failure(err))) },
         ec
       )
+  }
+
+  /**
+   * Builds an already complete `Future` from a `Try` value.
+   *
+   * ```typescript
+   * import { Success, Failure, Future } from "funfix"
+   *
+   * // Already completed with 1
+   * const f1 = Future.fromTry(Success(1))
+   *
+   * // Already completed in error
+   * const f2 = Future.fromTry(Failure("err"))
+   * ```
+   *
+   * @param value is the `Try` value to stream in `onComplete` listeners
+   *
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
+   */
+  static fromTry<A>(value: Try<A>, ec: Scheduler = Scheduler.global.get()): Future<A> {
+    return new PureFuture(value, ec)
   }
 
   /**
@@ -1030,7 +1070,9 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
 }
 
 class PureFuture<A> extends Future<A> {
-  constructor(private readonly _value: Try<A>, protected readonly _scheduler: Scheduler) { super() }
+  constructor(
+    private readonly _value: Try<A>,
+    protected readonly _scheduler: Scheduler) { super() }
 
   cancel(): void {}
   value(): Option<Try<A>> { return Some(this._value) }
@@ -1053,67 +1095,141 @@ class PureFuture<A> extends Future<A> {
   }
 }
 
-class FutureBuilder<A> extends Future<A> {
-  private _result: Option<Try<A>>
-  private _listeners: ((a: Try<A>) => void)[]
-  private _cancelable: ICancelable
-  protected readonly _scheduler: Scheduler
+/**
+ * Internal state shared between {@link AsyncFuture} and
+ * {@link FutureMaker}.
+ *
+ * @Hidden
+ */
+class AsyncFutureState<A> {
+  id: null | "chained" | "complete"
+  ref: null | ((a: Try<A>) => void)[] | AsyncFutureState<A> | Try<A>
 
-  constructor(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec: Scheduler) {
-    super()
-    this._result = None
-    this._listeners = []
-    this._scheduler = ec
-
-    const complete = (result: Try<A>) => {
-      if (this._result !== None) {
-        throw new IllegalStateError("Attempt to completing a Future multiple times")
-      } else {
-        this._result = Some(result)
-        const listeners = this._listeners
-        delete this._listeners
-        delete this._cancelable
-
-        for (const f of listeners) {
-          // Forced async boundary
-          ec.executeBatched(() => f(result))
-        }
-      }
-    }
-
-    const cb = register(complete)
-    if (this._result === None && cb) this._cancelable = cb
+  constructor() {
+    this.id = null
+    this.ref = null
   }
 
-  onComplete(f: (a: Try<A>) => void): void {
-    if (this._result !== None) {
-      // Forced async boundary
-      this._scheduler.executeBatched(() => f(this._result.get()))
-    } else {
-      this._listeners.push(f)
+  compressedRoot(): AsyncFutureState<A> {
+    let cursor: AsyncFutureState<A> = this
+    while (cursor.id === "chained") {
+      cursor = cursor.ref as AsyncFutureState<A>
+      this.ref = cursor
     }
+    return cursor
   }
 
   value(): Option<Try<A>> {
-    return this._result
+    switch (this.id) {
+      case null: return None
+      case "complete":
+        return Some(this.ref as Try<A>)
+      case "chained":
+        return this.compressedRoot().value()
+    }
+  }
+
+  tryComplete(r: Try<A>, ec: Scheduler): boolean {
+    switch (this.id) {
+      case null:
+        const xs = (this.ref as (null | ((a: Try<A>) => void)[]))
+        this.ref = r
+        this.id = "complete"
+        if (xs) {
+          for (let i = 0; i < xs.length; i++)
+            ec.executeBatched(() => xs[i](r))
+        }
+        return true
+
+      case "complete":
+        return false
+
+      case "chained":
+        const ref = (this.ref as AsyncFutureState<A>).compressedRoot()
+        const result = ref.tryComplete(r, ec)
+        this.id = "complete"
+        this.ref = result ? r : ref.value().get()
+        return result
+    }
+  }
+
+  chainTo(target: AsyncFutureState<A>, ec: Scheduler): void {
+    switch (this.id) {
+      case null:
+        const xs = (this.ref as (null | ((a: Try<A>) => void)[]))
+        this.id = "chained"
+        this.ref = target.compressedRoot()
+
+        if (xs && xs.length > 0) {
+          // Transferring all listeners to chained future
+          for (let i = 0; i < xs.length; i++)
+            target.onComplete(xs[i], ec)
+        }
+        break
+
+      case "chained":
+        this.compressedRoot().chainTo(target.compressedRoot(), ec)
+        break
+
+      case "complete":
+        target.tryComplete(this.ref as Try<A>, ec)
+        break
+    }
+  }
+
+  onComplete(f: (a: Try<A>) => void, ec: Scheduler): void {
+    switch (this.id) {
+      case null:
+        if (!this.ref) this.ref = [];
+        (this.ref as ((a: Try<A>) => void)[]).push(f)
+        break
+      case "complete":
+        // Forced async boundary
+        ec.executeBatched(() => f(this.ref as Try<A>))
+        break
+      case "chained":
+        (this.ref as AsyncFutureState<A>).onComplete(f, ec)
+        break
+    }
+  }
+}
+
+/**
+ * Internal `Future` implementation that's the result of a
+ * {@link FutureMaker.future}.
+ *
+ * @Hidden
+ */
+class AsyncFuture<A> extends Future<A> {
+  readonly _state: AsyncFutureState<A>
+  readonly _scheduler: Scheduler
+  _cancelable?: ICancelable
+
+  constructor(state: AsyncFutureState<A>, cRef: ICancelable | undefined, ec: Scheduler) {
+    super()
+    this._state = state
+    this._scheduler = ec
+    if (cRef) this._cancelable = cRef
+  }
+
+  value(): Option<Try<A>> {
+    return this._state.value()
+  }
+
+  onComplete(f: (a: Try<A>) => void): void {
+    return this._state.onComplete(f, this._scheduler)
   }
 
   cancel(): void {
-    const cb = this._cancelable
-    if (cb) {
-      cb.cancel()
-      delete this._cancelable
+    if (this._cancelable) {
+      try { this._cancelable.cancel() }
+      finally { delete this._cancelable }
     }
   }
 
   withScheduler(ec: Scheduler): Future<A> {
     if (this._scheduler === ec) return this
-    return new FutureBuilder<A>(
-      cb => {
-        this.onComplete(cb)
-        return this._cancelable
-      },
-      ec)
+    return new AsyncFuture(this._state, this._cancelable, ec)
   }
 
   transformWith<B>(failure: (e: Throwable) => Future<B>, success: (a: A) => Future<B>): Future<B> {
@@ -1122,8 +1238,239 @@ class FutureBuilder<A> extends Future<A> {
 }
 
 /**
- * Internal, reusable `transformWith` implementation for {@link PureFuture}
- * and {@link FutureBuilder}.
+ * A write interface for {@link Future} to use when implementing
+ * producers.
+ *
+ * This would be the equivalent of the now deprecated `Deferred`
+ * data type in JavaScript.
+ *
+ * Example:
+ *
+ * ```typescript
+ * import { Future, FutureMaker, Scheduler, Success } from "funfix"
+ *
+ * const ec = Scheduler.global.get()
+ * const m = FutureMaker.empty<number>()
+ *
+ * // The producer
+ * ec.scheduleOnce(1000, () => m.complete(Success(1)))
+ *
+ * // The future that will eventually complete when
+ * // `m.complete` gets called
+ * const f: Future<number> = maker.future()
+ * ```
+ */
+export class FutureMaker<A> {
+  private readonly _state: AsyncFutureState<A>
+  private readonly _scheduler: Scheduler
+
+  private constructor(state: AsyncFutureState<A>, ec: Scheduler) {
+    this["_state"] = state
+    this._scheduler = ec
+  }
+
+  /**
+   * Tries to complete this future builder either with a successful
+   * value or with a failure.
+   *
+   * This function can be used in concurrent races where multiple
+   * actors compete for completing the same `FutureMaker`.
+   *
+   * ```typescript
+   * const m = FutureMaker.empty<number>()
+   *
+   * m.tryComplete(Success(1)) //=> true
+   * m.tryComplete(Success(2)) //=> false
+   *
+   * m.future() //=> Yields 1
+   * ```
+   *
+   * In case you have a guarantee that the completion only
+   * happens once, then usage of {@link complete} is recommended.
+   *
+   * @return `false` in case the `FutureMaker` has been already
+   *         completed, or `true` otherwise
+   */
+  readonly tryComplete: (result: Try<A>) => boolean =
+    r => this["_state"].tryComplete(r, this._scheduler)
+
+  /**
+   * Completes this `FutureMaker` either with a successful value or
+   * with a failure, but throws an exception if this maker was
+   * already completed.
+   *
+   * Due to throwing exceptions, this function is recommended for
+   * usage in cases where there's a guarantee that the completion
+   * of the `FutureMaker` is attempted only once.
+   *
+   * ```typescript
+   * const m = FutureMaker.empty<number>()
+   *
+   * m.complete(Success(1))
+   *
+   * m.complete(Success(2)) //=> throws IllegalStateError
+   * ```
+   *
+   * In case you have a concurrent race, see {@link tryComplete}
+   * for a version that does not throw exceptions.
+   */
+  readonly complete: (result: Try<A>) => void =
+    r => {
+      if (!this.tryComplete(r))
+        throw new IllegalStateError("Cannot complete a FutureMaker twice!")
+    }
+
+  /**
+   * Alias for `tryComplete(Success(value))`.
+   *
+   * See {@link tryComplete}.
+   */
+  trySuccess(value: A): boolean {
+    return this.tryComplete(Success(value))
+  }
+
+  /**
+   * Alias for `complete(Success(value))`.
+   *
+   * See {@link complete}.
+   */
+  success(value: A): void {
+    return this.complete(Success(value))
+  }
+
+  /**
+   * Alias for `tryComplete(Failure(error))`.
+   *
+   * See {@link tryComplete}.
+   */
+  tryFailure(error: Throwable): boolean {
+    return this.tryComplete(Failure(error))
+  }
+
+  /**
+   * Alias for `complete(Failure(value))`.
+   *
+   * See {@link complete}.
+   */
+  failure(error: Throwable): void {
+    return this.complete(Failure(error))
+  }
+
+  /**
+   * Chains this to `target` such that any subsequent operations on
+   * this future maker is reflected on `target`.
+   *
+   * ```typescript
+   * const main = FutureMaker.empty<number>()
+   * const child = FutureMaker.empty<number>()
+   *
+   * // Now all operations on `child` will be redirected to `main`
+   * child.chainTo(main)
+   *
+   * // Completing `child` will complete `main`
+   * child.complete(Success(1))
+   *
+   * main.future() //=> Yields 1
+   * child.future() //=> Yields 1
+   * ```
+   *
+   * The purpose of this method is the same as with
+   * {@link ChainedCancelable}, to be used in pieces of logic where
+   * the chaining of `onComplete` calls creates a memory leaks,
+   * chaining being used to get rid of such chains.
+   *
+   * This method is being used in the implementation of
+   * {@link Future.flatMap} for example to make it memory safe.
+   *
+   * CREDITS: this was inspired by Scala's `scala.concurrent.Scala`
+   * implementation.
+   */
+  chainTo(target: FutureMaker<A>): void {
+    this["_state"].chainTo(target["_state"], this._scheduler)
+  }
+
+  /**
+   * Creates and returns a {@link Future} that will complete when this
+   * future maker is completed.
+   *
+   * ```typescript
+   * const m = FutureMaker.empty<number>()
+   *
+   * // Creates a simple future, no cancellation logic:
+   * m.future()
+   *
+   * // Creates a future with baked in cancellation logic:
+   * const cRef = Cancelable.of(() => console.log("Cancelled!"))
+   * m.future(cRef)
+   * ```
+   *
+   * @param cancelable is an optional reference that can indicate
+   *        cancellation logic to be baked into the created future
+   */
+  future(cancelable?: ICancelable): Future<A> {
+    switch (this._state.id) {
+      case "complete":
+        return new PureFuture(this["_state"].ref as Try<A>, this._scheduler)
+      default:
+        return new AsyncFuture(this["_state"], cancelable, this._scheduler)
+    }
+  }
+
+  /**
+   * Returns a new `FutureMaker` that mirrors the state of the source,
+   * but that uses the given {@link Scheduler} reference for
+   * managing the required async boundaries.
+   *
+   * The given `Scheduler` reference is used for inserting async
+   * boundaries when the registered listeners are triggered when
+   * [.complete]{@link complete} is called or for data transformations
+   * executed on the future references returned by
+   * [.future]{@link FutureMaker.future}.
+   *
+   * See {@link Future.withScheduler}.
+   */
+  withScheduler(ec: Scheduler): FutureMaker<A> {
+    if (this._scheduler === ec) return this
+    return new FutureMaker(this._state, ec)
+  }
+
+  /**
+   * Returns an empty `FutureMaker` reference awaiting completion.
+   *
+   * This is the builder that one should use for building
+   * `FutureMaker` instances, since the default constructor is not
+   * exposed due to it exposing internal state.
+   */
+  static empty<A>(ec: Scheduler = Scheduler.global.get()): FutureMaker<A> {
+    return new FutureMaker(new AsyncFutureState(), ec)
+  }
+
+  /**
+   * Returns an already completed {@link FutureMaker} reference.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const m = FutureMaker.completed(Success(1))
+   *
+   * m.future() // Yields 1
+   *
+   * m.complete(Success(2)) // Throws IllegalStateError
+   * ```
+   *
+   * If all you need is a `Future`, then use {@link Future.fromTry}
+   * instead.
+   */
+  static completed<A>(value: Try<A>, ec: Scheduler = Scheduler.global.get()): FutureMaker<A> {
+    const state = new AsyncFutureState<A>()
+    state.id = "complete"
+    state.ref = value
+    return new FutureMaker(state, ec)
+  }
+}
+
+/**
+ * Internal, common `transformWith` implementation.
  *
  * @Hidden
  */
@@ -1134,42 +1481,43 @@ function genericTransformWith<A, B>(
   scheduler: Scheduler,
   cancelable?: ICancelable): Future<B> {
 
-  return new FutureBuilder<B>(
-    cb => {
-      const cRef = new MultiAssignCancelable(cancelable)
+  const defer = FutureMaker.empty<B>(scheduler)
+  const cRef = new ChainedCancelable(cancelable)
 
-      self.onComplete(tryA => {
-        let fb: Future<B>
-        try {
-          fb = tryA.fold(failure, success)
-        } catch (e) {
-          fb = Future.raise(e)
-        }
+  self.onComplete(tryA => {
+    let fb: Future<B>
+    try {
+      fb = tryA.fold(failure, success)
+    } catch (e) {
+      fb = Future.raise(e)
+    }
 
-        // If the resulting Future is already completed, there's no point
-        // in treating it as being cancelable
-        if (fb.value().isEmpty()) {
-          const fbb = fb as any
-          if (fbb._cancelable && fbb._cancelable instanceof MultiAssignCancelable) {
-            // Trick we are doing to get rid of extraneous memory
-            // allocations, otherwise we can leak memory
-            cRef.update(fbb._cancelable).collapse()
-            fbb._cancelable = cRef
-          } else {
-            /* istanbul ignore next */
-            cRef.update((fb as any)._cancelable || fb)
-          }
-        } else {
-          // GC purposes
-          cRef.clear()
-        }
+    // If the resulting Future is already completed, there's no point
+    // in treating it as being cancelable
+    if (fb.value().isEmpty()) {
+      const fbb = fb as any
+      const cNext = fbb._cancelable
 
-        fb.onComplete(cb)
-      })
+      if (cNext && cNext instanceof ChainedCancelable) {
+        // Trick we are doing to get rid of extraneous memory
+        // allocations, otherwise we can leak memory
+        cNext.chainTo(cRef)
+      } else if (cNext && !(cNext instanceof DummyCancelable)) {
+        cRef.update(cNext)
+      }
+    } else {
+      // GC purposes
+      cRef.clear()
+    }
 
-      return cRef
-    },
-    scheduler)
+    if (fb instanceof AsyncFuture) {
+      fb._state.chainTo(defer["_state"] as AsyncFutureState<B>, scheduler)
+    } else {
+      (fb as Future<B>).onComplete(defer.tryComplete)
+    }
+  })
+
+  return defer.future(cRef)
 }
 
 /**
