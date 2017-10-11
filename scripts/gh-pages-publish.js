@@ -24,6 +24,7 @@ const path = require("path")
 
 console.info(`CI=${process.env["CI"]}`)
 console.info(`TRAVIS_BRANCH=${process.env["TRAVIS_BRANCH"]}`)
+console.info(`TRAVIS_TAG=${process.env["TRAVIS_TAG"]}`)
 console.info(`TRAVIS_PULL_REQUEST=${process.env["TRAVIS_PULL_REQUEST"]}`)
 
 if (!process.env["CI"]) {
@@ -31,7 +32,7 @@ if (!process.env["CI"]) {
   process.exit(1)
 }
 
-const branch = process.env["TRAVIS_BRANCH"]
+const branch = process.env["TRAVIS_BRANCH"] || process.env["TRAVIS_TAG"]
 const m = branch.match(/^v(\d+\.\d+\.\d+)$/)
 let version = m && m[1]
 
