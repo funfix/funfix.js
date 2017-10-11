@@ -519,7 +519,7 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        local overrides, being a {@link DynamicRef}
    */
   static of<A>(thunk: () => A, ec: Scheduler = Scheduler.global.get()): Future<A> {
-    const ref = Deferred.empty<A>(ec)
+    const ref = FutureMaker.empty<A>(ec)
     ec.executeAsync(() => ref.tryComplete(Try.of(thunk)))
     return ref.future()
   }
@@ -628,23 +628,13 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        local overrides, being a {@link DynamicRef}
    */
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec: Scheduler = Scheduler.global.get()): Future<A> {
-    const ref = Deferred.empty<A>(ec)
+    const ref = FutureMaker.empty<A>(ec)
     try {
       const cRef = register(ref.complete)
       return ref.future(cRef || undefined)
     } catch (e) {
       return Future.raise(e, ec)
     }
-  }
-
-  /**
-   * @param ec is an optional {@link Scheduler} reference that will get used
-   *        for scheduling the actual async execution; if one isn't provided
-   *        then {@link Scheduler.global} gets used, which also allows for
-   *        local overrides, being a {@link DynamicRef}
-   */
-  static defer<A>(ec: Scheduler = Scheduler.global.get()): Deferred<A> {
-    return Deferred.empty<A>(ec)
   }
 
   /**
@@ -755,6 +745,30 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
         cb => { ref.then(value => cb(Success(value)),err => cb(Failure(err))) },
         ec
       )
+  }
+
+  /**
+   * Builds an already complete `Future` from a `Try` value.
+   *
+   * ```typescript
+   * import { Success, Failure, Future } from "funfix"
+   *
+   * // Already completed with 1
+   * const f1 = Future.fromTry(Success(1))
+   *
+   * // Already completed in error
+   * const f2 = Future.fromTry(Failure("err"))
+   * ```
+   *
+   * @param value is the `Try` value to stream in `onComplete` listeners
+   *
+   * @param ec is an optional {@link Scheduler} reference that will get used
+   *        for scheduling the actual async execution; if one isn't provided
+   *        then {@link Scheduler.global} gets used, which also allows for
+   *        local overrides, being a {@link DynamicRef}
+   */
+  static fromTry<A>(value: Try<A>, ec: Scheduler = Scheduler.global.get()): Future<A> {
+    return new PureFuture(value, ec)
   }
 
   /**
@@ -1081,6 +1095,12 @@ class PureFuture<A> extends Future<A> {
   }
 }
 
+/**
+ * Internal state shared between {@link AsyncFuture} and
+ * {@link FutureMaker}.
+ *
+ * @Hidden
+ */
 class AsyncFutureState<A> {
   id: null | "chained" | "complete"
   ref: null | ((a: Try<A>) => void)[] | AsyncFutureState<A> | Try<A>
@@ -1174,6 +1194,12 @@ class AsyncFutureState<A> {
   }
 }
 
+/**
+ * Internal `Future` implementation that's the result of a
+ * {@link FutureMaker.future}.
+ *
+ * @Hidden
+ */
 class AsyncFuture<A> extends Future<A> {
   readonly _state: AsyncFutureState<A>
   readonly _scheduler: Scheduler
@@ -1211,7 +1237,30 @@ class AsyncFuture<A> extends Future<A> {
   }
 }
 
-export class Deferred<A> {
+/**
+ * A write interface for {@link Future} to use when implementing
+ * producers.
+ *
+ * This would be the equivalent of the now deprecated `Deferred`
+ * data type in JavaScript.
+ *
+ * Example:
+ *
+ * ```typescript
+ * import { Future, FutureMaker, Scheduler, Success } from "funfix"
+ *
+ * const ec = Scheduler.global.get()
+ * const m = FutureMaker.empty<number>()
+ *
+ * // The producer
+ * ec.scheduleOnce(1000, () => m.complete(Success(1)))
+ *
+ * // The future that will eventually complete when
+ * // `m.complete` gets called
+ * const f: Future<number> = maker.future()
+ * ```
+ */
+export class FutureMaker<A> {
   private readonly _state: AsyncFutureState<A>
   private readonly _scheduler: Scheduler
 
@@ -1220,19 +1269,144 @@ export class Deferred<A> {
     this._scheduler = ec
   }
 
-  tryComplete: (result: Try<A>) => boolean =
+  /**
+   * Tries to complete this future builder either with a successful
+   * value or with a failure.
+   *
+   * This function can be used in concurrent races where multiple
+   * actors compete for completing the same `FutureMaker`.
+   *
+   * ```typescript
+   * const m = FutureMaker.empty<number>()
+   *
+   * m.tryComplete(Success(1)) //=> true
+   * m.tryComplete(Success(2)) //=> false
+   *
+   * m.future() //=> Yields 1
+   * ```
+   *
+   * In case you have a guarantee that the completion only
+   * happens once, then usage of {@link complete} is recommended.
+   *
+   * @return `false` in case the `FutureMaker` has been already
+   *         completed, or `true` otherwise
+   */
+  readonly tryComplete: (result: Try<A>) => boolean =
     r => this["_state"].tryComplete(r, this._scheduler)
 
-  complete: (result: Try<A>) => void =
+  /**
+   * Completes this `FutureMaker` either with a successful value or
+   * with a failure, but throws an exception if this maker was
+   * already completed.
+   *
+   * Due to throwing exceptions, this function is recommended for
+   * usage in cases where there's a guarantee that the completion
+   * of the `FutureMaker` is attempted only once.
+   *
+   * ```typescript
+   * const m = FutureMaker.empty<number>()
+   *
+   * m.complete(Success(1))
+   *
+   * m.complete(Success(2)) //=> throws IllegalStateError
+   * ```
+   *
+   * In case you have a concurrent race, see {@link tryComplete}
+   * for a version that does not throw exceptions.
+   */
+  readonly complete: (result: Try<A>) => void =
     r => {
       if (!this.tryComplete(r))
-        throw new IllegalStateError("Cannot complete a Deferred twice!")
+        throw new IllegalStateError("Cannot complete a FutureMaker twice!")
     }
 
-  chainTo(target: Deferred<A>): void {
+  /**
+   * Alias for `tryComplete(Success(value))`.
+   *
+   * See {@link tryComplete}.
+   */
+  trySuccess(value: A): boolean {
+    return this.tryComplete(Success(value))
+  }
+
+  /**
+   * Alias for `complete(Success(value))`.
+   *
+   * See {@link complete}.
+   */
+  success(value: A): void {
+    return this.complete(Success(value))
+  }
+
+  /**
+   * Alias for `tryComplete(Failure(error))`.
+   *
+   * See {@link tryComplete}.
+   */
+  tryFailure(error: Throwable): boolean {
+    return this.tryComplete(Failure(error))
+  }
+
+  /**
+   * Alias for `complete(Failure(value))`.
+   *
+   * See {@link complete}.
+   */
+  failure(error: Throwable): void {
+    return this.complete(Failure(error))
+  }
+
+  /**
+   * Chains this to `target` such that any subsequent operations on
+   * this future maker is reflected on `target`.
+   *
+   * ```typescript
+   * const main = FutureMaker.empty<number>()
+   * const child = FutureMaker.empty<number>()
+   *
+   * // Now all operations on `child` will be redirected to `main`
+   * child.chainTo(main)
+   *
+   * // Completing `child` will complete `main`
+   * child.complete(Success(1))
+   *
+   * main.future() //=> Yields 1
+   * child.future() //=> Yields 1
+   * ```
+   *
+   * The purpose of this method is the same as with
+   * {@link ChainedCancelable}, to be used in pieces of logic where
+   * the chaining of `onComplete` calls creates a memory leaks,
+   * chaining being used to get rid of such chains.
+   *
+   * This method is being used in the implementation of
+   * {@link Future.flatMap} for example to make it memory safe.
+   *
+   * CREDITS: this was inspired by Scala's `scala.concurrent.Scala`
+   * implementation.
+   */
+  chainTo(target: FutureMaker<A>): void {
     this["_state"].chainTo(target["_state"], this._scheduler)
   }
 
+  /**
+   * Creates and returns a {@link Future} that will complete when this
+   * future maker is completed.
+   *
+   * ```typescript
+   * const m = FutureMaker.empty<number>()
+   *
+   * // Creates a simple future, no cancellation logic:
+   * m.future()
+   *
+   * // Creates a future with baked in cancellation logic:
+   * const cRef = Cancelable.of(() => console.log("Cancelled!"))
+   * m.future(cRef)
+   * ```
+   *
+   * @param cancelable is an optional reference that can indicate
+   *        cancellation logic to be baked into the created future
+   */
   future(cancelable?: ICancelable): Future<A> {
     switch (this._state.id) {
       case "complete":
@@ -1243,7 +1417,7 @@ export class Deferred<A> {
   }
 
   /**
-   * Returns a new `Deferred` that mirrors the state of the source,
+   * Returns a new `FutureMaker` that mirrors the state of the source,
    * but that uses the given {@link Scheduler} reference for
    * managing the required async boundaries.
    *
@@ -1251,38 +1425,47 @@ export class Deferred<A> {
    * boundaries when the registered listeners are triggered when
    * [.complete]{@link complete} is called or for data transformations
    * executed on the future references returned by
-   * [.future]{@link Deferred.future}.
+   * [.future]{@link FutureMaker.future}.
    *
    * See {@link Future.withScheduler}.
    */
-  withScheduler(ec: Scheduler): Deferred<A> {
+  withScheduler(ec: Scheduler): FutureMaker<A> {
     if (this._scheduler === ec) return this
-    return new Deferred(this._state, ec)
+    return new FutureMaker(this._state, ec)
   }
 
   /**
-   * Returns an empty {@link Deferred} reference awaiting completion.
+   * Returns an empty `FutureMaker` reference awaiting completion.
+   *
+   * This is the builder that one should use for building
+   * `FutureMaker` instances, since the default constructor is not
+   * exposed due to it exposing internal state.
    */
-  static empty<A>(ec: Scheduler = Scheduler.global.get()): Deferred<A> {
-    return new Deferred(new AsyncFutureState(), ec)
+  static empty<A>(ec: Scheduler = Scheduler.global.get()): FutureMaker<A> {
+    return new FutureMaker(new AsyncFutureState(), ec)
   }
 
   /**
-   * Returns an already completed {@link Deferred} reference.
+   * Returns an already completed {@link FutureMaker} reference.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const m = FutureMaker.completed(Success(1))
+   *
+   * m.future() // Yields 1
+   *
+   * m.complete(Success(2)) // Throws IllegalStateError
+   * ```
+   *
+   * If all you need is a `Future`, then use {@link Future.fromTry}
+   * instead.
    */
-  static fromTry<A>(value: Try<A>, ec: Scheduler = Scheduler.global.get()): Deferred<A> {
+  static completed<A>(value: Try<A>, ec: Scheduler = Scheduler.global.get()): FutureMaker<A> {
     const state = new AsyncFutureState<A>()
     state.id = "complete"
     state.ref = value
-    return new Deferred(state, ec)
-  }
-
-  static successful<A>(value: A, ec: Scheduler = Scheduler.global.get()): Deferred<A> {
-    return Deferred.fromTry(Success(value), ec)
-  }
-
-  static failure<A>(e: Throwable, ec: Scheduler = Scheduler.global.get()): Deferred<A> {
-    return Deferred.fromTry(Failure(e), ec)
+    return new FutureMaker(state, ec)
   }
 }
 
@@ -1298,7 +1481,7 @@ function genericTransformWith<A, B>(
   scheduler: Scheduler,
   cancelable?: ICancelable): Future<B> {
 
-  const defer = Deferred.empty<B>(scheduler)
+  const defer = FutureMaker.empty<B>(scheduler)
   const cRef = new ChainedCancelable(cancelable)
 
   self.onComplete(tryA => {

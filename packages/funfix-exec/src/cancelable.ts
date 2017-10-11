@@ -137,7 +137,7 @@ export abstract class Cancelable implements ICancelable {
    * any thrown exceptions until all references have been cancelled.
    *
    * In case multiple exceptions are caught, then the thrown exception
-   * is going to be a {@link CompositeError}.
+   * is going to be a `CompositeError`.
    */
   static cancelAll(refs: Cancelable[]): void {
     let errors: any[] | null = null

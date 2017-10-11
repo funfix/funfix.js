@@ -17,7 +17,7 @@
 
 import * as assert from "./asserts"
 import { id, is, Try, Success, Failure, Option, Some, None, DummyError, Left, Right, IllegalStateError, TimeoutError, IllegalArgumentError } from "funfix-core"
-import { Future, Deferred, IPromiseLike, TestScheduler, Scheduler, BoolCancelable, Cancelable, Duration, ExecutionModel } from "../../src/"
+import { Future, FutureMaker, IPromiseLike, TestScheduler, Scheduler, BoolCancelable, Cancelable, Duration, ExecutionModel } from "../../src/"
 
 describe("PureFuture", () => {
   it("pure", () => {
@@ -243,6 +243,16 @@ describe("PureFuture", () => {
     ec.tick()
     assert.equal(f.value(), Some(Success(total)))
     assert.equal(effect, total)
+  })
+
+  it("fromTry(Success)", () => {
+    const f = Future.fromTry(Success(1))
+    assert.equal(f.value(), Some(Success(1)))
+  })
+
+  it("fromTry(Failure)", () => {
+    const f = Future.fromTry(Failure("err"))
+    assert.equal(f.value(), Some(Failure("err")))
   })
 })
 
@@ -1209,21 +1219,21 @@ describe("Future.tailRecM", () => {
 
 describe("Deferred", () => {
   it("tryComplete(Success) before any listener", () => {
-    const ref = Future.defer<number>()
+    const ref = FutureMaker.empty<number>()
     assert.ok(ref.tryComplete(Success(1)))
     assert.not(ref.tryComplete(Success(2)))
     assert.equal(ref.future().value(), Some(Success(1)))
   })
 
   it("tryComplete(Failure) before any listener", () => {
-    const ref = Future.defer<number>()
+    const ref = FutureMaker.empty<number>()
     assert.ok(ref.tryComplete(Failure(1)))
     assert.not(ref.tryComplete(Failure(2)))
     assert.equal(ref.future().value(), Some(Failure(1)))
   })
 
   it("complete() before any listener", () => {
-    const ref = Future.defer<number>()
+    const ref = FutureMaker.empty<number>()
     ref.complete(Success(1))
 
     assert.throws(() => ref.complete(Success(2)))
@@ -1232,7 +1242,7 @@ describe("Deferred", () => {
 
   const testAsyncTryComplete = (r: Try<number>) => () => {
     const ec = new TestScheduler()
-    const ref = Future.defer<number>(ec)
+    const ref = FutureMaker.empty<number>(ec)
     const f1 = ref.future()
     const f2 = ref.future()
 
@@ -1264,9 +1274,9 @@ describe("Deferred", () => {
   it("chainTo", () => {
     const ec = new TestScheduler()
 
-    const d0 = Future.defer<number>(ec)
-    const d1 = Future.defer<number>(ec)
-    const d2 = Future.defer<number>(ec)
+    const d0 = FutureMaker.empty<number>(ec)
+    const d1 = FutureMaker.empty<number>(ec)
+    const d2 = FutureMaker.empty<number>(ec)
 
     d1.chainTo(d0)
     d2.chainTo(d1)
@@ -1280,9 +1290,9 @@ describe("Deferred", () => {
   it("chainTo, with reversed chain order", () => {
     const ec = new TestScheduler()
 
-    const d0 = Future.defer<number>(ec)
-    const d1 = Future.defer<number>(ec)
-    const d2 = Future.defer<number>(ec)
+    const d0 = FutureMaker.empty<number>(ec)
+    const d1 = FutureMaker.empty<number>(ec)
+    const d2 = FutureMaker.empty<number>(ec)
 
     d2.chainTo(d1)
     d1.chainTo(d0)
@@ -1296,9 +1306,9 @@ describe("Deferred", () => {
   it("chainTo >> value", () => {
     const ec = new TestScheduler()
 
-    const d0 = Future.defer<number>(ec)
-    const d1 = Future.defer<number>(ec)
-    const d2 = Future.defer<number>(ec)
+    const d0 = FutureMaker.empty<number>(ec)
+    const d1 = FutureMaker.empty<number>(ec)
+    const d2 = FutureMaker.empty<number>(ec)
 
     d1.chainTo(d0)
     d2.chainTo(d1)
@@ -1314,8 +1324,8 @@ describe("Deferred", () => {
   it("chainTo transfers listeners to target", () => {
     const ec = new TestScheduler()
 
-    const d0 = Future.defer<number>(ec)
-    const d1 = Future.defer<number>(ec)
+    const d0 = FutureMaker.empty<number>(ec)
+    const d1 = FutureMaker.empty<number>(ec)
     const f1 = d1.future()
 
     let result0: Option<Try<number>> = None
@@ -1338,9 +1348,9 @@ describe("Deferred", () => {
   it("double chainTo", () => {
     const ec = new TestScheduler()
 
-    const d0 = Future.defer<number>(ec)
-    const d1 = Future.defer<number>(ec)
-    const d2 = Future.defer<number>(ec)
+    const d0 = FutureMaker.empty<number>(ec)
+    const d1 = FutureMaker.empty<number>(ec)
+    const d2 = FutureMaker.empty<number>(ec)
 
     d2.chainTo(d1)
     d2.chainTo(d0)
@@ -1362,8 +1372,8 @@ describe("Deferred", () => {
   it("Deferred.successful(x).chainTo(other)", () => {
     const ec = new TestScheduler()
 
-    const d0 = Deferred.successful(1, ec)
-    const d1 = Future.defer<number>(ec)
+    const d0 = FutureMaker.completed(Success(1), ec)
+    const d1 = FutureMaker.empty<number>(ec)
     d1.chainTo(d0)
 
     assert.not(d1.tryComplete(Success(2)))
@@ -1373,8 +1383,8 @@ describe("Deferred", () => {
   it("Deferred.empty().chainTo(successful)", () => {
     const ec = new TestScheduler()
 
-    const d0 = Future.defer<number>(ec)
-    const d1 = Deferred.successful(1, ec)
+    const d0 = FutureMaker.empty<number>(ec)
+    const d1 = FutureMaker.completed(Success(1), ec)
     d1.chainTo(d0)
 
     assert.not(d1.tryComplete(Success(2)))
@@ -1383,7 +1393,7 @@ describe("Deferred", () => {
 
   it("withScheduler", () => {
     const ec = new TestScheduler().withExecutionModel(ExecutionModel.alwaysAsync())
-    const defRef = Future.defer<number>()
+    const defRef = FutureMaker.empty<number>()
     const ref = defRef.withScheduler(ec)
 
     assert.notEqual(defRef, ref)
@@ -1398,34 +1408,54 @@ describe("Deferred", () => {
     assert.equal(result, Some(Success(1)))
   })
 
-  it("Deferred.successful yields Future.successful", () => {
-    const ref = Deferred.successful(1)
-    assert.equal(ref.future().value(), Some(Success(1)))
-  })
-
-  it("Deferred.failure yields Future.successful", () => {
-    const ref = Deferred.failure("error")
-    assert.equal(ref.future().value(), Some(Failure("error")))
-  })
-
   it("Deferred.empty() defaults to Scheduler.global", () => {
-    const defRef = Deferred.empty()
-    assert.equal(defRef.withScheduler(Scheduler.global.get()), defRef)
-  })
-
-  it("Deferred.successful() defaults to Scheduler.global", () => {
-    const defRef = Deferred.successful(1)
-    assert.equal(defRef.withScheduler(Scheduler.global.get()), defRef)
-  })
-
-  it("Deferred.failure() defaults to Scheduler.global", () => {
-    const defRef = Deferred.failure("err")
+    const defRef = FutureMaker.empty()
     assert.equal(defRef.withScheduler(Scheduler.global.get()), defRef)
   })
 
   it("Deferred.fromTry() defaults to Scheduler.global", () => {
-    const defRef = Deferred.fromTry(Success(1))
+    const defRef = FutureMaker.completed(Success(1))
     assert.equal(defRef.withScheduler(Scheduler.global.get()), defRef)
+  })
+
+  it("trySuccess", () => {
+    const m = FutureMaker.empty()
+
+    assert.ok(m.trySuccess(1))
+    assert.equal(m.future().value(), Some(Success(1)))
+
+    assert.not(m.trySuccess(2))
+    assert.equal(m.future().value(), Some(Success(1)))
+  })
+
+  it("success", () => {
+    const m = FutureMaker.empty()
+
+    m.success(1)
+    assert.equal(m.future().value(), Some(Success(1)))
+
+    assert.throws(() => m.success(2))
+    assert.equal(m.future().value(), Some(Success(1)))
+  })
+
+  it("tryFailure", () => {
+    const m = FutureMaker.empty()
+
+    assert.ok(m.tryFailure(1))
+    assert.equal(m.future().value(), Some(Failure(1)))
+
+    assert.not(m.tryFailure(2))
+    assert.equal(m.future().value(), Some(Failure(1)))
+  })
+
+  it("failure", () => {
+    const m = FutureMaker.empty()
+
+    m.failure("err")
+    assert.equal(m.future().value(), Some(Failure("err")))
+
+    assert.throws(() => m.failure("err2"))
+    assert.equal(m.future().value(), Some(Failure("err")))
   })
 })
 

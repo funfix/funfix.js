@@ -1,4 +1,4 @@
-/*!
+/*
  * Copyright (c) 2017 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -880,7 +880,7 @@ describe("IO run-loop", () => {
 
     ec2.tick()
     asyncEC.tick()
-    assert.equal(f2.value(), Some(Success(1)))
+    assert.equal(f2.value(), Some(Success(0)))
   })
 
   it("can override the execution model", () => {

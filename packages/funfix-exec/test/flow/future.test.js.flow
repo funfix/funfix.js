@@ -17,13 +17,15 @@
 
 /* @flow */
 
-import { Either, Try, Option } from "funfix-core"
+import { Either, Try, Option, Success, Failure } from "funfix-core"
 import {
   Future,
+  FutureMaker,
   Scheduler,
   ICancelable,
   IPromiseLike,
-  Duration
+  Duration,
+  Cancelable
 } from "../../src/"
 
 const fa1: Future<number> = Future.pure(1)
@@ -140,3 +142,23 @@ const tAll1: Future<number[]> = Future.traverse(arr2)(Future.pure)
 const tAll2: Future<number[]> = Future.traverse(arr2, 2)(Future.pure)
 const tAll3: Future<number[]> = Future.traverse(arr2, 2, Scheduler.global.get())(Future.pure)
 const tAll4: Future<string[]> = Future.traverse(arr2)(x => Future.pure(x.toString()))
+
+const ftr1: Future<number> = Future.fromTry(Success(1))
+const ftr2: Future<number> = Future.fromTry(Failure("err"))
+
+const maker1: FutureMaker<number> = FutureMaker.empty()
+const maker2: FutureMaker<number> = FutureMaker.empty(Scheduler.global.get())
+maker1.chainTo(maker2)
+
+const b1: boolean = maker1.tryComplete(Success(1))
+const b2: boolean = maker1.tryComplete(Failure("err"))
+const b3: boolean = maker1.trySuccess(1)
+const b4: boolean = maker1.tryFailure("err")
+
+maker1.complete(Success(1))
+maker1.complete(Failure("err"))
+maker1.success(1)
+maker2.failure("err")
+
+const fm1: Future<number> = maker2.future()
+const fm2: Future<number> = maker2.future(Cancelable.empty())
