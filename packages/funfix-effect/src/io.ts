@@ -200,9 +200,9 @@ import {
  * // this being the maximum parallelism allowed
  * const chunks = _.chunks(list, 30)
  * // Specify that each batch should process stuff in parallel
- * const batchedIOs = _.map(chunks, chunk => Task.gather(chunk))
+ * const batchedIOs = _.map(chunks, chunk => IO.gather(chunk))
  * // Sequence the batches
- * const allBatches = Task.sequence(batchedIOs)
+ * const allBatches = IO.sequence(batchedIOs)
  *
  * // Flatten the result, within the context of IO
  * const all: IO<string[]> =
@@ -1795,7 +1795,7 @@ export class IO<A> {
   }
 
   /**
-   * Unsafe utility - starts the execution of a Task.
+   * Unsafe utility - starts the execution of an `IO`.
    *
    * This function allows for specifying a custom {@link IOContext}
    * when evaluating the `IO` reference.
