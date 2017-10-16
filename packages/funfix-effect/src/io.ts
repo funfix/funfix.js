@@ -387,7 +387,7 @@ export class IO<A> {
    * @return a `Future` that will eventually complete with the
    *         result produced by this `IO` on evaluation
    */
-  run<A>(ec: Scheduler = Scheduler.global.get()): Future<A> {
+  run(ec: Scheduler = Scheduler.global.get()): Future<A> {
     return taskToFutureRunLoop(this, ec)
   }
 
@@ -457,7 +457,7 @@ export class IO<A> {
    *         the running computation, assuming that the implementation
    *         of the source `IO` can be cancelled
    */
-  runOnComplete<A>(
+  runOnComplete(
     cb: (result: Try<A>) => void,
     ec: Scheduler = Scheduler.global.get()): ICancelable {
 

@@ -22,8 +22,8 @@ import { Either, Try, Option } from "funfix-core";
 import { ICancelable, StackedCancelable, Scheduler, Future, ExecutionModel, Duration } from "funfix-exec";
 
 declare export class IO<+A> {
-  run<A>(ec?: Scheduler): Future<A>;
-  runOnComplete<A>(cb: (result: Try<A>) => void, ec?: Scheduler): ICancelable;
+  run(ec?: Scheduler): Future<A>;
+  runOnComplete(cb: (result: Try<A>) => void, ec?: Scheduler): ICancelable;
 
   attempt(): IO<Either<Throwable, A>>;
   asyncBoundary(ec?: Scheduler): IO<A>;
