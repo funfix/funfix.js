@@ -92,8 +92,11 @@ const r18: Option<number> =
 const r19: Option<number> =
   Option.of(1).orElseL(() => Option.of(2))
 
-const r20: number | null =
+const rel1: number | null =
   Option.of(1).orNull()
+
+const rel2: number | void =
+  Option.of(1).orUndefined()
 
 // Covariance again
 const optStr1: Option<string> = Option.some("")

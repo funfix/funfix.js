@@ -550,10 +550,18 @@ export class Option<A> implements std.IEquals<Option<A>> {
   /**
    * Returns the option's value if the option is nonempty, otherwise
    * return `null`.
+   * ```
    */
   orNull(): A | null {
-    if (!this._isEmpty) return this._ref
-    else return null
+    return !this._isEmpty ? this._ref : null
+  }
+
+  /**
+   * Returns the option's value if the option is nonempty, otherwise
+   * return `undefined`.
+   */
+  orUndefined(): A | undefined {
+    return !this._isEmpty ? this._ref : undefined
   }
 
   /**
@@ -1146,8 +1154,26 @@ export class Try<A> implements std.IEquals<Try<A>> {
    * ```
    */
   orNull(): A | null {
-    if (this._isSuccess) return this._successRef
-    return null
+    return this._isSuccess ? this._successRef : null
+  }
+
+  /**
+   * Returns the current value if it's a [[Success]], or
+   * if the source is a [[Failure]] then return `undefined`.
+   *
+   * ```typescript
+   * Success(10).orUndefined()      // 10
+   * Failure("error").orUndefined() // undefined
+   * ```
+   *
+   * This can be useful for use-cases such as:
+   *
+   * ```typescript
+   * Try.of(() => dict.user.profile.name).orUndefined()
+   * ```
+   */
+  orUndefined(): A | undefined {
+    return this._isSuccess ? this._successRef : undefined
   }
 
   /**

@@ -75,6 +75,7 @@ declare export class Option<+A> {
   orElse<AA>(fallback: Option<AA>): Option<A | AA>;
   orElseL<AA>(thunk: () => Option<AA>): Option<A | AA>;
   orNull(): A | null;
+  orUndefined(): A | void;
 
   chain<B>(f: (a: A) => Option<B>): Option<B>;
   contains(elem: A): boolean;
@@ -130,6 +131,7 @@ declare export class Try<+A> {
   orElse<AA>(fallback: Try<AA>): Try<A | AA>;
   orElseL<AA>(thunk: () => Try<AA>): Try<A | AA>;
   orNull(): A | null;
+  orUndefined(): A | void;
 
   isSuccess(): boolean;
   isFailure(): boolean;
