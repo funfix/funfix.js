@@ -273,9 +273,21 @@ describe("Try #orNull", () => {
     b => is(Try.success(b).orNull(), b)
   )
 
-  jv.property("failure(a).orNull() == null",
+  jv.property("failure(a).orNull() == undefined",
     inst.arbAny, jv.string,
     (a, b) => is(Try.failure(a).orNull(), null)
+  )
+})
+
+describe("Try #orUndefined", () => {
+  jv.property("success(b).orUndefined() == b",
+    inst.arbAny,
+    b => is(Try.success(b).orUndefined(), b)
+  )
+
+  jv.property("failure(a).orUndefined() == undefined",
+    inst.arbAny, jv.string,
+    (a, b) => is(Try.failure(a).orUndefined(), undefined)
   )
 })
 

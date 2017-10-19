@@ -51,3 +51,6 @@ const r29: Try<Object> = dogTry.orElseL(() => Success(new Human()))
 
 const fail1: Try<number> = Try.raise("error")
 const fail2: Try<number> = Try.failure("error")
+
+const rel1: Dog | null = dogTry.orNull()
+const rel2: Dog | void = dogTry.orUndefined()

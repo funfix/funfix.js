@@ -96,6 +96,17 @@ describe("Option", () => {
     })
   })
 
+  describe("#orUndefined", () => {
+    jv.property("equivalence with #get if nonempty",
+      inst.arbOptNonempty,
+      opt => is(opt.orUndefined(), opt.get())
+    )
+
+    it("should return undefined in case the option is empty", () => {
+      assert.equal(Option.empty<number>().orUndefined(), undefined)
+    })
+  })
+
   describe("#orElse", () => {
     jv.property("mirrors the source if nonempty",
       inst.arbOptNonempty,
