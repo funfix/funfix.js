@@ -89,7 +89,7 @@ declare export class Option<+A> {
   hashCode(): number;
   isEmpty(): boolean;
   map<B>(f: (a: A) => B): Option<B>;
-  mapN<B>(f: (a: A) => B): Option<B>;
+  mapN<B>(f: (a: A) => ?B): Option<B>;
   nonEmpty(): boolean;
 
   // Implements HK<F, A>
