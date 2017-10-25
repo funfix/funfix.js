@@ -649,7 +649,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
    *   .mapN(_ => _.length)
    * ```
    */
-  mapN<B>(f: (a: A) => B): Option<B> {
+  mapN<B>(f: (a: A) => B | null | undefined): Option<B> {
     return this._isEmpty ? None : Option.of(f(this._ref))
   }
 
