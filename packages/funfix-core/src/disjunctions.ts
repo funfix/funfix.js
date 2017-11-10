@@ -701,6 +701,8 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * @return a new option instance containing the value of the
    *         source filtered with the given predicate
    */
+  filter<B extends A>(p: (a: A) => a is B): Option<B>
+  filter(p: (a: A) => boolean): Option<A>
   filter(p: (a: A) => boolean): Option<A> {
     if (this._isEmpty || !p(this._ref)) return None
     else return this
@@ -1243,6 +1245,8 @@ export class Try<A> implements std.IEquals<Try<A>> {
    *
    * @throws NoSuchElementError in case the predicate doesn't hold
    */
+  filter<B extends A>(p: (a: A) => a is B): Try<B>
+  filter(p: (a: A) => boolean): Try<A>
   filter(p: (a: A) => boolean): Try<A> {
     if (!this._isSuccess) return this
     try {
