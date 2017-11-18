@@ -37,7 +37,7 @@ export interface FlatMap<F> extends Apply<F>{
   // Implements TypeClass<F>
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: FlatMap<any>;
+  static +_CT: FlatMap<any>;
 }
 
 export interface FlatMapLaws<F> extends ApplyLaws<F> {
@@ -59,7 +59,7 @@ export interface Monad<F> extends FlatMap<F>, Applicative<F> {
   // Implements TypeClass<F>
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: Monad<any>;
+  static +_CT: Monad<any>;
 }
 
 export interface MonadLaws<F> extends ApplicativeLaws<F>, FlatMapLaws<F> {
@@ -78,7 +78,7 @@ export interface MonadError<F, E> extends ApplicativeError<F, E>, Monad<F> {
   // Implements TypeClass<F>
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: MonadError<any, any>;
+  static +_CT: MonadError<any, any>;
 }
 
 export interface MonadErrorLaws<F, E> extends ApplicativeErrorLaws<F, E>, MonadLaws<F> {

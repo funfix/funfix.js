@@ -49,7 +49,7 @@ export abstract class Eq<A> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = []
   /** @hidden */
-  static readonly _funErasure: Eq<any>
+  static readonly _CT: Eq<any>
 
   /**
    * Tests equality for two values of type `A` by using the type's

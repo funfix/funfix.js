@@ -32,7 +32,7 @@ import {
   flatMapOf
 } from "../../src/"
 
-const erasure: FlatMap<any> = FlatMap._funErasure
+const erasure: FlatMap<any> = FlatMap._CT
 const typeId: string = FlatMap._funTypeId
 const supertypes: string[] = FlatMap._funSupertypeIds
 const tc: TypeClass<FlatMap<any>> = FlatMap

@@ -29,7 +29,7 @@ import {
 } from "../../src/"
 
 
-const erasure: CoflatMap<any> = CoflatMap._funErasure
+const erasure: CoflatMap<any> = CoflatMap._CT
 const typeId: string = CoflatMap._funTypeId
 const supertypes: string[] = CoflatMap._funSupertypeIds
 const tc: TypeClass<CoflatMap<any>> = CoflatMap

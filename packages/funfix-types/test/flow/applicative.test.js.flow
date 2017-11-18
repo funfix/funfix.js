@@ -31,7 +31,7 @@ import {
   applicativeLawsOf,
 } from "../../src/"
 
-const erasure: Applicative<any> = Applicative._funErasure
+const erasure: Applicative<any> = Applicative._CT
 const typeId: string = Applicative._funTypeId
 const supertypes: string[] = Applicative._funSupertypeIds
 const tc: TypeClass<Applicative<any>> = Applicative

@@ -210,7 +210,7 @@ export abstract class FlatMap<F> implements Apply<F> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = ["functor", "apply"]
   /** @hidden */
-  static readonly _funErasure: FlatMap<any>
+  static readonly _CT: FlatMap<any>
 }
 
 /**
@@ -533,7 +533,7 @@ export abstract class Monad<F> implements FlatMap<F>, Applicative<F> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = ["functor", "apply", "applicative", "flatMap"]
   /** @hidden */
-  static readonly _funErasure: Monad<any>
+  static readonly _CT: Monad<any>
 }
 
 applyMixins(Monad, [Applicative, FlatMap])
@@ -801,7 +801,7 @@ export abstract class MonadError<F, E> implements ApplicativeError<F, E>, Monad<
     ["functor", "apply", "applicative", "monad", "applicativeError"]
 
   /** @hidden */
-  static readonly _funErasure: MonadError<any, any>
+  static readonly _CT: MonadError<any, any>
 }
 
 applyMixins(MonadError, [Monad, ApplicativeError])

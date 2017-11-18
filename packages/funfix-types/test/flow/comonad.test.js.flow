@@ -31,7 +31,7 @@ import {
 } from "../../src/"
 
 
-const erasure: Comonad<any> = Comonad._funErasure
+const erasure: Comonad<any> = Comonad._CT
 const typeId: string = Comonad._funTypeId
 const supertypes: string[] = Comonad._funSupertypeIds
 const tc: TypeClass<Comonad<any>> = Comonad

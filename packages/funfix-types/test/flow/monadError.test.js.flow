@@ -36,7 +36,7 @@ import {
   monadErrorLawsOf
 } from "../../src/"
 
-const erasure: MonadError<any, any> = MonadError._funErasure
+const erasure: MonadError<any, any> = MonadError._CT
 const typeId: string = MonadError._funTypeId
 const supertypes: string[] = MonadError._funSupertypeIds
 const tc: TypeClass<MonadError<any, any>> = MonadError

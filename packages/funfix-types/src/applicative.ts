@@ -153,7 +153,7 @@ export abstract class Apply<F> implements Functor<F> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = ["functor"]
   /** @hidden */
-  static readonly _funErasure: Apply<any>
+  static readonly _CT: Apply<any>
 }
 
 applyMixins(Apply, [Functor])
@@ -374,7 +374,7 @@ export abstract class Applicative<F> implements Apply<F> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = ["functor", "apply"]
   /** @hidden */
-  static readonly _funErasure: Applicative<any>
+  static readonly _CT: Applicative<any>
 }
 
 applyMixins(Applicative, [Apply])
@@ -646,7 +646,7 @@ export abstract class ApplicativeError<F, E> implements Applicative<F> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = ["functor", "apply", "applicative"]
   /** @hidden */
-  static readonly _funErasure: ApplicativeError<any, any>
+  static readonly _CT: ApplicativeError<any, any>
 }
 
 applyMixins(ApplicativeError, [Applicative])

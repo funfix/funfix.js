@@ -30,7 +30,7 @@ import {
   applyLawsOf
 } from "../../src/"
 
-const erasure: Apply<any> = Apply._funErasure
+const erasure: Apply<any> = Apply._CT
 const typeId: string = Apply._funTypeId
 const supertypes: string[] = Apply._funSupertypeIds
 const tc: TypeClass<Apply<any>> = Apply

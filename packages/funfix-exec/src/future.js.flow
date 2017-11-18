@@ -57,7 +57,7 @@ declare export class Future<+A> {
   +_funKindA: A;
 
   // Implements Constructor<T>
-  static +_funErasure: Future<any>;
+  static +_CT: Future<any>;
 
   static of<A>(thunk: () => A, ec?: Scheduler): Future<A>;
   static pure<A>(a: A, ec?: Scheduler): Future<A>;

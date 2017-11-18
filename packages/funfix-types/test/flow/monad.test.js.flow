@@ -36,7 +36,7 @@ import {
   monadOf
 } from "../../src/"
 
-const erasure: Monad<any> = Monad._funErasure
+const erasure: Monad<any> = Monad._CT
 const typeId: string = Monad._funTypeId
 const supertypes: string[] = FlatMap._funSupertypeIds
 const tc: TypeClass<Monad<any>> = Monad

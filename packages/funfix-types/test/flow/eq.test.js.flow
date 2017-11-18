@@ -27,7 +27,7 @@ import {
   eqLawsOf
 } from "../../src/"
 
-const erasure: Eq<any> = Eq._funErasure
+const erasure: Eq<any> = Eq._CT
 const typeId: string = Eq._funTypeId
 const supertypes: string[] = Eq._funSupertypeIds
 const tc: TypeClass<Eq<any>> = Eq

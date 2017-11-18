@@ -26,7 +26,7 @@ export interface Functor<F> {
   // Implements TypeClass<F>
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: Functor<any>;
+  static +_CT: Functor<any>;
 }
 
 export interface FunctorLaws<F> {

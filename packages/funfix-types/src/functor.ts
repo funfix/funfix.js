@@ -103,7 +103,7 @@ export abstract class Functor<F> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = []
   /** @hidden */
-  static readonly _funErasure: Functor<any>
+  static readonly _CT: Functor<any>
 }
 
 /**

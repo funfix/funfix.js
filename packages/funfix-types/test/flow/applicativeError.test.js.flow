@@ -34,7 +34,7 @@ import {
   applicativeErrorLawsOf
 } from "../../src/"
 
-const erasure: ApplicativeError<any, any> = ApplicativeError._funErasure
+const erasure: ApplicativeError<any, any> = ApplicativeError._CT
 const typeId: string = ApplicativeError._funTypeId
 const supertypes: string[] = ApplicativeError._funSupertypeIds
 const tc: TypeClass<ApplicativeError<any, any>> = ApplicativeError

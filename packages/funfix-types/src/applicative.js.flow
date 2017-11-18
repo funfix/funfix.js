@@ -30,7 +30,7 @@ export interface Apply<F> extends Functor<F> {
   // Implements TypeClass<F>
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: Apply<any>;
+  static +_CT: Apply<any>;
 }
 
 export interface ApplyLaws<F> extends FunctorLaws<F> {
@@ -51,7 +51,7 @@ export interface Applicative<F> extends Apply<F> {
   // Implements TypeClass<F>
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: Applicative<any>;
+  static +_CT: Applicative<any>;
 }
 
 export interface ApplicativeLaws<F> extends ApplyLaws<F> {
@@ -77,7 +77,7 @@ export interface ApplicativeError<F, E> extends Applicative<F> {
   // Implements TypeClass<F>
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: ApplicativeError<any, any>;
+  static +_CT: ApplicativeError<any, any>;
 }
 
 export interface ApplicativeErrorLaws<F, E> extends ApplicativeLaws<F> {

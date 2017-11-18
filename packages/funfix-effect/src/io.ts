@@ -985,7 +985,7 @@ export class IO<A> {
   /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: IO<any>
+  /** @hidden */ static readonly _CT: IO<any>
 
   /**
    * Promote a `thunk` function to an `IO`, catching exceptions in

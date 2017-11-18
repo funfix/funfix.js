@@ -31,7 +31,7 @@ declare export class Eval<+A> {
 
   +_funKindF: Eval<any>;
   +_funKindA: A;
-  static +_funErasure: Eval<any>;
+  static +_CT: Eval<any>;
 
   static of<A>(thunk: () => A): Eval<A>;
   static pure<A>(value: A): Eval<A>;

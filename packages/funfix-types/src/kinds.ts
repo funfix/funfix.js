@@ -27,7 +27,7 @@ import { IllegalArgumentError, NotImplementedError } from "funfix-core"
  * Note that in TypeScript constructors can also be `protected` or `private`
  * and unfortunately specifying `{ new(): T }` is thus insufficient.
  * Which is why, for classes without a public constructor, we have to
- * specify a `_funErasure` (static) member as a property, to help the compiler
+ * specify a `_CT` (static) member as a property, to help the compiler
  * infer type `T`.
  *
  * Example:
@@ -54,7 +54,7 @@ import { IllegalArgumentError, NotImplementedError } from "funfix-core"
  * class PrivateBox<A> {
  *   private constructor(public a: A) {}
  *
- *   static _funErasure: PrivateBox<any> // leaving undefined
+ *   static _CT: PrivateBox<any> // leaving undefined
  * }
  *
  * const F = PrivateBox as any
@@ -64,7 +64,7 @@ import { IllegalArgumentError, NotImplementedError } from "funfix-core"
  * ```
  */
 export type Constructor<T> =
-  { new(...args: any[]): T } | { readonly _funErasure: T }
+  { new(...args: any[]): T } | { readonly _CT: T }
 
 /**
  * The `TypeClass` interface is to be implemented by type class
@@ -85,12 +85,9 @@ export type TypeClass<F> = Constructor<F> & {
  * paper.
  *
  */
-export interface HK<F, A> {
-  /** Trick for achieving nominal typing. */
-  readonly _funKindF: F
-
-  /** Trick for achieving nominal typing. */
-  readonly _funKindA: A
+export interface HK<URI, A> {
+  readonly _URI: URI
+  readonly _A: A
 }
 
 /**

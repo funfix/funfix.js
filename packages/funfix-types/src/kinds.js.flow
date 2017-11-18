@@ -18,7 +18,7 @@
 /* @flow */
 
 export type Constructor<T> =
-  Class<T> | { +_funErasure: T }
+  Class<T> | { +_CT: T }
 
 export type TypeClass<F> = Constructor<F> & {
   +_funTypeId: string;

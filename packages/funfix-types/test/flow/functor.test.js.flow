@@ -28,7 +28,7 @@ import {
   functorLawsOf
 } from "../../src/"
 
-const erasure: Functor<any> = Functor._funErasure
+const erasure: Functor<any> = Functor._CT
 const typeId: string = Functor._funTypeId
 const supertypes: string[] = Functor._funSupertypeIds
 const tc: TypeClass<Functor<any>> = Functor

@@ -125,7 +125,7 @@ export abstract class CoflatMap<F> implements Functor<F> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = ["functor"]
   /** @hidden */
-  static readonly _funErasure: CoflatMap<any>
+  static readonly _CT: CoflatMap<any>
 }
 
 applyMixins(CoflatMap, [Functor])
@@ -360,7 +360,7 @@ export abstract class Comonad<F> implements CoflatMap<F> {
   /** @hidden */
   static readonly _funSupertypeIds: string[] = ["functor", "coflatMap"]
   /** @hidden */
-  static readonly _funErasure: Comonad<any>
+  static readonly _CT: Comonad<any>
 }
 
 applyMixins(Comonad, [CoflatMap])

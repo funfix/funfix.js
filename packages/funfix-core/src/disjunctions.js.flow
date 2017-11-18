@@ -43,7 +43,7 @@ declare export class Either<+L, +R> {
   +_funKindA: R;
 
   // Implements Constructor<T>
-  static +_funErasure: Either<any, any>;
+  static +_CT: Either<any, any>;
 
   static left<L, R>(value: L): Either<L, R>;
   static right<L, R>(value: R): Either<L, R>;
@@ -97,7 +97,7 @@ declare export class Option<+A> {
   +_funKindA: A;
 
   // Implements Constructor<T>
-  static +_funErasure: Option<any>;
+  static +_CT: Option<any>;
 
   static empty<A>(): Option<A>;
   static none(): Option<empty>;
@@ -154,7 +154,7 @@ declare export class Try<+A> {
   +_funKindA: A;
 
   // Implements Constructor<T>
-  static +_funErasure: Try<any>;
+  static +_CT: Try<any>;
 
   static of<A>(thunk: () => A): Try<A>;
   static pure<A>(value: A): Try<A>;

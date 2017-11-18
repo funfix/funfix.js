@@ -208,7 +208,7 @@ export class Eval<A> {
   /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Eval<any>
+  /** @hidden */ static readonly _CT: Eval<any>
 
   /**
    * Alias for {@link Eval.always}.

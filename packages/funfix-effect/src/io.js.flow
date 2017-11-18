@@ -52,7 +52,7 @@ declare export class IO<+A> {
   +_funADType: "pure" | "always" | "once" | "flatMap" | "async" | "memoize";
   +_funKindF: IO<any>;
   +_funKindA: A;
-  static +_funErasure: IO<any>;
+  static +_CT: IO<any>;
 
   static always<A>(thunk: () => A): IO<A>;
   static async<A>(register: (ec: Scheduler, cb: (a: Try<A>) => void) => ICancelable | void): IO<A>;

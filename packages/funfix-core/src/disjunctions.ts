@@ -308,7 +308,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   /** @hidden */ readonly _funKindA: R
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Either<any, any>
+  /** @hidden */ static readonly _CT: Either<any, any>
 
   static left<L, R>(value: L): Either<L, R> {
     return Left(value)
@@ -790,7 +790,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
   /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Option<any>
+  /** @hidden */ static readonly _CT: Option<any>
 
   /**
    * Builds an [[Option]] reference that contains the given value.
@@ -1419,7 +1419,7 @@ export class Try<A> implements std.IEquals<Try<A>> {
   /** @hidden */ readonly _funKindA: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Try<any>
+  /** @hidden */ static readonly _CT: Try<any>
 
   /**
    * Evaluates the given `thunk` and returns either a [[Success]],

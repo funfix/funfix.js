@@ -27,7 +27,7 @@ export interface CoflatMap<F> extends Functor<F> {
 
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: CoflatMap<any>;
+  static +_CT: CoflatMap<any>;
 }
 
 export interface CoflatMapLaws<F> extends FunctorLaws<F> {
@@ -47,7 +47,7 @@ export interface Comonad<F> extends CoflatMap<F> {
 
   static +_funTypeId: string;
   static +_funSupertypeIds: string[];
-  static +_funErasure: Comonad<any>;
+  static +_CT: Comonad<any>;
 }
 
 export interface ComonadLaws<F> extends CoflatMapLaws<F> {
