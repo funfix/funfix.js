@@ -33,7 +33,7 @@
     "mocha": "^4.0.0",
     "nyc": "^11.2.1",
     "rimraf": "^2.6.1",
-    "rollup": "^0.53.3",
+    "rollup": "^0.53.4",
     "rollup-plugin-babel": "^3.0.0",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-node-resolve": "^3.0.0",
