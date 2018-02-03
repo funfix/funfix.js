@@ -18,7 +18,8 @@
 import * as jv from "jsverify"
 import * as assert from "./asserts"
 import * as inst from "./instances"
-import { hashCode, is, Left, Right, Either, Option } from "../../src/"
+import { hashCode, is, Left, Right, Either, Option, EitherSetoid } from "../../src/"
+import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
 
 describe("Either", () => {
   describe("Either discrimination", () => {
@@ -339,5 +340,9 @@ describe("Either", () => {
       const fa = Either.tailRecM(0, a => Left("value"))
       assert.equal(fa.swap().get(), "value")
     })
+  })
+
+  describe("EitherSetoid", () => {
+    setoidCheck(inst.arbEither, EitherSetoid.universal)
   })
 })

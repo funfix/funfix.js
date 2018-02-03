@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import { Setoid } from "funfix-types"
+
 /**
  * Interface for testing the equality of value objects.
  */
@@ -116,6 +118,12 @@ export function is<A>(lh: A, rh: A): boolean {
 export function equals<A>(lh: A, rh: A): boolean {
   return is(lh, rh)
 }
+
+/**
+ * Returns a `Setoid` type-class instance that depends
+ * universal equality, as defined by {@link is}.
+ */
+export const universalSetoid: Setoid<any> = { equals }
 
 /**
  * Universal hash-code function.

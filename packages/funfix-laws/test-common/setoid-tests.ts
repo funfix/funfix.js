@@ -20,8 +20,8 @@ import { Setoid } from "funfix-types"
 import { Equiv, SetoidLaws } from "../src"
 
 export function setoidCheck<A>(
-  F: Setoid<A>,
-  genA: jv.Arbitrary<A>) {
+  genA: jv.Arbitrary<A>,
+  F: Setoid<A>) {
 
   const laws = new SetoidLaws<A>(F)
   const eq = (p: Equiv<boolean>) => p.lh === p.rh

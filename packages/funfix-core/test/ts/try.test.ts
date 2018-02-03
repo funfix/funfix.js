@@ -19,10 +19,11 @@ import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
 
-import { Try, Success, Failure, DummyError, NoSuchElementError } from "../../src/"
+import { Try, TrySetoid, Success, Failure, DummyError, NoSuchElementError } from "../../src/"
 import { None, Some, Left, Right } from "../../src/"
 import { IllegalStateError } from "../../src/"
 import { is, hashCode } from "../../src/"
+import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
 
 describe("Try.of", () => {
   jv.property("should work for successful functions",
@@ -511,4 +512,8 @@ describe("Try.tailRecM", () => {
     const fa = Try.tailRecM(0, a => { throw "dummy" })
     assert.equal(fa.failed().get(), "dummy")
   })
+})
+
+describe("TrySetoid", () => {
+  setoidCheck(inst.arbTry, TrySetoid.universal)
 })

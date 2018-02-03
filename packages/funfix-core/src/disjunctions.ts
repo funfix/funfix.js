@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import { Setoid } from "funfix-types"
 import * as std from "./std"
 import { HK, HK2 } from "./kinds"
 import { Throwable, NoSuchElementError } from "./errors"
@@ -289,12 +290,22 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
       : Option.none()
   }
 
-  /** Implements {@link IEquals.equals}. */
-  equals(other: Either<L, R>): boolean {
+  /**
+   * Implements {@link IEquals.equals} but with overrideable equality
+   * for `L` and `R`.
+   *
+   * @param that is the right hand side of the equality check
+   * @param eqL is an optional function describing equality for `L`
+   * @param eqR is an optional function describing equality for `R`
+   */
+  equals(that: Either<L, R>,
+    eqL: (x: L, y: L) => boolean = std.is,
+    eqR: (x: R, y: R) => boolean = std.is): boolean {
+
     // tslint:disable-next-line:strict-type-predicates
-    if (other == null) return false
-    if (this._isRight) return std.is(this._rightRef, other._rightRef)
-    return std.is(this._leftRef, other._leftRef)
+    if (that == null) return false
+    if (this._isRight) return eqR(this._rightRef, that._rightRef)
+    return eqL(this._leftRef, that._leftRef)
   }
 
   /** Implements {@link IEquals.hashCode}. */
@@ -496,6 +507,32 @@ export function Left<L>(value: L): Either<L, never> {
  */
 export function Right<R>(value: R): Either<never, R> {
   return new (Either as any)(null as never, value, true)
+}
+
+/**
+ * Implements the `Setoid` type-class for {@link Either}.
+ */
+export class EitherSetoid<L, R> implements Setoid<Either<L, R>> {
+  /**
+   * @param L defines equality for left values
+   * @param R defines equality for right values
+   */
+  constructor(
+    private readonly L: Setoid<L> = std.universalSetoid,
+    private readonly R: Setoid<R> = std.universalSetoid) {
+  }
+
+  equals(x: Either<L, R>, y: Either<L, R>): boolean {
+    if (!x) return !y
+    return x.equals(y, this.L.equals, this.R.equals)
+  }
+
+  /**
+   * Reusable instance that uses universal equality for the
+   * underlying `L` and `R`.
+   */
+  static readonly universal: EitherSetoid<any, any> =
+    new EitherSetoid()
 }
 
 /**
@@ -770,14 +807,21 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
     if (!this._isEmpty) cb(this._ref)
   }
 
-  // Implemented from IEquals
-  equals(that: Option<A>): boolean {
+  /**
+   * Implements {@link IEquals.equals} but with overrideable equality
+   * for the equality checks of `A`.
+   *
+   * @param that is the right hand side of the equality check
+   * @param eq is an optional function describing equality for `A`,
+   *        defaulting to the standard {@link is}
+   */
+  equals(that: Option<A>, eq: (x: A, y: A) => boolean = std.is): boolean {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
     if (this.nonEmpty() && that.nonEmpty()) {
       const l = this.get()
       const r = that.get()
-      return std.is(l, r)
+      return eq(l, r)
     }
     return this.isEmpty() && that.isEmpty()
   }
@@ -1034,6 +1078,30 @@ function emptyOptionRef() {
 export const None: Option<never> = emptyOptionRef()
 
 /**
+ * Implements the `Setoid` type-class for {@link Option}.
+ */
+export class OptionSetoid<A> implements Setoid<Option<A>> {
+  /**
+   * @param A defines equality for inner values when `Some(a)`
+   */
+  constructor(
+    private readonly A: Setoid<A> = std.universalSetoid) {
+  }
+
+  equals(x: Option<A>, y: Option<A>) {
+    if (!x) return !y
+    return x.equals(y, this.A.equals)
+  }
+
+  /**
+   * Reusable instance that uses universal equality for the
+   * underlying `A`.
+   */
+  static readonly universal: OptionSetoid<any> =
+    new OptionSetoid()
+}
+
+/**
  * The `Try` type represents a computation that may either result in an
  * exception, or return a successfully computed value. It's similar to,
  * but semantically different from the [[Either]] type.
@@ -1286,9 +1354,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   }
 
   /** Alias for [[flatMap]]. */
-  chain<B>(f: (a: A) => Try<B>): Try<B> {
-    return this.flatMap(f)
-  }
+  readonly chain = this.flatMap
 
   /**
    * Returns a `Try` containing the result of applying `f` to
@@ -1404,12 +1470,14 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
       : Left(this._failureRef)
   }
 
-  // Implemented from IEquals
-  equals(that: Try<A>): boolean {
+  /**
+   * Implements {@link IEquals.equals} with overridable equality for `A`.
+   */
+  equals(that: Try<A>, eq: (x: A, y: A) => boolean = std.is): boolean {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
     return this._isSuccess
-      ? that._isSuccess && std.is(this._successRef, that._successRef)
+      ? that._isSuccess && eq(this._successRef, that._successRef)
       : !that._isSuccess && std.is(this._failureRef, that._failureRef)
   }
 
@@ -1756,6 +1824,30 @@ export function Success<A>(value: A): Try<A> {
  */
 export function Failure(e: Throwable): Try<never> {
   return new (Try as any)(null as never, e, false)
+}
+
+/**
+ * Implements the `Setoid` type-class for {@link Try}.
+ */
+export class TrySetoid<A> implements Setoid<Try<A>> {
+  /**
+   * @param A defines equality for inner values when `Success(a)`
+   */
+  constructor(
+    private readonly A: Setoid<A> = std.universalSetoid) {
+  }
+
+  equals(x: Try<A>, y: Try<A>) {
+    if (!x) return !y
+    return x.equals(y, this.A.equals)
+  }
+
+  /**
+   * Reusable instance that uses universal equality for the
+   * underlying `A`.
+   */
+  static readonly universal: TrySetoid<any> =
+    new TrySetoid()
 }
 
 /**

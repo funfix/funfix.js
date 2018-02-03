@@ -19,9 +19,10 @@ import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
 
-import { Option, Some, None, Left, Right } from "../../src/"
+import { Option, Some, None, Left, Right, OptionSetoid } from "../../src/"
 import { NoSuchElementError } from "../../src/"
 import { is, hashCode } from "../../src/"
+import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
 
 describe("Option", () => {
   describe("constructor", () => {
@@ -483,5 +484,9 @@ describe("Option", () => {
       const fa = Option.tailRecM(0, a => None)
       assert.equal(fa, None)
     })
+  })
+
+  describe("OptionSetoid", () => {
+    setoidCheck(inst.arbOpt, OptionSetoid.universal)
   })
 })

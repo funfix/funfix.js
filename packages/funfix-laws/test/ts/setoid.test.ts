@@ -16,8 +16,8 @@
  */
 
 import { setoidCheck } from "../../test-common/setoid-tests"
-import { Box, BoxArbitrary, BoxSetoid } from "./box"
+import { BoxArbitrary, BoxSetoid } from "./box"
 
 describe("Setoid<Box>", () => {
-  setoidCheck<Box<number>>(BoxSetoid(), BoxArbitrary())
+  setoidCheck(BoxArbitrary(), BoxSetoid())
 })
