@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-/* @flow */
+import * as assert from "assert"
+import * as types from "../../src"
 
-export type Constructor<T> = Class<T> | { +_Class: T }
-
-export interface HK<URI, A> {
-  +_URI: URI;
-  +_A: A;
+const t: types.Setoid<number> = {
+  equals: (x, y) => x === y
 }
 
-export interface HK2<URI, L, A> extends HK<URI, A> {
-  +_L: L
-}
-
-export interface HK3<URI, U, L, A> extends HK2<URI, L, A> {
-  +_U: U
-}
+describe("dummy", () => {
+  it("does nothing", () => {
+    // Dummy test meant to prevent errors due to this project not
+    // exposing any actual executable code
+    assert.ok(t.equals(1, 1))
+    assert.ok(!t.equals(1, 2))
+  })
+})

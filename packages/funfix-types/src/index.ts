@@ -16,9 +16,4 @@
  */
 
 export * from "./kinds"
-export * from "./eq"
-export * from "./functor"
-export * from "./applicative"
-export * from "./monad"
-export * from "./comonad"
-export * from "./instances"
+export * from "./setoid"

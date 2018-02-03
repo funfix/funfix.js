@@ -4,28 +4,24 @@
   <img src="https://funfix.org/public/logo/funfix-512.png" width="120" align="right" style="float:right; display: block; width:120px;" />
 </a>
 
-Sub-project of **[Funfix](https://funfix.org)** exposing type classes
-inspired by Haskell's standard library and
-by [Typelevel Cats](https://typelevel.org/cats/).
+Sub-project of **[Funfix](https://funfix.org)** exposing type classes,
+inspired by Haskell and that follow the 
+[static-land](https://github.com/rpominov/static-land) specification.
 
 ## Contents
 
-Summary of type classes:
+Summary of available type classes:
 
 |                          |                                                                                                                                                                         |
 |--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| {@link Eq}               | type class for determining equality between instances of the same type and that obeys the laws defined in {@link EqLaws}                                                |
-| {@link Functor}          | type class exposing `map` and that obeys the laws defined in {@link FunctorLaws}                                                                                        |
-| {@link Apply}            | type class that extends `Functor`, exposing `ap` and that obeys the laws defined in {@link ApplyLaws}                                                                   |
-| {@link Applicative}      | type class that extends `Functor` and `Apply`, exposing `pure` and that obeys the laws defined in {@link ApplicativeLaws}                                               |
-| {@link ApplicativeError} | type class that extends `Applicative`, for applicative types that can raise errors or recover from them and that obeys the laws defined in {@link ApplicativeErrorLaws} | 
-| {@link FlatMap}          | type class that extends `Functor` and `Apply`, exposing `flatMap` and `tailRecM` and that obeys the laws defined in {@link FlatMapLaws}                                 |
-| {@link Monad}            | type class that extends `Applicative` and `FlatMap` and that obeys the laws defined in {@link MonadLaws}                                                                |
-| {@link MonadError}       | type class that extends `ApplicativeError` and `Monad`, for monads that can raise or recover from errors and that obeys the laws defined in {@link MonadErrorLaws}      |
-| {@link CoflatMap}        | type class that extends `Functor`, the dual of `FlatMap`, obeying the laws defined in {@link CoflatMapLaws}                                                             |
-| {@link Comonad}          | type class that extends `CoflatMap`, the dual of `Monad`, for data types that providing `extract`, obeying the laws defined in {@link ComonadLaws}                      |
+| {@link Setoid}           | type class for determining equality between instances of the same type and that obeys the laws defined in `SetoidLaws` (see `funfix-laws`)                              |
 
-More is coming 😉
+## Documentation
+
+Links:
+
+- [Homepage](https://funfix.org)
+- **[JSDoc documentation](https://funfix.org/api/core/)**
 
 ## Usage
 
@@ -36,23 +32,35 @@ You can depend on the whole `funfix` library, by adding it to
 npm install --save funfix
 ```
 
-In this case imports are like:
+In this case, for TypeScript the imports are like:
 
 ```typescript
-import { Monad } from "funfix"
+import { Setoid } from "funfix"
+```
+
+Or for Flow, since all type-classes are described via `type`:
+
+```js
+import type { Setoid } from "funfix"
 ```
 
 Or for finer grained dependency management, the project can depend
-only on `funfix-types`:
+only on `funfix-core`:
 
 ```bash
-npm install --save funfix-types
+npm install --save funfix-core
 ```
 
-In this case imports are like:
+In this case, for TypeScript the imports are like:
 
 ```typescript
-import { Monad } from "funfix-types"
+import { Setoid } from "funfix-types"
+```
+
+Of for Flow:
+
+```js
+import type { Setoid } from "funfix-types"
 ```
 
 ### Modules: UMD and ES 2015

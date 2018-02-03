@@ -17,6 +17,7 @@
 
 /* @flow */
 
+declare export * from "./kinds";
 declare export * from "./errors";
 declare export * from "./std";
 declare export * from "./disjunctions";

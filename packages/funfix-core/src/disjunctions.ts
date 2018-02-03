@@ -16,6 +16,7 @@
  */
 
 import * as std from "./std"
+import { HK, HK2 } from "./kinds"
 import { Throwable, NoSuchElementError } from "./errors"
 
 /**
@@ -50,7 +51,7 @@ import { Throwable, NoSuchElementError } from "./errors"
  *
  * @final
  */
-export class Either<L, R> implements std.IEquals<Either<L, R>> {
+export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/either", L, R> {
   private _isRight: boolean
   private _rightRef: R
   private _leftRef: L
@@ -304,11 +305,12 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Either<L, any>
-  /** @hidden */ readonly _funKindA: R
+  /** @hidden */ readonly _URI: "funfix/either"
+  /** @hidden */ readonly _A: R
+  /** @hidden */ readonly _L: L
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Either<any, any>
+  /** @hidden */ static readonly _Class: Either<any, any>
 
   static left<L, R>(value: L): Either<L, R> {
     return Left(value)
@@ -510,7 +512,7 @@ export function Right<R>(value: R): Either<never, R> {
  *
  * @final
  */
-export class Option<A> implements std.IEquals<Option<A>> {
+export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A> {
   // tslint:disable-next-line:variable-name
   private _isEmpty: boolean
   private _ref: A
@@ -788,11 +790,11 @@ export class Option<A> implements std.IEquals<Option<A>> {
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Option<any>
-  /** @hidden */ readonly _funKindA: A
+  /** @hidden */ readonly _URI: "funfix/option"
+  /** @hidden */ readonly _A: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Option<any>
+  /** @hidden */ static readonly _Class: Option<any>
 
   /**
    * Builds an [[Option]] reference that contains the given value.
@@ -1077,7 +1079,7 @@ export const None: Option<never> = emptyOptionRef()
  * NOTE: all `Try` combinators will catch exceptions and return failure
  * unless otherwise specified in the documentation.
  */
-export class Try<A> implements std.IEquals<Try<A>> {
+export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   private _isSuccess: boolean
   private _successRef: A
   private _failureRef: Throwable
@@ -1419,11 +1421,11 @@ export class Try<A> implements std.IEquals<Try<A>> {
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Try<any>
-  /** @hidden */ readonly _funKindA: A
+  /** @hidden */ readonly _URI: "funfix/try"
+  /** @hidden */ readonly _A: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Try<any>
+  /** @hidden */ static readonly _Class: Try<any>
 
   /**
    * Evaluates the given `thunk` and returns either a [[Success]],

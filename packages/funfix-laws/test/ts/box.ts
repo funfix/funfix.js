@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-/* @flow */
+import { Setoid } from "funfix-types"
+import * as jv from "jsverify"
 
-export type Constructor<T> = Class<T> | { +_Class: T }
-
-export interface HK<URI, A> {
-  +_URI: URI;
-  +_A: A;
+export class Box<A> {
+  constructor(public readonly value: A) {}
 }
 
-export interface HK2<URI, L, A> extends HK<URI, A> {
-  +_L: L
+export function BoxSetoid<A>(): Setoid<Box<A>> {
+  return {
+    equals: (x: Box<A>, y: Box<A>) => x.value === y.value
+  }
 }
 
-export interface HK3<URI, U, L, A> extends HK2<URI, L, A> {
-  +_U: U
+export function BoxArbitrary(): jv.Arbitrary<Box<number>> {
+  return jv.integer.smap(
+    i => new Box(i),
+    b => b.value
+  )
 }

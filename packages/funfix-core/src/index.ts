@@ -16,6 +16,7 @@
  */
 
 // Exporting everything
+export * from "./kinds"
 export * from "./std"
 export * from "./errors"
 export * from "./disjunctions"

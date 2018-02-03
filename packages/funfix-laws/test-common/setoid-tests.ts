@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-/* @flow */
+import * as jv from "jsverify"
+import { Setoid } from "funfix-types"
+import { Equiv, SetoidLaws } from "../src"
 
-export type Constructor<T> = Class<T> | { +_Class: T }
+export function setoidCheck<A>(
+  F: Setoid<A>,
+  genA: jv.Arbitrary<A>) {
 
-export interface HK<URI, A> {
-  +_URI: URI;
-  +_A: A;
-}
+  const laws = new SetoidLaws<A>(F)
+  const eq = (p: Equiv<boolean>) => p.lh === p.rh
 
-export interface HK2<URI, L, A> extends HK<URI, A> {
-  +_L: L
-}
+  jv.property("reflexivity", genA,
+    x => eq(laws.reflexivity(x)))
 
-export interface HK3<URI, U, L, A> extends HK2<URI, L, A> {
-  +_U: U
+  jv.property("symmetry", genA, genA,
+    (x, y) => eq(laws.symmetry(x, y)))
+
+  jv.property("transitivity", genA, genA, genA,
+    (x, y, z) => eq(laws.transitivity(x, y, z)))
 }

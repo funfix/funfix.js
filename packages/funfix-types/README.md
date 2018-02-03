@@ -7,9 +7,9 @@
 [![Join chat](https://badges.gitter.im/funfix/funfix.svg)](https://gitter.im/funfix/funfix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![npm](https://img.shields.io/npm/v/funfix-types.svg)](https://www.npmjs.com/package/funfix-types)
 
-Sub-project of **[Funfix](https://funfix.org)** exposing type classes
-inspired by Haskell's standard library and
-by [Typelevel Cats](https://typelevel.org/cats/).
+Sub-project of **[Funfix](https://funfix.org)** exposing type classes,
+inspired by Haskell and that follow the 
+[static-land](https://github.com/rpominov/static-land) specification.
 
 ## Documentation
 
@@ -27,23 +27,35 @@ You can depend on the whole `funfix` library, by adding it to
 npm install --save funfix
 ```
 
-In this case imports are like:
+In this case, for TypeScript the imports are like:
 
 ```typescript
-import { Monad } from "funfix"
+import { Setoid } from "funfix"
+```
+
+Or for Flow, since all type-classes are described via `type`:
+
+```js
+import type { Setoid } from "funfix"
 ```
 
 Or for finer grained dependency management, the project can depend
-only on `funfix-types`:
+only on `funfix-core`:
 
 ```bash
-npm install --save funfix-types
+npm install --save funfix-core
 ```
 
-In this case imports are like:
+In this case, for TypeScript the imports are like:
 
 ```typescript
-import { Monad } from "funfix-types"
+import { Setoid } from "funfix-types"
+```
+
+Of for Flow:
+
+```js
+import type { Setoid } from "funfix-types"
 ```
 
 ### Modules: UMD and ES 2015

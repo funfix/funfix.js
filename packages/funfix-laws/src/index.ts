@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,19 +15,5 @@
  * limitations under the License.
  */
 
-/* @flow */
-
-export type Constructor<T> = Class<T> | { +_Class: T }
-
-export interface HK<URI, A> {
-  +_URI: URI;
-  +_A: A;
-}
-
-export interface HK2<URI, L, A> extends HK<URI, A> {
-  +_L: L
-}
-
-export interface HK3<URI, U, L, A> extends HK2<URI, L, A> {
-  +_U: U
-}
+export * from "./equiv"
+export * from "./setoid"

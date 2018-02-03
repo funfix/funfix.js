@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-/* @flow */
-
-export type Constructor<T> = Class<T> | { +_Class: T }
-
-export interface HK<URI, A> {
-  +_URI: URI;
-  +_A: A;
-}
-
-export interface HK2<URI, L, A> extends HK<URI, A> {
-  +_L: L
-}
-
-export interface HK3<URI, U, L, A> extends HK2<URI, L, A> {
-  +_U: U
+/**
+ * The `Setoid` type defines equality.
+ *
+ * Instances must obey the following laws:
+ *
+ * 1. Reflexivity: `S.equals(a, a) === true`
+ * 2. Symmetry: `S.equals(a, b) === S.equals(b, a)`
+ * 3. Transitivity: if `S.equals(a, b)` and `S.equals(b, c)`, then `S.equals(a, c)`
+ *
+ * Equivalent with the `Setoid` specification in the
+ * [static-land]{@link https://github.com/rpominov/static-land/} project.
+ */
+export type Setoid<A> = {
+  equals: (x: A, y: A) => boolean
 }
