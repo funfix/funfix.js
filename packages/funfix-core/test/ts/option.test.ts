@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +19,11 @@ import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
 
-import { Option, Some, None, Left, Right, OptionSetoid } from "../../src/"
+import { Option, Some, None, Left, Right, OptionModule } from "../../src/"
 import { NoSuchElementError } from "../../src/"
 import { is, hashCode } from "../../src/"
 import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
+import { Setoid } from "funfix-types"
 
 describe("Option", () => {
   describe("constructor", () => {
@@ -486,7 +487,23 @@ describe("Option", () => {
     })
   })
 
-  describe("OptionSetoid", () => {
-    setoidCheck(inst.arbOpt, OptionSetoid.universal)
+  describe("Setoid<Option> (static-land)", () => {
+    setoidCheck(inst.arbOpt, OptionModule)
+
+    it("has a canonical definition", () => {
+      assert.equal(Option['static-land/canonical'](), OptionModule)
+    })
+
+    it("protects against null", () => {
+      assert.ok(OptionModule.equals(null as any, null as any))
+      assert.not(OptionModule.equals(null as any, None))
+      assert.not(OptionModule.equals(None, null as any))
+    })
+  })
+
+  describe("Setoid<Option> (fantasy-land)", () => {
+    setoidCheck(inst.arbOpt, {
+      equals: (x, y) => x["fantasy-land/equals"](y)
+    })
   })
 })

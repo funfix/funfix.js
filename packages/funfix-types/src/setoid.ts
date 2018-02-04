@@ -27,6 +27,6 @@
  * Equivalent with the `Setoid` specification in the
  * [static-land]{@link https://github.com/rpominov/static-land/} project.
  */
-export type Setoid<A> = {
-  equals: (x: A, y: A) => boolean
+export interface Setoid<A> {
+  equals(x: A, y: A): boolean
 }

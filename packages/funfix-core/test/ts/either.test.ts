@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +18,9 @@
 import * as jv from "jsverify"
 import * as assert from "./asserts"
 import * as inst from "./instances"
-import { hashCode, is, Left, Right, Either, Option, EitherSetoid } from "../../src/"
+import { hashCode, is, Left, Right, Either, Option, EitherModule } from "../../src/"
 import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
+import { Setoid } from "funfix-types"
 
 describe("Either", () => {
   describe("Either discrimination", () => {
@@ -342,7 +343,23 @@ describe("Either", () => {
     })
   })
 
-  describe("EitherSetoid", () => {
-    setoidCheck(inst.arbEither, EitherSetoid.universal)
+  describe("Setoid<Either> (static-land)", () => {
+    setoidCheck(inst.arbEither, EitherModule)
+
+    it("has a canonical definition", () => {
+      assert.equal(Either['static-land/canonical'](), EitherModule)
+    })
+
+    it("protects against null", () => {
+      assert.ok(EitherModule.equals(null as any, null as any))
+      assert.not(EitherModule.equals(null as any, Either.right(1)))
+      assert.not(EitherModule.equals(Either.right(1), null as any))
+    })
+  })
+
+  describe("Setoid<Either> (fantasy-land)", () => {
+    setoidCheck(inst.arbEither, {
+      equals: (x, y) => x["fantasy-land/equals"](y)
+    })
   })
 })

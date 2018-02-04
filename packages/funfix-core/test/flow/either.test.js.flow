@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,12 @@
 
 /* @flow */
 
+import type { Setoid } from "funfix-types"
 import {
   Either,
   Left,
-  Right
+  Right,
+  EitherSetoid
 } from "../../src/"
 
 const optLeft: Either<number, string> = Left(1)
@@ -55,3 +57,9 @@ const r26: Either<Animal, string> =
 // $ExpectError
 const r27: Either<Dog, string> =
   lDog.filterOrElse(_ => _ === "not", () => new Animal())
+
+const setoid1: Setoid<Either<number, number>> =
+  EitherSetoid.universal
+
+const setoid2: Setoid<Either<number, number>> =
+  new EitherSetoid()

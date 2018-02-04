@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -291,21 +291,15 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
   }
 
   /**
-   * Implements {@link IEquals.equals} but with overrideable equality
-   * for `L` and `R`.
+   * Implements {@link IEquals.equals}.
    *
    * @param that is the right hand side of the equality check
-   * @param eqL is an optional function describing equality for `L`
-   * @param eqR is an optional function describing equality for `R`
    */
-  equals(that: Either<L, R>,
-    eqL: (x: L, y: L) => boolean = std.is,
-    eqR: (x: R, y: R) => boolean = std.is): boolean {
-
+  equals(that: Either<L, R>): boolean {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
-    if (this._isRight) return eqR(this._rightRef, that._rightRef)
-    return eqL(this._leftRef, that._leftRef)
+    if (this._isRight) return std.is(this._rightRef, that._rightRef)
+    return std.is(this._leftRef, that._leftRef)
   }
 
   /** Implements {@link IEquals.hashCode}. */
@@ -491,6 +485,12 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
       cursor = some.swap().get()
     }
   }
+
+  /** See {@link https://github.com/fantasyland/fantasy-land}. */
+  ["fantasy-land/equals"] = this.equals;
+
+  /** See {@link https://github.com/rpominov/static-land}. */
+  static ["static-land/canonical"]() { return EitherModule }
 }
 
 /**
@@ -510,29 +510,11 @@ export function Right<R>(value: R): Either<never, R> {
 }
 
 /**
- * Implements the `Setoid` type-class for {@link Either}.
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
  */
-export class EitherSetoid<L, R> implements Setoid<Either<L, R>> {
-  /**
-   * @param L defines equality for left values
-   * @param R defines equality for right values
-   */
-  constructor(
-    private readonly L: Setoid<L> = std.universalSetoid,
-    private readonly R: Setoid<R> = std.universalSetoid) {
-  }
-
-  equals(x: Either<L, R>, y: Either<L, R>): boolean {
-    if (!x) return !y
-    return x.equals(y, this.L.equals, this.R.equals)
-  }
-
-  /**
-   * Reusable instance that uses universal equality for the
-   * underlying `L` and `R`.
-   */
-  static readonly universal: EitherSetoid<any, any> =
-    new EitherSetoid()
+export const EitherModule: Setoid<Either<any, any>> = {
+  equals: (x, y) => x ? x.equals(y) : !y
 }
 
 /**
@@ -808,20 +790,17 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
   }
 
   /**
-   * Implements {@link IEquals.equals} but with overrideable equality
-   * for the equality checks of `A`.
+   * Implements {@link IEquals.equals}.
    *
    * @param that is the right hand side of the equality check
-   * @param eq is an optional function describing equality for `A`,
-   *        defaulting to the standard {@link is}
    */
-  equals(that: Option<A>, eq: (x: A, y: A) => boolean = std.is): boolean {
+  equals(that: Option<A>): boolean {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
     if (this.nonEmpty() && that.nonEmpty()) {
       const l = this.get()
       const r = that.get()
-      return eq(l, r)
+      return std.is(l, r)
     }
     return this.isEmpty() && that.isEmpty()
   }
@@ -1049,6 +1028,12 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
       cursor = some.swap().get()
     }
   }
+
+  /** See {@link https://github.com/fantasyland/fantasy-land}. */
+  ["fantasy-land/equals"] = this.equals;
+
+  /** See {@link https://github.com/rpominov/static-land}. */
+  static ["static-land/canonical"]() { return OptionModule }
 }
 
 /**
@@ -1078,27 +1063,11 @@ function emptyOptionRef() {
 export const None: Option<never> = emptyOptionRef()
 
 /**
- * Implements the `Setoid` type-class for {@link Option}.
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
  */
-export class OptionSetoid<A> implements Setoid<Option<A>> {
-  /**
-   * @param A defines equality for inner values when `Some(a)`
-   */
-  constructor(
-    private readonly A: Setoid<A> = std.universalSetoid) {
-  }
-
-  equals(x: Option<A>, y: Option<A>) {
-    if (!x) return !y
-    return x.equals(y, this.A.equals)
-  }
-
-  /**
-   * Reusable instance that uses universal equality for the
-   * underlying `A`.
-   */
-  static readonly universal: OptionSetoid<any> =
-    new OptionSetoid()
+export const OptionModule: Setoid<Option<any>> = {
+  equals: (x, y) => x ? x.equals(y) : !y
 }
 
 /**
@@ -1808,6 +1777,12 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
       }
     }
   }
+
+  /** See {@link https://github.com/fantasyland/fantasy-land}. */
+  ["fantasy-land/equals"] = this.equals;
+
+  /** See {@link https://github.com/rpominov/static-land}. */
+  static ["static-land/canonical"]() { return TryModule }
 }
 
 /**
@@ -1827,27 +1802,11 @@ export function Failure(e: Throwable): Try<never> {
 }
 
 /**
- * Implements the `Setoid` type-class for {@link Try}.
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
  */
-export class TrySetoid<A> implements Setoid<Try<A>> {
-  /**
-   * @param A defines equality for inner values when `Success(a)`
-   */
-  constructor(
-    private readonly A: Setoid<A> = std.universalSetoid) {
-  }
-
-  equals(x: Try<A>, y: Try<A>) {
-    if (!x) return !y
-    return x.equals(y, this.A.equals)
-  }
-
-  /**
-   * Reusable instance that uses universal equality for the
-   * underlying `A`.
-   */
-  static readonly universal: TrySetoid<any> =
-    new TrySetoid()
+export const TryModule: Setoid<Try<any>> = {
+  equals: (x, y) => x ? x.equals(y) : !y
 }
 
 /**

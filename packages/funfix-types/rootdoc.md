@@ -32,16 +32,10 @@ You can depend on the whole `funfix` library, by adding it to
 npm install --save funfix
 ```
 
-In this case, for TypeScript the imports are like:
+In this case the imports are like:
 
 ```typescript
 import { Setoid } from "funfix"
-```
-
-Or for Flow, since all type-classes are described via `type`:
-
-```js
-import type { Setoid } from "funfix"
 ```
 
 Or for finer grained dependency management, the project can depend
@@ -51,16 +45,10 @@ only on `funfix-core`:
 npm install --save funfix-core
 ```
 
-In this case, for TypeScript the imports are like:
+In this case the imports are like:
 
 ```typescript
 import { Setoid } from "funfix-types"
-```
-
-Of for Flow:
-
-```js
-import type { Setoid } from "funfix-types"
 ```
 
 ### Modules: UMD and ES 2015

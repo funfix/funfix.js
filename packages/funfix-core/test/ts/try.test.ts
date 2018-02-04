@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,11 +19,12 @@ import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
 
-import { Try, TrySetoid, Success, Failure, DummyError, NoSuchElementError } from "../../src/"
+import { Try, TryModule, Success, Failure, DummyError, NoSuchElementError } from "../../src/"
 import { None, Some, Left, Right } from "../../src/"
 import { IllegalStateError } from "../../src/"
 import { is, hashCode } from "../../src/"
 import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
+import { Setoid } from "funfix-types"
 
 describe("Try.of", () => {
   jv.property("should work for successful functions",
@@ -514,6 +515,23 @@ describe("Try.tailRecM", () => {
   })
 })
 
-describe("TrySetoid", () => {
-  setoidCheck(inst.arbTry, TrySetoid.universal)
+
+describe("Setoid<Try> (static-land)", () => {
+  setoidCheck(inst.arbTry, TryModule)
+
+  it("has a canonical definition", () => {
+    assert.equal(Try['static-land/canonical'](), TryModule)
+  })
+
+  it("protects against null", () => {
+    assert.ok(TryModule.equals(null as any, null as any))
+    assert.not(TryModule.equals(null as any, Success(1)))
+    assert.not(TryModule.equals(Success(1), null as any))
+  })
+})
+
+describe("Setoid<Try> (fantasy-land)", () => {
+  setoidCheck(inst.arbOpt, {
+    equals: (x, y) => x["fantasy-land/equals"](y)
+  })
 })

@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import type { Setoid } from "funfix-types"
+import { Setoid } from "funfix-types"
 import { Equiv } from "./equiv"
 
 declare export class SetoidLaws<A> {

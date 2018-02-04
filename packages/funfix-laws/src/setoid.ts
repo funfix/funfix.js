@@ -25,8 +25,8 @@ import { Equiv } from "./equiv"
 export class SetoidLaws<A> {
   constructor(public readonly F: Setoid<A>) {}
 
-  reflexivity(x: A): Equiv<boolean> {
-    return Equiv.of(this.F.equals(x, x), true)
+  reflexivity(a: A): Equiv<boolean> {
+    return Equiv.of(this.F.equals(a, a), true)
   }
 
   symmetry(x: A, y: A): Equiv<boolean> {

@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,12 @@
 
 /* @flow */
 
+import { Setoid } from "funfix-types"
 import {
   Option,
   Some,
-  None
+  None,
+  OptionSetoid
 } from "../../src/"
 
 const opt: Option<number> = Option.of(1)
@@ -130,3 +132,9 @@ const opt1: Option<string> = Option.of(str1)
 
 const str2: string | null = null
 const opt2: Option<string> = Option.of(str2)
+
+const setoid1: Setoid<Option<number>> =
+  OptionSetoid.universal
+
+const setoid2: Setoid<Option<number>> =
+  new OptionSetoid()

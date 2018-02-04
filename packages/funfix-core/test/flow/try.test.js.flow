@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +20,10 @@
 import {
   Failure,
   Success,
-  Try
+  Try,
+  TrySetoid
 } from "../../src/"
+import { Setoid } from "funfix-types";
 
 const failure: Try<string> = Failure(1)
 const success: Try<string> = Success("unu")
@@ -54,3 +56,9 @@ const fail2: Try<number> = Try.failure("error")
 
 const rel1: Dog | null = dogTry.orNull()
 const rel2: Dog | void = dogTry.orUndefined()
+
+const setoid1: Setoid<Try<number>> =
+  TrySetoid.universal
+
+const setoid2: Setoid<Try<number>> =
+  new TrySetoid()
