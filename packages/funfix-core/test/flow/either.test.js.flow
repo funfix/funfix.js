@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import type { Setoid } from "funfix-types"
+import type { HK, HK2, Constructor, Setoid, Functor } from "funfix-types"
 import {
   Either,
   Left,
@@ -58,7 +58,15 @@ const r26: Either<Animal, string> =
 const r27: Either<Dog, string> =
   lDog.filterOrElse(_ => _ === "not", () => new Animal())
 
-const setoid1: Setoid<Either<number, number>> =
+const setoid: Setoid<Either<number, number>> =
   EitherModule
-const setoid2: Setoid<Either<number, number>> =
-  Either.module()
+const functor: Functor<"funfix/either"> =
+  EitherModule
+
+const hk1: HK<"funfix/either", number> =
+  Either.right(1)
+const hk2: HK2<"funfix/either", number, number> =
+  Either.right(1)
+
+const tp: Constructor<Either<any, any>> =
+  Either

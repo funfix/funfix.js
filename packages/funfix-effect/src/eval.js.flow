@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 
 /* @flow */
 
+import { Functor } from "funfix-types"
 import { Either } from "funfix-core"
 
 declare export class Eval<+A> {
@@ -29,9 +30,9 @@ declare export class Eval<+A> {
   forEachL(cb: (a: A) => void): Eval<void>;
   forEach(cb: (a: A) => void): void;
 
-  +_funKindF: Eval<any>;
-  +_funKindA: A;
-  static +_funErasure: Eval<any>;
+  +_URI: "funfix/eval";
+  +_A: A;
+  static +_Class: Eval<any>;
 
   static of<A>(thunk: () => A): Eval<A>;
   static pure<A>(value: A): Eval<A>;
@@ -50,3 +51,6 @@ declare export class Eval<+A> {
   static map5<A1, A2, A3, A4, A5, R>(fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>, fa5: Eval<A5>, f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Eval<R>;
   static map6<A1, A2, A3, A4, A5, A6, R>(fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>, fa5: Eval<A5>, fa6: Eval<A6>, f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Eval<R>;
 }
+
+export type EvalTypes = Functor<"funfix/eval">;
+declare export var EvalModule: EvalTypes;

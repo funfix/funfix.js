@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import { Setoid } from "funfix-types"
+import type { HK, Constructor, Setoid, Functor } from "funfix-types"
 import {
   Option,
   Some,
@@ -133,7 +133,12 @@ const opt1: Option<string> = Option.of(str1)
 const str2: string | null = null
 const opt2: Option<string> = Option.of(str2)
 
-const setoid1: Setoid<Option<number>> =
+const setoid: Setoid<Option<number>> =
   OptionModule
-const setoid2: Setoid<Option<number>> =
-  Option.module()
+const functor: Functor<"funfix/option"> =
+  OptionModule
+
+const hk1: HK<"funfix/option", number> =
+  Some(1)
+const tp: Constructor<Option<any>> =
+  Option

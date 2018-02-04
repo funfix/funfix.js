@@ -1,4 +1,4 @@
-/*!
+/*
  * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -16,22 +16,16 @@
  */
 
 import * as jv from "jsverify"
-import { Setoid } from "funfix-types"
-import { Equiv, SetoidLaws } from "../src"
+import { HK } from "funfix-types"
+import { Equiv } from "../../src"
+import { functorCheck } from "../../test-common/functor-tests"
+import { Box, BoxArbitrary, BoxFunctor } from "./box"
 
-export function setoidCheck<A>(
-  genA: jv.Arbitrary<A>,
-  F: Setoid<A>) {
-
-  const laws = new SetoidLaws<A>(F)
-  const eq = (p: Equiv<boolean>) => p.lh === p.rh
-
-  jv.property("setoid.reflexivity", genA,
-    x => eq(laws.reflexivity(x)))
-
-  jv.property("setoid.symmetry", genA, genA,
-    (x, y) => eq(laws.symmetry(x, y)))
-
-  jv.property("setoid.transitivity", genA, genA, genA,
-    (x, y, z) => eq(laws.transitivity(x, y, z)))
-}
+describe("Setoid<Box>", () => {
+  functorCheck(
+    BoxArbitrary() as jv.Arbitrary<HK<"box", number>>,
+    jv.fun(jv.string),
+    jv.fun(jv.int16),
+    (eq: Equiv<HK<"box", any>>) => (eq.lh as Box<any>).value === (eq.rh as Box<any>).value,
+    new BoxFunctor)
+})

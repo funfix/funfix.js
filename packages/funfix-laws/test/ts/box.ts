@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-import { Setoid } from "funfix-types"
+import { HK, Setoid, Functor } from "funfix-types"
 import * as jv from "jsverify"
 
-export class Box<A> {
+export class Box<A> implements HK<"box", A> {
+  readonly _URI: "box"
+  readonly _A: A
   constructor(public readonly value: A) {}
 }
 
@@ -33,4 +35,10 @@ export function BoxArbitrary(): jv.Arbitrary<Box<number>> {
     i => new Box(i),
     b => b.value
   )
+}
+
+export class BoxFunctor implements Functor<"box"> {
+  map<A, B>(f: (a: A) => B, fa: HK<"box", A>) {
+    return new Box(f((fa as Box<A>).value))
+  }
 }

@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,42 @@
  * limitations under the License.
  */
 
+import * as jv from "jsverify"
+import { HK } from "funfix-types"
 import * as assert from "./asserts"
-import { id, is, Try, Success, Failure, Option, Some, None, DummyError, Left, Right, IllegalStateError, TimeoutError, IllegalArgumentError } from "funfix-core"
-import { Future, FutureMaker, IPromiseLike, TestScheduler, Scheduler, BoolCancelable, Cancelable, Duration, ExecutionModel } from "../../src/"
+import { Equiv } from "../../../funfix-laws/src"
+import { functorCheck } from "../../../funfix-laws/test-common"
+import * as inst from "./instances"
+
+import {
+  id,
+  is,
+  Try,
+  Success,
+  Failure,
+  Option,
+  Some,
+  None,
+  DummyError,
+  Left,
+  Right,
+  IllegalStateError,
+  TimeoutError,
+  IllegalArgumentError
+} from "funfix-core"
+
+import {
+  Future,
+  FutureMaker,
+  FutureModule,
+  IPromiseLike,
+  TestScheduler,
+  Scheduler,
+  BoolCancelable,
+  Cancelable,
+  Duration,
+  ExecutionModel
+} from "../../src/"
 
 describe("PureFuture", () => {
   it("pure", () => {
@@ -38,7 +71,7 @@ describe("PureFuture", () => {
 
     const f = Future.pure(10, s)
     const dummy = new DummyError("dummy")
-    f.onComplete(_ => { throw dummy })
+    f.onComplete(() => { throw dummy })
 
     assert.equal(thrownErr, dummy)
   })
@@ -55,7 +88,7 @@ describe("PureFuture", () => {
 
   it("pure.map protects against user errors", () => {
     const dummy = new DummyError("dummy")
-    const f = Future.pure(1).map(_ => { throw dummy })
+    const f = Future.pure(1).map(() => { throw dummy })
 
     assert.equal(f.value(), Some(Failure(dummy)))
   })
@@ -86,7 +119,7 @@ describe("PureFuture", () => {
     const ec = new TestScheduler()
 
     const dummy = new DummyError("dummy")
-    const f = Future.pure(1, ec).flatMap(_ => { throw dummy })
+    const f = Future.pure(1, ec).flatMap(() => { throw dummy })
 
     assert.equal(f.value(), Some(Failure(dummy)))
   })
@@ -98,7 +131,7 @@ describe("PureFuture", () => {
 
   it("pure.recover <-> pure", () => {
     const f = Future.pure(1)
-    assert.equal(f.value(), f.recover(_ => 0).value())
+    assert.equal(f.value(), f.recover(() => 0).value())
   })
 
   it("pure.recoverWith <-> pure", () => {
@@ -129,7 +162,7 @@ describe("PureFuture", () => {
   it("raise.recover protects against user error", () => {
     const dummy = new DummyError("dummy")
     const dummy2 = new DummyError("dummy2")
-    const f: Future<string> = Future.raise(dummy).recover(ex => { throw dummy2 })
+    const f: Future<string> = Future.raise(dummy).recover(() => { throw dummy2 })
 
     assert.equal(f.value(), Some(Failure(dummy2)))
   })
@@ -144,7 +177,7 @@ describe("PureFuture", () => {
   it("raise.recoverWith protects against user error", () => {
     const dummy = new DummyError("dummy")
     const dummy2 = new DummyError("dummy2")
-    const f = Future.raise(dummy).recoverWith(_ => { throw dummy2 })
+    const f = Future.raise(dummy).recoverWith(() => { throw dummy2 })
     assert.equal(f.value(), Some(Failure(dummy2)))
   })
 
@@ -156,8 +189,8 @@ describe("PureFuture", () => {
 
   it("pure(x).flatMap(f) yields cancelable future", () => {
     const c = BoolCancelable.empty()
-    const never = Future.create(_ => c)
-    const f = Future.pure(1).flatMap(x => never)
+    const never = Future.create(() => c)
+    const f = Future.pure(1).flatMap(() => never)
 
     assert.ok(f.value().isEmpty())
     assert.equal(c.isCanceled(), false)
@@ -170,8 +203,8 @@ describe("PureFuture", () => {
 
   it("raise(x).recoverWith(f) yields cancelable future", () => {
     const c = BoolCancelable.empty()
-    const never = Future.create(_ => c)
-    const f = Future.raise(new DummyError()).recoverWith(_ => never)
+    const never = Future.create(() => c)
+    const f = Future.raise(new DummyError()).recoverWith(() => never)
 
     assert.ok(f.value().isEmpty())
     assert.equal(c.isCanceled(), false)
@@ -275,7 +308,7 @@ describe("FutureBuilder", () => {
 
     const f = Future.of(() => 10, s)
     const dummy = new DummyError("dummy")
-    f.onComplete(_ => { throw dummy })
+    f.onComplete(() => { throw dummy })
 
     s.tick()
     assert.equal(thrownErr, dummy)
@@ -305,7 +338,7 @@ describe("FutureBuilder", () => {
   it("Future.of(f).map protects against user errors", () => {
     const s = new TestScheduler()
     const dummy = new DummyError("dummy")
-    const f = Future.of(() => 1, s).map(_ => { throw dummy })
+    const f = Future.of(() => 1, s).map(() => { throw dummy })
 
     assert.equal(f.value(), None); s.tick()
     assert.equal(f.value(), Some(Failure(dummy)))
@@ -339,7 +372,7 @@ describe("FutureBuilder", () => {
   it("Future.of(f).flatMap protects against user errors", () => {
     const s = new TestScheduler()
     const dummy = new DummyError("dummy")
-    const f = Future.of(() => 1, s).flatMap(_ => { throw dummy })
+    const f = Future.of(() => 1, s).flatMap(() => { throw dummy })
 
     assert.equal(f.value(), None); s.tick()
     assert.equal(f.value(), Some(Failure(dummy)))
@@ -373,7 +406,7 @@ describe("FutureBuilder", () => {
 
   it("Future.of(() => v).recover <-> Future.pure(v)", () => {
     const ec = new TestScheduler()
-    const f = Future.of(() => 1, ec).recover(_ => 0)
+    const f = Future.of(() => 1, ec).recover(() => 0)
     ec.tick()
     assert.equal(f.value(), Some(Success(1)))
   })
@@ -399,7 +432,7 @@ describe("FutureBuilder", () => {
 
     const dummy = new DummyError("dummy")
     const dummy2 = new DummyError("dummy2")
-    const f: Future<string> = Future.of(() => { throw dummy }, s).recover(ex => { throw dummy2 })
+    const f: Future<string> = Future.of(() => { throw dummy }, s).recover(() => { throw dummy2 })
 
     assert.equal(f.value(), None); s.tick()
     assert.equal(f.value(), Some(Failure(dummy2)))
@@ -419,7 +452,7 @@ describe("FutureBuilder", () => {
 
     const dummy = new DummyError("dummy")
     const dummy2 = new DummyError("dummy2")
-    const f: Future<string> = Future.of(() => { throw dummy }, s).recoverWith(ex => { throw dummy2 })
+    const f: Future<string> = Future.of(() => { throw dummy }, s).recoverWith(() => { throw dummy2 })
 
     assert.equal(f.value(), None); s.tick()
     assert.equal(f.value(), Some(Failure(dummy2)))
@@ -440,13 +473,13 @@ describe("FutureBuilder", () => {
 
     Scheduler.global.bind(s, () => {
       const c = BoolCancelable.empty()
-      const never = Future.create(_ => c)
+      const never = Future.create(() => c)
 
       let effect = 0
       const f = Future.of(() => { effect += 1 })
         .flatMap(_ => Future.pure(_))
         .flatMap(_ => Future.pure(_))
-        .flatMap(_ => never)
+        .flatMap(() => never)
 
       assert.equal(effect, 0); s.tick()
       assert.equal(effect, 1)
@@ -466,10 +499,10 @@ describe("FutureBuilder", () => {
 
     Scheduler.global.bind(s, () => {
       const c = BoolCancelable.empty()
-      const never = Future.create(_ => c)
+      const never = Future.create(() => c)
 
       let effect = 0
-      const f = Future.of(() => { effect += 1; throw new DummyError() }).recoverWith(_ => never)
+      const f = Future.of(() => { effect += 1; throw new DummyError() }).recoverWith(() => never)
 
       assert.equal(effect, 0); s.tick()
       assert.equal(effect, 1)
@@ -523,7 +556,7 @@ describe("FutureBuilder", () => {
 
   it("Future.create protects against thrown errors", () => {
     const dummy = new DummyError()
-    const f = Future.create(_ => { throw dummy })
+    const f = Future.create(() => { throw dummy })
     assert.equal(f.value(), Some(Failure(dummy)))
   })
 
@@ -641,7 +674,6 @@ describe("Future is Promise-like", () => {
   })
 
   it("converts to Promise if async", () => {
-    const s = new TestScheduler()
     const p = Future.of(() => 1 + 1).toPromise()
     return p.then(num => assert.equal(num, 2))
   })
@@ -653,13 +685,11 @@ describe("Future is Promise-like", () => {
   })
 
   it("converts to Promise if pure", () => {
-    const s = new TestScheduler()
     const p = Future.pure(2).toPromise()
     return p.then(num => assert.equal(num, 2))
   })
 
   it("converts to Promise if pure error", () => {
-    const s = new TestScheduler()
     const dummy = new DummyError()
     const p = Future.raise(dummy).toPromise()
     return p.then(null, err => assert.equal(err, dummy))
@@ -762,7 +792,7 @@ describe("Future.sequence", () => {
   it("on failure of a future, cancels all", () => {
     const s = new TestScheduler()
     let effect = 0
-    const create = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), s)
+    const create = () => Future.create(() => Cancelable.of(() => { effect += 1 }), s)
 
     const dummy = new DummyError("dummy")
     const fail = Future.raise(dummy, s).delayResult(2000)
@@ -778,8 +808,6 @@ describe("Future.sequence", () => {
   })
 
   it("works with actual Iterable", () => {
-    let effect = 0
-
     const iter = {
       [Symbol.iterator]: () => {
         let index = 0
@@ -806,7 +834,7 @@ describe("Future.sequence", () => {
     const dummy = new DummyError("dummy")
     let effect = 0
 
-    const never = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+    const never = () => Future.create(() => Cancelable.of(() => { effect += 1 }), ec)
 
     const iter = {
       [Symbol.iterator]: () => {
@@ -874,10 +902,10 @@ describe("Future.sequence", () => {
   it("protect against broken cancelable", () => {
     const ec = new TestScheduler()
     let effect = 0
-    const never = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+    const never = () => Future.create(() => Cancelable.of(() => { effect += 1 }), ec)
 
     const dummy = new DummyError("dummy")
-    const fail = Future.create(_ => Cancelable.of(() => { throw dummy }), ec)
+    const fail = Future.create(() => Cancelable.of(() => { throw dummy }), ec)
 
     const all = Future.sequence([never(), never(), fail, never(), never()], ec)
     all.cancel()
@@ -896,7 +924,7 @@ describe("Future.sequence", () => {
     const all = Future.sequence([
       Future.raise(dummy1, ec),
       Future.of(() => 1, ec),
-      Future.of(() => null, ec).flatMap(_ => Future.raise(dummy2, ec))
+      Future.of(() => null, ec).flatMap(() => Future.raise(dummy2, ec))
     ], ec)
 
     ec.tick()
@@ -914,7 +942,7 @@ describe("Future.firstCompletedOf", () => {
   it("timeout", () => {
     const ec = new TestScheduler()
     let effect = 0
-    const never = Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+    const never = Future.create(() => Cancelable.of(() => { effect += 1 }), ec)
 
     const fa = never.timeout(Duration.of(1000))
     ec.tick()
@@ -933,15 +961,13 @@ describe("Future.firstCompletedOf", () => {
   it("timeoutTo", () => {
     const ec = new TestScheduler()
     let effect = 0
-    const never = Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+    const never = Future.create(() => Cancelable.of(() => { effect += 1 }), ec)
 
     const fa = never.timeoutTo(1000, () => Future.pure(1000))
     ec.tick()
     assert.equal(fa.value(), None)
 
     ec.tick(1000)
-    const v = fa.value()
-
     assert.equal(fa.value(), Some(Success(1000)))
     assert.equal(effect, 1)
   })
@@ -991,8 +1017,6 @@ describe("Future.firstCompletedOf", () => {
 
   it("works with actual Iterable", () => {
     const ec = new TestScheduler()
-    let effect = 0
-
     const iter = {
       [Symbol.iterator]: () => {
         let index = 0
@@ -1019,7 +1043,7 @@ describe("Future.firstCompletedOf", () => {
     const dummy = new DummyError("dummy")
     let effect = 0
 
-    const never = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+    const never = () => Future.create(() => Cancelable.of(() => { effect += 1 }), ec)
 
     const iter = {
       [Symbol.iterator]: () => {
@@ -1047,7 +1071,7 @@ describe("Future.firstCompletedOf", () => {
     const all = Future.firstCompletedOf([
       Future.raise(dummy1, ec),
       Future.of(() => 1, ec),
-      Future.of(() => null, ec).flatMap(_ => Future.raise(dummy2, ec))
+      Future.of(() => null, ec).flatMap(() => Future.raise(dummy2, ec))
     ], ec)
 
     ec.tick()
@@ -1058,10 +1082,10 @@ describe("Future.firstCompletedOf", () => {
   it("protect against broken cancelable", () => {
     const ec = new TestScheduler()
     let effect = 0
-    const never = () => Future.create(_ => Cancelable.of(() => { effect += 1 }), ec)
+    const never = () => Future.create(() => Cancelable.of(() => { effect += 1 }), ec)
 
     const dummy = new DummyError("dummy")
-    const fail = Future.create(_ => Cancelable.of(() => { throw dummy }), ec)
+    const fail = Future.create(() => Cancelable.of(() => { throw dummy }), ec)
 
     const all = Future.firstCompletedOf([never(), never(), fail, never(), never()], ec)
     all.cancel()
@@ -1118,7 +1142,7 @@ describe("Future.traverse", () => {
     const dummy = new DummyError("dummy")
 
     let effect = 0
-    const never = (n: number) => Future.create(_ => Cancelable.of(() => { effect += n }), ec)
+    const never = (n: number) => Future.create(() => Cancelable.of(() => { effect += n }), ec)
 
     const f = Future.traverse(list, Infinity, ec)(a => {
       if (a === 6) throw dummy
@@ -1169,8 +1193,6 @@ describe("Future.traverse", () => {
   it("protects against broken Iterable", () => {
     const ec = new TestScheduler()
     const dummy = new DummyError("dummy")
-    let effect = 0
-
     const iter = {
       [Symbol.iterator]: () => {
         let index = 0
@@ -1456,6 +1478,45 @@ describe("Deferred", () => {
 
     assert.throws(() => m.failure("err2"))
     assert.equal(m.future().value(), Some(Failure("err")))
+  })
+})
+
+describe("Future type classes", () => {
+  const ec = new TestScheduler()
+  const arb = inst.arbFuture(ec) as jv.Arbitrary<HK<"funfix/future", number>>
+
+  function check<A>(eq: Equiv<HK<"funfix/future", A>>): boolean {
+    ec.tick(Duration.days(99))
+    return is((eq.lh as Future<A>).value(), (eq.rh as Future<A>).value())
+  }
+
+  before(function() {
+    Scheduler.global.set(ec)
+  })
+
+  after(function () {
+    Scheduler.global.revert()
+  })
+
+  describe("Functor<Future> (static-land)", () => {
+    functorCheck(
+      arb,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check,
+      FutureModule)
+  })
+
+  describe("Functor<Future> (fantasy-land)", () => {
+    const arb = inst.arbFuture(ec) as jv.Arbitrary<HK<"funfix/future", number>>
+    functorCheck(
+      arb,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check,
+      {
+        map: (f: any, fa: any) => fa['fantasy-land/map'](f)
+      })
   })
 })
 

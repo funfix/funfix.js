@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,16 +17,35 @@
 
 import * as assert from "assert"
 import * as types from "../../src"
+import { HK } from "../../src"
 
-const t: types.Setoid<number> = {
-  equals: (x, y) => x === y
+class Box<A> implements HK<"box", A> {
+  readonly _URI: "box"
+  readonly _A: A
+  constructor(public readonly value: A) {}
 }
 
-describe("dummy", () => {
-  it("does nothing", () => {
+type Types =
+  types.Setoid<Box<any>> &
+  types.Functor<"box">
+
+const t: Types = {
+  equals: (x, y) =>
+    (x as Box<any>).value === (y as Box<any>).value,
+  map: <A, B>(f: (a: A) => B, fa: HK<"box", A>) =>
+    new Box(f((fa as Box<A>).value))
+}
+
+describe("type tests", () => {
+  it("setoid", () => {
     // Dummy test meant to prevent errors due to this project not
     // exposing any actual executable code
-    assert.ok(t.equals(1, 1))
-    assert.ok(!t.equals(1, 2))
+    assert.ok(t.equals(new Box(1), new Box(1)))
+    assert.ok(!t.equals(new Box(1), new Box(2)))
+  })
+
+  it("functor", () => {
+    const fb = t.map(x => x + 1, new Box(1))
+    assert.equal((fb as Box<number>).value, 2)
   })
 })

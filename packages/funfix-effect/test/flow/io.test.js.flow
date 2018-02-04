@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,11 @@
 
 /* @flow */
 
+import type { HK, Constructor, Functor } from "funfix-types"
 import type { Throwable } from "funfix-core"
 import { Try, Either, Left, Right, Success, Option } from "funfix-core"
 import { ICancelable, Future, Scheduler, StackedCancelable, ExecutionModel, Duration } from "funfix-exec"
-import { IO, IOContext } from "../../src/"
+import { IO, IOModule, IOContext } from "../../src/"
 
 const ec = Scheduler.global.get()
 const t1: IO<number> = IO.now(1)
@@ -158,3 +159,7 @@ const firstOf1: IO<number> = IO.firstCompletedOf([IO.pure(1), IO.pure(2), IO.pur
 
 const flat1: IO<number> = IO.pure("Hello").followedBy(IO.pure(1))
 const flat2: IO<string> = IO.pure("Hello").forEffect(IO.pure(1))
+
+const hk: HK<"funfix/io", number> = IO.pure(1)
+const tp: Constructor<IO<any>> = IO
+const functor: Functor<"funfix/io"> = IOModule

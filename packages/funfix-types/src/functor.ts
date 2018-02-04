@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-import * as jv from "jsverify"
-import { Setoid } from "funfix-types"
-import { Equiv, SetoidLaws } from "../src"
+import { HK } from "./kinds"
 
-export function setoidCheck<A>(
-  genA: jv.Arbitrary<A>,
-  F: Setoid<A>) {
-
-  const laws = new SetoidLaws<A>(F)
-  const eq = (p: Equiv<boolean>) => p.lh === p.rh
-
-  jv.property("setoid.reflexivity", genA,
-    x => eq(laws.reflexivity(x)))
-
-  jv.property("setoid.symmetry", genA, genA,
-    (x, y) => eq(laws.symmetry(x, y)))
-
-  jv.property("setoid.transitivity", genA, genA, genA,
-    (x, y, z) => eq(laws.transitivity(x, y, z)))
+/**
+ * The `Functor` is a type class providing the `map` operation that
+ * allows lifting an `f` function into the functor context and
+ * applying it.
+ *
+ * Instances must obey these laws:
+ *
+ * 1. Identity: `F.map(x => x, a) <-> a`
+ * 2. Composition: `F.map(x => f(g(x)), a) <-> F.map(f, F.map(g, a))`
+ *
+ * Equivalent with the `Functor` specification in the
+ * [static-land]{@link https://github.com/rpominov/static-land/} spec.
+ */
+export interface Functor<F> {
+  map<A, B>(f: (a: A) => B, fa: HK<F, A>): HK<F, B>
 }

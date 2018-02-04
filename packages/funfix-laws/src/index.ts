@@ -17,3 +17,4 @@
 
 export * from "./equiv"
 export * from "./setoid"
+export * from "./functor"

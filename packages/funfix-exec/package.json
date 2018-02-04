@@ -21,7 +21,8 @@
     "fix-types": "../../scripts/fix-types.js ."
   },
   "dependencies": {
-    "funfix-core": "0.0.0-development"
+    "funfix-core": "0.0.0-development",
+    "funfix-types": "0.0.0-development"
   },
   "files": [
     "dist",

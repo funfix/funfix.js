@@ -19,3 +19,4 @@
 
 declare export * from "./equiv"
 declare export * from "./setoid"
+declare export * from "./functor"

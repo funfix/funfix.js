@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 
 /* @flow */
 
+import { Functor } from "funfix-types"
 import type { Throwable } from "funfix-core"
 import { Either, Try, Option } from "funfix-core";
 import { ICancelable, StackedCancelable, Scheduler, Future, ExecutionModel, Duration } from "funfix-exec";
@@ -49,10 +50,11 @@ declare export class IO<+A> {
   transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): IO<R>;
   transformWith<R>(failure: (e: Throwable) => IO<R>, success: (a: A) => IO<R>): IO<R>;
 
-  +_funADType: "pure" | "always" | "once" | "flatMap" | "async" | "memoize";
-  +_funKindF: IO<any>;
-  +_funKindA: A;
-  static +_funErasure: IO<any>;
+  +_tag: "pure" | "always" | "once" | "flatMap" | "async" | "memoize";
+
+  +_URI: "funfix/io";
+  +_A: A;
+  static +_Class: IO<any>;
 
   static always<A>(thunk: () => A): IO<A>;
   static async<A>(register: (ec: Scheduler, cb: (a: Try<A>) => void) => ICancelable | void): IO<A>;
@@ -89,6 +91,9 @@ declare export class IO<+A> {
   static unit(): IO<void>;
   static unsafeStart<A>(source: IO<A>, context: IOContext, cb: (r: Try<A>) => void): void | ICancelable;
 }
+
+export type IOTypes = Functor<"funfix/io">;
+declare export var IOModule: IOTypes;
 
 export type IORegister<A> =
   (context: IOContext, callback: (result: Try<A>) => void) => void;

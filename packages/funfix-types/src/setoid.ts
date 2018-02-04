@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@
  * 3. Transitivity: if `S.equals(a, b)` and `S.equals(b, c)`, then `S.equals(a, c)`
  *
  * Equivalent with the `Setoid` specification in the
- * [static-land]{@link https://github.com/rpominov/static-land/} project.
+ * [static-land]{@link https://github.com/rpominov/static-land/} spec.
  */
 export interface Setoid<A> {
   equals(x: A, y: A): boolean

@@ -18,7 +18,7 @@
 /* @flow */
 
 import type { Throwable } from "./errors"
-import { Setoid } from "funfix-types"
+import { Setoid, Functor } from "funfix-types"
 
 declare export class Either<+L, +R> {
   get(): R;
@@ -40,11 +40,12 @@ declare export class Either<+L, +R> {
   equals(that: Either<L, R>, eqL?: (x: L, y: L) => boolean, eqR?: (x: R, y: R) => boolean): boolean;
   hashCode(): number;
 
-  +_funKindF: Either<L, any>;
-  +_funKindA: R;
+  +_URI: "funfix/either";
+  +_A: R;
+  +_L: L;
 
   // Implements Constructor<T>
-  static +_funErasure: Either<any, any>;
+  static +_Class: Either<any, any>;
 
   static left<L, R>(value: L): Either<L, R>;
   static right<L, R>(value: R): Either<L, R>;
@@ -64,20 +65,12 @@ declare export class Either<+L, +R> {
     f: (A1, A2, A3, A4, A5, A6) => R): Either<L, R>;
 
   static tailRecM<L, A, B>(a: A, f: (a: A) => Either<L, Either<A, B>>): Either<L, B>;
-
-  static module(): EitherTypes;
-
-  // NOTE: at the moment of writing these properties are not supported by Flow,
-  // but the compiler doesn't reject such definitions for declarations, so
-  // leaving them here anyway:
-  ["fantasy-land/equals"]: (that: Either<L, R>) => boolean;
-  static ["static-land/canonical"]: () => EitherTypes;
 }
 
 declare export function Left<L>(value: L): Either<L, empty>;
 declare export function Right<R>(value: R): Either<empty, R>;
 
-export type EitherTypes = Setoid<Either<any, any>>;
+export type EitherTypes = Setoid<Either<any, any>> & Functor<"funfix/either">;
 declare export var EitherModule: EitherTypes;
 
 declare export class Option<+A> {
@@ -105,14 +98,14 @@ declare export class Option<+A> {
   nonEmpty(): boolean;
 
   // Implements HK<F, A>
-  +_funKindF: Option<any>;
-  +_funKindA: A;
+  +_URI: "funfix/option";
+  +_A: A;
 
   // Implements Constructor<T>
-  static +_funErasure: Option<any>;
+  static +_Class: Option<any>;
 
   static empty<A>(): Option<A>;
-  static none(): Option<empty>;
+  static none<A>(): Option<A>;
   static of<A>(value: ?A): Option<A>;
   static pure<A>(value: A): Option<A>;
   static some<A>(value: A): Option<A>;
@@ -134,20 +127,12 @@ declare export class Option<+A> {
     f: (A1, A2, A3, A4, A5, A6) => R): Option<R>;
 
   static tailRecM<A, B>(a: A, f: (a: A) => Option<Either<A, B>>): Option<B>;
-
-  static module(): OptionTypes;
-
-  // NOTE: at the moment of writing these properties are not supported by Flow,
-  // but the compiler doesn't reject such definitions for declarations, so
-  // leaving them here anyway:
-  ["fantasy-land/equals"]: (that: Option<A>) => boolean;
-  static ["static-land/canonical"]: () => OptionTypes;
 }
 
 declare export function Some<A>(value: A): Option<A>;
 declare export var None: Option<empty>;
 
-export type OptionTypes = Setoid<Option<any>>;
+export type OptionTypes = Setoid<Option<any>> & Functor<"funfix/option">;
 declare export var OptionModule: OptionTypes;
 
 declare export class Try<+A> {
@@ -176,18 +161,18 @@ declare export class Try<+A> {
   hashCode(): number;
 
   // Implements HK<F, A>
-  +_funKindF: Try<any>;
-  +_funKindA: A;
+  +_URI: "funfix/try";
+  +_A: A;
 
   // Implements Constructor<T>
-  static +_funErasure: Try<any>;
+  static +_Class: Try<any>;
 
   static of<A>(thunk: () => A): Try<A>;
   static pure<A>(value: A): Try<A>;
   static unit(): Try<void>;
   static success<A>(value: A): Try<A>;
-  static failure(e: Throwable): Try<empty>;
-  static raise(e: Throwable): Try<empty>;
+  static failure<A>(e: Throwable): Try<A>;
+  static raise<A>(e: Throwable): Try<A>;
 
   static map2<A1,A2,R>(
     fa1: Try<A1>, fa2: Try<A2>,
@@ -206,18 +191,10 @@ declare export class Try<+A> {
     f: (A1, A2, A3, A4, A5, A6) => R): Try<R>;
 
   static tailRecM<A, B>(a: A, f: (a: A) => Try<Either<A, B>>): Try<B>;
-
-  static module(): TryTypes;
-
-  // NOTE: at the moment of writing these properties are not supported by Flow,
-  // but the compiler doesn't reject such definitions for declarations, so
-  // leaving them here anyway:
-  ["fantasy-land/equals"]: (that: Try<A>) => boolean;
-  static ["static-land/canonical"]: () => TryTypes;
 }
 
 declare export function Success<A>(value: A): Try<A>;
 declare export function Failure(e: Throwable): Try<empty>;
 
-export type TryTypes = Setoid<Try<any>>;
+export type TryTypes = Setoid<Try<any>> & Functor<"funfix/try">;
 declare export var TryModule: TryTypes;

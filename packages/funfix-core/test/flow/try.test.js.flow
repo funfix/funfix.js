@@ -17,13 +17,13 @@
 
 /* @flow */
 
+import type { HK, Constructor, Setoid, Functor } from "funfix-types"
 import {
   Failure,
   Success,
   Try,
   TryModule
 } from "../../src/"
-import { Setoid } from "funfix-types";
 
 const failure: Try<string> = Failure(1)
 const success: Try<string> = Success("unu")
@@ -57,7 +57,12 @@ const fail2: Try<number> = Try.failure("error")
 const rel1: Dog | null = dogTry.orNull()
 const rel2: Dog | void = dogTry.orUndefined()
 
-const setoid1: Setoid<Try<number>> =
+const setoid: Setoid<Try<number>> =
   TryModule
-const setoid2: Setoid<Try<number>> =
-  Try.module()
+const functor: Functor<"funfix/try"> =
+  TryModule
+
+const hk1: HK<"funfix/try", number> =
+  Success(1)
+const tp: Constructor<Try<any>> =
+  Try

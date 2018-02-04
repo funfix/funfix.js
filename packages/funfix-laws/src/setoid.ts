@@ -21,6 +21,12 @@ import { Equiv } from "./equiv"
 /**
  * Type-class laws for `Setoid`, as defined in the `funfix-types`
  * sub-project and in the `static-land` spec.
+ *
+ * Laws defined for `Setoid`:
+ *
+ * 1. Reflexivity: `S.equals(a, a) === true`
+ * 2. Symmetry: `S.equals(a, b) === S.equals(b, a)`
+ * 3. Transitivity: if `S.equals(a, b)` and `S.equals(b, c)`, then `S.equals(a, c)`
  */
 export class SetoidLaws<A> {
   constructor(public readonly F: Setoid<A>) {}

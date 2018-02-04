@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2017 by The Funfix Project Developers.
+/*!
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,7 @@ import * as inst from "./instances"
 import * as assert from "./asserts"
 
 import {
+  is,
   Try,
   Success,
   Failure,
@@ -29,8 +30,11 @@ import {
   Some, None, Option
 } from "funfix-core"
 
-import { TestScheduler, Future, ExecutionModel } from "funfix-exec"
-import { IO } from "../../src/"
+import { HK } from "funfix-types"
+import { Equiv } from "../../../funfix-laws/src"
+import { functorCheck } from "../../../funfix-laws/test-common"
+import { TestScheduler, Future, ExecutionModel, Duration } from "funfix-exec"
+import { IO, IOModule } from "../../src/"
 
 describe("IOPure", () => {
   it("evaluates IO.pure(v).run() to Future.pure(v)", () => {
@@ -214,7 +218,7 @@ describe("IO.async", () => {
   it("protects against user error", () => {
     const ec = scheduler()
     const dummy = new DummyError("registration1")
-    const io = IO.async((ec, cb) => { throw dummy })
+    const io = IO.async(() => { throw dummy })
 
     const f = io.run(ec); ec.tick()
     assert.equal(f.value(), Some(Failure(dummy)))
@@ -236,7 +240,7 @@ describe("IO (error recovery)", () => {
   it("protects against errors in map", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
-    const io = IO.pure(1).map(x => { throw dummy })
+    const io = IO.pure(1).map(() => { throw dummy })
     assert.equal(io.run(ec).value(), Some(Failure(dummy)))
   })
 
@@ -269,7 +273,7 @@ describe("IO (error recovery)", () => {
   it("protects flatMap against user error (run)", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
-    const io = IO.pure(1).flatMap(_ => { throw dummy })
+    const io = IO.pure(1).flatMap(() => { throw dummy })
     const f = io.run(ec)
 
     ec.tick()
@@ -279,7 +283,7 @@ describe("IO (error recovery)", () => {
   it("protects flatMap against user error (runOnComplete)", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
-    const io = IO.pure(1).flatMap(_ => { throw dummy })
+    const io = IO.pure(1).flatMap(() => { throw dummy })
 
     let result: Option<Try<any>> = None
     io.runOnComplete(r => { result = Some(r) }, ec)
@@ -291,7 +295,7 @@ describe("IO (error recovery)", () => {
   it("recovers from user error in flatMap (run)", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
-    const io = IO.pure(1).flatMap(_ => { throw dummy })
+    const io = IO.pure(1).flatMap(() => { throw dummy })
       .recoverWith(e => {
         if (e === dummy) return IO.pure(100)
         return IO.raise(e)
@@ -306,7 +310,7 @@ describe("IO (error recovery)", () => {
   it("recovers from user error in flatMap (runOnComplete)", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
-    const io = IO.pure(1).flatMap(_ => { throw dummy })
+    const io = IO.pure(1).flatMap(() => { throw dummy })
       .recoverWith(e => {
         if (e === dummy) return IO.pure(100)
         return IO.raise(e)
@@ -325,8 +329,8 @@ describe("IO (error recovery)", () => {
     const dummy2 = new DummyError("dummy2")
 
     const io = IO.raise<number>(dummy1)
-      .recoverWith(_ => { throw dummy2 })
-      .recoverWith(e => {
+      .recoverWith(() => { throw dummy2 })
+      .recoverWith(() => {
         return IO.pure(100)
         // return IO.raise(e)
       })
@@ -341,7 +345,7 @@ describe("IO (error recovery)", () => {
     const dummy1 = new DummyError("dummy1")
     const dummy2 = new DummyError("dummy2")
 
-    const io = IO.raise<number>(dummy1).recoverWith(_ => { throw dummy2 })
+    const io = IO.raise<number>(dummy1).recoverWith(() => { throw dummy2 })
       .recoverWith(e => {
         if (e === dummy2) return IO.pure(100)
         return IO.raise(e)
@@ -428,7 +432,7 @@ describe("IO.map", () => {
   it("protects against user error", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
-    const io = IO.pure(1).map(_ => { throw dummy })
+    const io = IO.pure(1).map(() => { throw dummy })
     assert.equal(io.run(ec).value(), Some(Failure(dummy)))
   })
 
@@ -475,7 +479,7 @@ describe("IO.tailRecM", () => {
 
   it("returns the failure unchanged", () => {
     const ec = scheduler()
-    const fa = IO.tailRecM(0, a => IO.raise("failure"))
+    const fa = IO.tailRecM(0, () => IO.raise("failure"))
     const fu = fa.run(ec)
     ec.tick()
     assert.equal(fu.value(), Some(Failure("failure")))
@@ -484,7 +488,7 @@ describe("IO.tailRecM", () => {
   it("protects against user errors", () => {
     const ec = scheduler()
     // tslint:disable:no-string-throw
-    const fa = IO.tailRecM(0, a => { throw "dummy" })
+    const fa = IO.tailRecM(0, () => { throw "dummy" })
     const fu = fa.run(ec)
     assert.equal(fu.value(), Some(Failure("dummy")))
   })
@@ -607,7 +611,7 @@ describe("IO builders", () => {
   it("deferAction protects against user error", () => {
     const ec = scheduler()
     const dummy = new DummyError()
-    const f = IO.deferAction<number>(ec => { throw dummy }).run(ec)
+    const f = IO.deferAction<number>(() => { throw dummy }).run(ec)
     assert.equal(f.value(), Some(Failure(dummy)))
   })
 })
@@ -628,7 +632,7 @@ describe("IO aliases", () => {
     (fa, fb) => {
       const ec = scheduler()
       const f1 = fa.followedBy(fb).run(ec)
-      const f2 = fa.flatMap(_ => fb).run(ec)
+      const f2 = fa.flatMap(() => fb).run(ec)
       ec.tick()
       return f1.value().equals(f2.value())
     })
@@ -638,7 +642,7 @@ describe("IO aliases", () => {
     (fa, fb) => {
       const ec = scheduler()
       const f1 = fa.forEffect(fb).run(ec)
-      const f2 = fa.flatMap(a => fb.map(_ => a)).run(ec)
+      const f2 = fa.flatMap(a => fb.map(() => a)).run(ec)
       ec.tick()
       return f1.value().equals(f2.value())
     })
@@ -658,7 +662,7 @@ describe("IO aliases", () => {
     (fa) => {
       const ec = scheduler()
       const f1 = IO.suspend(() => fa).run(ec)
-      const f2 = IO.unit().flatMap(_ => fa).run(ec)
+      const f2 = IO.unit().flatMap(() => fa).run(ec)
       ec.tick()
       return f1.value().equals(f2.value())
     })
@@ -668,7 +672,7 @@ describe("IO aliases", () => {
     (fa) => {
       const ec = scheduler()
       const f1 = IO.defer(() => fa).run(ec)
-      const f2 = IO.unit().flatMap(_ => fa).run(ec)
+      const f2 = IO.unit().flatMap(() => fa).run(ec)
       ec.tick()
       return f1.value().equals(f2.value())
     })
@@ -765,7 +769,7 @@ describe("IO run-loop", () => {
       ctx.scheduler.executeAsync(() => cb(Success(1)))
     })
 
-    const f = io.flatMap(_ => io).executeWithOptions({ autoCancelableRunLoops: true }).run(ec)
+    const f = io.flatMap(() => io).executeWithOptions({ autoCancelableRunLoops: true }).run(ec)
     f.cancel()
 
     assert.equal(f.value(), None); ec.tick()
@@ -866,8 +870,8 @@ describe("IO run-loop", () => {
 
     const ec1 = scheduler().withExecutionModel(ExecutionModel.batched())
     const f1 = Future.unit(ec1).flatMap(Future.pure)
-      .flatMap(_ => IO.pure(1).flatMap(IO.pure).run(ec1))
-      .map(_ => ec1.batchIndex)
+      .flatMap(() => IO.pure(1).flatMap(IO.pure).run(ec1))
+      .map(() => ec1.batchIndex)
 
     ec1.tick()
     asyncEC.tick()
@@ -875,8 +879,8 @@ describe("IO run-loop", () => {
 
     const ec2 = scheduler()
     const f2 = Future.unit(ec2).flatMap(Future.pure)
-      .flatMap(_ => IO.pure(1).flatMap(signal).run(ec2))
-      .map(_ => ec2.batchIndex)
+      .flatMap(() => IO.pure(1).flatMap(signal).run(ec2))
+      .map(() => ec2.batchIndex)
 
     ec2.tick()
     asyncEC.tick()
@@ -967,7 +971,7 @@ describe("IO.memoize", () => {
       .always(() => { effect += 1; return effect })
       .memoize()
 
-    assert.equal(io._funADType, "once")
+    assert.equal(io._tag, "once")
     assert.equal(io.run(ec).value(), Some(Success(1)))
     assert.equal(io.run(ec).value(), Some(Success(1)))
   })
@@ -988,7 +992,7 @@ describe("IO.memoize", () => {
     const io2 = io.memoize()
 
     assert.notEqual(io, io2)
-    assert.equal(io2._funADType, "once")
+    assert.equal(io2._tag, "once")
 
     assert.equal(io2.run(ec).value(), Some(Failure(dummy)))
     assert.equal(effect, 1)
@@ -1005,8 +1009,8 @@ describe("IO.memoize", () => {
       .memoizeOnSuccess()
 
     const io2 = io.memoize()
-    assert.equal(io._funADType, "memoize")
-    assert.equal(io2._funADType, "memoize")
+    assert.equal(io._tag, "memoize")
+    assert.equal(io2._tag, "memoize")
     assert.notEqual(io, io2)
 
     const f1 = io2.run(ec); ec.tick()
@@ -1062,7 +1066,7 @@ describe("IO.memoizeOnSuccess", () => {
       .always(() => { effect += 1; return effect })
       .memoizeOnSuccess()
 
-    assert.equal(io._funADType, "once")
+    assert.equal(io._tag, "once")
     assert.equal(io.run(ec).value(), Some(Success(1)))
     assert.equal(io.run(ec).value(), Some(Success(1)))
   })
@@ -1730,6 +1734,41 @@ describe("IO.firstCompletedOf", () => {
     assert.ok(ec.hasTasksLeft())
     f.cancel()
     assert.not(ec.hasTasksLeft())
+  })
+})
+
+describe("IO type classes", () => {
+  const arbIO = inst.arbIO as jv.Arbitrary<HK<"funfix/io", number>>
+
+  function check(ec: TestScheduler): <A>(eq: Equiv<HK<"funfix/io", A>>) => boolean {
+    return eq => {
+      const a = (eq.lh as IO<any>).run(ec)
+      const b = (eq.rh as IO<any>).run(ec)
+      ec.tick(Duration.days(99))
+      return is(a.value(), b.value())
+    }
+  }
+
+  describe("Functor<IO> (static-land)", () => {
+    const sc = new TestScheduler()
+    functorCheck(
+      arbIO,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check(sc),
+      IOModule)
+  })
+
+  describe("Functor<IO> (fantasy-land)", () => {
+    const sc = new TestScheduler()
+    functorCheck(
+      arbIO,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check(sc),
+      {
+        map: (f: any, fa: any) => fa['fantasy-land/map'](f)
+      })
   })
 })
 

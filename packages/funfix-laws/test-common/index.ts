@@ -13,25 +13,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-import * as jv from "jsverify"
-import { Setoid } from "funfix-types"
-import { Equiv, SetoidLaws } from "../src"
-
-export function setoidCheck<A>(
-  genA: jv.Arbitrary<A>,
-  F: Setoid<A>) {
-
-  const laws = new SetoidLaws<A>(F)
-  const eq = (p: Equiv<boolean>) => p.lh === p.rh
-
-  jv.property("setoid.reflexivity", genA,
-    x => eq(laws.reflexivity(x)))
-
-  jv.property("setoid.symmetry", genA, genA,
-    (x, y) => eq(laws.symmetry(x, y)))
-
-  jv.property("setoid.transitivity", genA, genA, genA,
-    (x, y, z) => eq(laws.transitivity(x, y, z)))
-}
+export * from "./setoid-tests"
+export * from "./functor-tests"

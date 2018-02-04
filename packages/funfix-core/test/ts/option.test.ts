@@ -22,8 +22,10 @@ import * as assert from "./asserts"
 import { Option, Some, None, Left, Right, OptionModule } from "../../src/"
 import { NoSuchElementError } from "../../src/"
 import { is, hashCode } from "../../src/"
+import { HK } from "funfix-types"
+import { Equiv } from "../../../funfix-laws/src"
 import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
-import { Setoid } from "funfix-types"
+import { functorCheck } from "../../../funfix-laws/test-common/functor-tests"
 
 describe("Option", () => {
   describe("constructor", () => {
@@ -490,10 +492,6 @@ describe("Option", () => {
   describe("Setoid<Option> (static-land)", () => {
     setoidCheck(inst.arbOpt, OptionModule)
 
-    it("has a canonical definition", () => {
-      assert.equal(Option['static-land/canonical'](), OptionModule)
-    })
-
     it("protects against null", () => {
       assert.ok(OptionModule.equals(null as any, null as any))
       assert.not(OptionModule.equals(null as any, None))
@@ -503,7 +501,33 @@ describe("Option", () => {
 
   describe("Setoid<Option> (fantasy-land)", () => {
     setoidCheck(inst.arbOpt, {
-      equals: (x, y) => x["fantasy-land/equals"](y)
+      equals: (x, y) => (x as any)["fantasy-land/equals"](y)
     })
+  })
+
+  describe("Functor<Option> (static-land)", () => {
+    const check = (e: Equiv<HK<"funfix/option", any>>) =>
+      (e.lh as Option<any>).equals(e.rh as Option<any>)
+
+    functorCheck(
+      inst.arbOpt as jv.Arbitrary<HK<"funfix/option", any>>,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check,
+      OptionModule)
+  })
+
+  describe("Functor<Option> (fantasy-land)", () => {
+    const check = (e: Equiv<HK<"funfix/option", any>>) =>
+      (e.lh as Option<any>).equals(e.rh as Option<any>)
+
+    functorCheck(
+      inst.arbOpt as jv.Arbitrary<HK<"funfix/option", any>>,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check,
+      {
+        map: (f, fa) => (fa as any)["fantasy-land/map"](f)
+      })
   })
 })

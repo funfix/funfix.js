@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-import { Setoid } from "funfix-types"
+import { Setoid, Functor } from "funfix-types"
 import * as std from "./std"
 import { HK, HK2 } from "./kinds"
 import { Throwable, NoSuchElementError } from "./errors"
+import { fantasyLandRegister } from "./internals"
 
 /**
  * Represents a value of one of two possible types (a disjoint union).
@@ -485,18 +486,10 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
       cursor = some.swap().get()
     }
   }
-
-  /**
-   * Returns the type-class instances of `Either`.
-   */
-  static module() { return EitherModule }
-
-  /** See {@link https://github.com/fantasyland/fantasy-land}. */
-  ["fantasy-land/equals"] = this.equals;
-
-  /** See {@link https://github.com/rpominov/static-land}. */
-  static ["static-land/canonical"] = Either.module
 }
+
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Either)
 
 /**
  * The `Left` data constructor represents the left side of the
@@ -517,14 +510,20 @@ export function Right<R>(value: R): Either<never, R> {
 /**
  * Type enumerating the type-classes that `Either` implements.
  */
-export type EitherTypes = Setoid<Either<any, any>>
+export type EitherTypes =
+  Setoid<Either<any, any>> &
+  Functor<"funfix/either">
 
 /**
  * Type-class implementations, compatible with the `static-land`
  * specification.
  */
 export const EitherModule: EitherTypes = {
-  equals: (x, y) => x ? x.equals(y) : !y
+  // Setoid
+  equals: (x, y) => x ? x.equals(y) : !y,
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/either", A>) =>
+    (fa as Either<never, A>).map(f)
 }
 
 /**
@@ -866,7 +865,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * NOTE: Because `Option` is immutable, this function returns the
    * same cached reference is on different calls.
    */
-  static none(): Option<never> {
+  static none<A = never>(): Option<A> {
     return None
   }
 
@@ -1038,18 +1037,10 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
       cursor = some.swap().get()
     }
   }
-
-  /**
-   * Returns the type-class instances of `Option`.
-   */
-  static module() { return OptionModule }
-
-  /** See {@link https://github.com/fantasyland/fantasy-land}. */
-  ["fantasy-land/equals"] = this.equals;
-
-  /** See {@link https://github.com/rpominov/static-land}. */
-  static ["static-land/canonical"] = Option.module
 }
+
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Option)
 
 /**
  * The `Some<A>` data constructor for [[Option]] represents existing
@@ -1080,14 +1071,20 @@ export const None: Option<never> = emptyOptionRef()
 /**
  * Type enumerating the type classes implemented by `Option`.
  */
-export type OptionTypes = Setoid<Option<any>>
+export type OptionTypes =
+  Setoid<Option<any>> &
+  Functor<"funfix/option">
 
 /**
  * Type-class implementations, compatible with the `static-land`
  * specification.
  */
 export const OptionModule: OptionTypes = {
-  equals: (x, y) => x ? x.equals(y) : !y
+  // Setoid
+  equals: (x, y) => x ? x.equals(y) : !y,
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/option", A>) =>
+    (fa as Option<A>).map(f)
 }
 
 /**
@@ -1462,11 +1459,11 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   /**
    * Implements {@link IEquals.equals} with overridable equality for `A`.
    */
-  equals(that: Try<A>, eq: (x: A, y: A) => boolean = std.is): boolean {
+  equals(that: Try<A>): boolean {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
     return this._isSuccess
-      ? that._isSuccess && eq(this._successRef, that._successRef)
+      ? that._isSuccess && std.is(this._successRef, that._successRef)
       : !that._isSuccess && std.is(this._failureRef, that._failureRef)
   }
 
@@ -1797,18 +1794,10 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
       }
     }
   }
-
-  /**
-   * Returns the type-class instances of `Try`.
-   */
-  static module() { return TryModule }
-
-  /** See {@link https://github.com/fantasyland/fantasy-land}. */
-  ["fantasy-land/equals"] = this.equals;
-
-  /** See {@link https://github.com/rpominov/static-land}. */
-  static ["static-land/canonical"] = Try.module
 }
+
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Try)
 
 /**
  * The `Success` data constructor is for building [[Try]] values that
@@ -1829,14 +1818,20 @@ export function Failure(e: Throwable): Try<never> {
 /**
  * Type enumerating the type classes implemented by `Try`.
  */
-export type TryTypes = Setoid<Try<any>>
+export type TryTypes =
+  Setoid<Try<any>> &
+  Functor<"funfix/try">
 
 /**
  * Type-class implementations, compatible with the `static-land`
  * specification.
  */
 export const TryModule: TryTypes = {
-  equals: (x, y) => x ? x.equals(y) : !y
+  // Setoid
+  equals: (x, y) => x ? x.equals(y) : !y,
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/try", A>) =>
+    (fa as Try<A>).map(f)
 }
 
 /**

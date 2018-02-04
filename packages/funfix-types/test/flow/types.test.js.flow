@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-import * as jv from "jsverify"
-import { Setoid } from "funfix-types"
-import { Equiv, SetoidLaws } from "../src"
+/* @flow */
 
-export function setoidCheck<A>(
-  genA: jv.Arbitrary<A>,
-  F: Setoid<A>) {
+import { HK, Setoid, Functor } from "../../src"
 
-  const laws = new SetoidLaws<A>(F)
-  const eq = (p: Equiv<boolean>) => p.lh === p.rh
+type BoxURI = BoxURI
 
-  jv.property("setoid.reflexivity", genA,
-    x => eq(laws.reflexivity(x)))
+class Box<A> implements HK<BoxURI, A> {
+  +_URI: BoxURI
+  +_A: A
+  value: A;
+  constructor(value: A) { this.value = value }
+}
 
-  jv.property("setoid.symmetry", genA, genA,
-    (x, y) => eq(laws.symmetry(x, y)))
+class Module implements Setoid<Box<any>>, Functor<BoxURI> {
+  equals(x, y): boolean {
+    return (x : Box<any>).value === (y : Box<any>).value
+  }
 
-  jv.property("setoid.transitivity", genA, genA, genA,
-    (x, y, z) => eq(laws.transitivity(x, y, z)))
+  map<A, B>(f: (a: A) => B, fa: HK<BoxURI, A>): Box<B> {
+    return new Box(f((fa : any).value))
+  }
 }

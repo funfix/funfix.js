@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import { HK } from "funfix-types"
 import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
@@ -23,8 +24,9 @@ import { Try, TryModule, Success, Failure, DummyError, NoSuchElementError } from
 import { None, Some, Left, Right } from "../../src/"
 import { IllegalStateError } from "../../src/"
 import { is, hashCode } from "../../src/"
+import { Equiv } from "../../../funfix-laws/src"
 import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
-import { Setoid } from "funfix-types"
+import { functorCheck } from "../../../funfix-laws/test-common/functor-tests"
 
 describe("Try.of", () => {
   jv.property("should work for successful functions",
@@ -519,10 +521,6 @@ describe("Try.tailRecM", () => {
 describe("Setoid<Try> (static-land)", () => {
   setoidCheck(inst.arbTry, TryModule)
 
-  it("has a canonical definition", () => {
-    assert.equal(Try['static-land/canonical'](), TryModule)
-  })
-
   it("protects against null", () => {
     assert.ok(TryModule.equals(null as any, null as any))
     assert.not(TryModule.equals(null as any, Success(1)))
@@ -532,6 +530,33 @@ describe("Setoid<Try> (static-land)", () => {
 
 describe("Setoid<Try> (fantasy-land)", () => {
   setoidCheck(inst.arbOpt, {
-    equals: (x, y) => x["fantasy-land/equals"](y)
+    equals: (x, y) => (x as any)["fantasy-land/equals"](y)
   })
 })
+
+describe("Functor<Try> (static-land)", () => {
+  const check = (e: Equiv<HK<"funfix/try", any>>) =>
+    (e.lh as Try<any>).equals(e.rh as Try<any>)
+
+  functorCheck(
+    inst.arbTry as jv.Arbitrary<HK<"funfix/try", any>>,
+    jv.fun(jv.string),
+    jv.fun(jv.int32),
+    check,
+    TryModule)
+})
+
+describe("Functor<Try> (fantasy-land)", () => {
+  const check = (e: Equiv<HK<"funfix/try", any>>) =>
+    (e.lh as Try<any>).equals(e.rh as Try<any>)
+
+  functorCheck(
+    inst.arbTry as jv.Arbitrary<HK<"funfix/try", any>>,
+    jv.fun(jv.string),
+    jv.fun(jv.int32),
+    check,
+    {
+      map: (f, fa) => (fa as any)["fantasy-land/map"](f)
+    })
+})
+

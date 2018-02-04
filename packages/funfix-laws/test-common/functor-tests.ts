@@ -1,4 +1,4 @@
-/*!
+/*
  * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
@@ -16,22 +16,21 @@
  */
 
 import * as jv from "jsverify"
-import { Setoid } from "funfix-types"
-import { Equiv, SetoidLaws } from "../src"
+import { HK, Functor } from "funfix-types"
+import { Equiv, FunctorLaws } from "../src"
 
-export function setoidCheck<A>(
-  genA: jv.Arbitrary<A>,
-  F: Setoid<A>) {
+export function functorCheck<F, A, B, C>(
+  genFA: jv.Arbitrary<HK<F, A>>,
+  genAtoB: jv.Arbitrary<(a: A) => B>,
+  genBtoC: jv.Arbitrary<(b: B) => C>,
+  check: <T>(e: Equiv<HK<F, T>>) => boolean,
+  F: Functor<F>) {
 
-  const laws = new SetoidLaws<A>(F)
-  const eq = (p: Equiv<boolean>) => p.lh === p.rh
+  const laws = new FunctorLaws<F>(F)
 
-  jv.property("setoid.reflexivity", genA,
-    x => eq(laws.reflexivity(x)))
+  jv.property("functor.identity", genFA,
+    fa => check(laws.identity(fa)))
 
-  jv.property("setoid.symmetry", genA, genA,
-    (x, y) => eq(laws.symmetry(x, y)))
-
-  jv.property("setoid.transitivity", genA, genA, genA,
-    (x, y, z) => eq(laws.transitivity(x, y, z)))
+  jv.property("functor.composition", genFA, genAtoB, genBtoC,
+    (fa, g, f) => check(laws.composition(fa, f, g)))
 }

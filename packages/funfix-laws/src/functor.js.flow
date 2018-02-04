@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-import * as jv from "jsverify"
-import { Setoid } from "funfix-types"
-import { Equiv, SetoidLaws } from "../src"
+/* @flow */
 
-export function setoidCheck<A>(
-  genA: jv.Arbitrary<A>,
-  F: Setoid<A>) {
+import { HK, Functor } from "funfix-types";
+import { Equiv } from "./equiv";
 
-  const laws = new SetoidLaws<A>(F)
-  const eq = (p: Equiv<boolean>) => p.lh === p.rh
-
-  jv.property("setoid.reflexivity", genA,
-    x => eq(laws.reflexivity(x)))
-
-  jv.property("setoid.symmetry", genA, genA,
-    (x, y) => eq(laws.symmetry(x, y)))
-
-  jv.property("setoid.transitivity", genA, genA, genA,
-    (x, y, z) => eq(laws.transitivity(x, y, z)))
+declare export class FunctorLaws<F> {
+  +F: Functor<F>;
+  constructor(F: Functor<F>): FunctorLaws<F>;
+  identity<A>(fa: HK<F, A>, f: (a: A) => A): Equiv<HK<F, A>>;
+  composition<A, B, C>(fa: HK<F, A>, f: (a: B) => C, g: (a: A) => B): Equiv<HK<F, C>>;
 }

@@ -18,9 +18,10 @@
 import * as jv from "jsverify"
 import * as assert from "./asserts"
 import * as inst from "./instances"
-import { hashCode, is, Left, Right, Either, Option, EitherModule } from "../../src/"
+import { hashCode, is, HK, Left, Right, Either, Option, EitherModule } from "../../src/"
+import { Equiv } from "../../../funfix-laws/src"
 import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
-import { Setoid } from "funfix-types"
+import { functorCheck } from "../../../funfix-laws/test-common/functor-tests"
 
 describe("Either", () => {
   describe("Either discrimination", () => {
@@ -346,10 +347,6 @@ describe("Either", () => {
   describe("Setoid<Either> (static-land)", () => {
     setoidCheck(inst.arbEither, EitherModule)
 
-    it("has a canonical definition", () => {
-      assert.equal(Either['static-land/canonical'](), EitherModule)
-    })
-
     it("protects against null", () => {
       assert.ok(EitherModule.equals(null as any, null as any))
       assert.not(EitherModule.equals(null as any, Either.right(1)))
@@ -359,7 +356,33 @@ describe("Either", () => {
 
   describe("Setoid<Either> (fantasy-land)", () => {
     setoidCheck(inst.arbEither, {
-      equals: (x, y) => x["fantasy-land/equals"](y)
+      equals: (x, y) => (x as any)["fantasy-land/equals"](y)
     })
+  })
+
+  describe("Functor<Either> (static-land)", () => {
+    const check = (e: Equiv<HK<"funfix/either", any>>) =>
+      (e.lh as Either<any, any>).equals(e.rh as Either<any, any>)
+
+    functorCheck(
+      inst.arbEither as jv.Arbitrary<HK<"funfix/either", any>>,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check,
+      EitherModule)
+  })
+
+  describe("Functor<Either> (fantasy-land)", () => {
+    const check = (e: Equiv<HK<"funfix/either", any>>) =>
+      (e.lh as Either<any, any>).equals(e.rh as Either<any, any>)
+
+    functorCheck(
+      inst.arbEither as jv.Arbitrary<HK<"funfix/either", any>>,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check,
+      {
+        map: (f, fa) => (fa as any)["fantasy-land/map"](f)
+      })
   })
 })
