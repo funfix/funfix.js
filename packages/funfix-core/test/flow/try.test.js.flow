@@ -21,7 +21,7 @@ import {
   Failure,
   Success,
   Try,
-  TrySetoid
+  TryModule
 } from "../../src/"
 import { Setoid } from "funfix-types";
 
@@ -58,7 +58,6 @@ const rel1: Dog | null = dogTry.orNull()
 const rel2: Dog | void = dogTry.orUndefined()
 
 const setoid1: Setoid<Try<number>> =
-  TrySetoid.universal
-
+  TryModule
 const setoid2: Setoid<Try<number>> =
-  new TrySetoid()
+  Try.module()

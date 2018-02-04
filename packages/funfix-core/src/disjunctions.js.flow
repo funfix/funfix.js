@@ -64,16 +64,21 @@ declare export class Either<+L, +R> {
     f: (A1, A2, A3, A4, A5, A6) => R): Either<L, R>;
 
   static tailRecM<L, A, B>(a: A, f: (a: A) => Either<L, Either<A, B>>): Either<L, B>;
+
+  static module(): EitherTypes;
+
+  // NOTE: at the moment of writing these properties are not supported by Flow,
+  // but the compiler doesn't reject such definitions for declarations, so
+  // leaving them here anyway:
+  ["fantasy-land/equals"]: (that: Either<L, R>) => boolean;
+  static ["static-land/canonical"]: () => EitherTypes;
 }
 
 declare export function Left<L>(value: L): Either<L, empty>;
 declare export function Right<R>(value: R): Either<empty, R>;
 
-declare export class EitherSetoid<L, R> {
-  constructor(L?: Setoid<L>, R?: Setoid<R>): EitherSetoid<L, R>;
-  equals(x: Either<L, R>, y: Either<L, R>): boolean;
-  static +universal: EitherSetoid<any, any>;
-}
+export type EitherTypes = Setoid<Either<any, any>>;
+declare export var EitherModule: EitherTypes;
 
 declare export class Option<+A> {
   get(): A;
@@ -112,12 +117,15 @@ declare export class Option<+A> {
   static pure<A>(value: A): Option<A>;
   static some<A>(value: A): Option<A>;
 
-  static map2<A1,A2,R>(fa1: Option<A1>, fa2: Option<A2>,
-                       f: (A1, A2) => R): Option<R>;
-  static map3<A1,A2,A3,R>(fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>,
-                          f: (A1, A2, A3) => R): Option<R>;
-  static map4<A1,A2,A3,A4,R>(fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>,
-                             f: (A1, A2, A3, A4) => R): Option<R>;
+  static map2<A1,A2,R>(
+    fa1: Option<A1>, fa2: Option<A2>,
+    f: (A1, A2) => R): Option<R>;
+  static map3<A1,A2,A3,R>(
+    fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>,
+    f: (A1, A2, A3) => R): Option<R>;
+  static map4<A1,A2,A3,A4,R>(
+    fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>,
+    f: (A1, A2, A3, A4) => R): Option<R>;
   static map5<A1,A2,A3,A4,A5,R>(
     fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>, fa5: Option<A5>,
     f: (A1, A2, A3, A4, A5) => R): Option<R>;
@@ -126,16 +134,21 @@ declare export class Option<+A> {
     f: (A1, A2, A3, A4, A5, A6) => R): Option<R>;
 
   static tailRecM<A, B>(a: A, f: (a: A) => Option<Either<A, B>>): Option<B>;
+
+  static module(): OptionTypes;
+
+  // NOTE: at the moment of writing these properties are not supported by Flow,
+  // but the compiler doesn't reject such definitions for declarations, so
+  // leaving them here anyway:
+  ["fantasy-land/equals"]: (that: Option<A>) => boolean;
+  static ["static-land/canonical"]: () => OptionTypes;
 }
 
 declare export function Some<A>(value: A): Option<A>;
 declare export var None: Option<empty>;
 
-declare export class OptionSetoid<A> {
-  constructor(A?: Setoid<A>): OptionSetoid<A>;
-  equals(x: Option<A>, y: Option<A>): boolean;
-  static +universal: OptionSetoid<any>;
-}
+export type OptionTypes = Setoid<Option<any>>;
+declare export var OptionModule: OptionTypes;
 
 declare export class Try<+A> {
   get(): A;
@@ -193,13 +206,18 @@ declare export class Try<+A> {
     f: (A1, A2, A3, A4, A5, A6) => R): Try<R>;
 
   static tailRecM<A, B>(a: A, f: (a: A) => Try<Either<A, B>>): Try<B>;
+
+  static module(): TryTypes;
+
+  // NOTE: at the moment of writing these properties are not supported by Flow,
+  // but the compiler doesn't reject such definitions for declarations, so
+  // leaving them here anyway:
+  ["fantasy-land/equals"]: (that: Try<A>) => boolean;
+  static ["static-land/canonical"]: () => TryTypes;
 }
 
 declare export function Success<A>(value: A): Try<A>;
 declare export function Failure(e: Throwable): Try<empty>;
 
-declare export class TrySetoid<A> {
-  constructor(A?: Setoid<A>): Setoid<A>;
-  equals(x: Try<A>, y: Try<A>): boolean;
-  static +universal: TrySetoid<any>;
-}
+export type TryTypes = Setoid<Try<any>>;
+declare export var TryModule: TryTypes;

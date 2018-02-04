@@ -22,7 +22,7 @@ import {
   Either,
   Left,
   Right,
-  EitherSetoid
+  EitherModule
 } from "../../src/"
 
 const optLeft: Either<number, string> = Left(1)
@@ -59,7 +59,6 @@ const r27: Either<Dog, string> =
   lDog.filterOrElse(_ => _ === "not", () => new Animal())
 
 const setoid1: Setoid<Either<number, number>> =
-  EitherSetoid.universal
-
+  EitherModule
 const setoid2: Setoid<Either<number, number>> =
-  new EitherSetoid()
+  Either.module()

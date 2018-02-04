@@ -22,7 +22,7 @@ import {
   Option,
   Some,
   None,
-  OptionSetoid
+  OptionModule
 } from "../../src/"
 
 const opt: Option<number> = Option.of(1)
@@ -134,7 +134,6 @@ const str2: string | null = null
 const opt2: Option<string> = Option.of(str2)
 
 const setoid1: Setoid<Option<number>> =
-  OptionSetoid.universal
-
+  OptionModule
 const setoid2: Setoid<Option<number>> =
-  new OptionSetoid()
+  Option.module()

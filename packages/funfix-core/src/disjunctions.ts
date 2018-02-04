@@ -486,11 +486,16 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
     }
   }
 
+  /**
+   * Returns the type-class instances of `Either`.
+   */
+  static module() { return EitherModule }
+
   /** See {@link https://github.com/fantasyland/fantasy-land}. */
   ["fantasy-land/equals"] = this.equals;
 
   /** See {@link https://github.com/rpominov/static-land}. */
-  static ["static-land/canonical"]() { return EitherModule }
+  static ["static-land/canonical"] = Either.module
 }
 
 /**
@@ -510,10 +515,15 @@ export function Right<R>(value: R): Either<never, R> {
 }
 
 /**
+ * Type enumerating the type-classes that `Either` implements.
+ */
+export type EitherTypes = Setoid<Either<any, any>>
+
+/**
  * Type-class implementations, compatible with the `static-land`
  * specification.
  */
-export const EitherModule: Setoid<Either<any, any>> = {
+export const EitherModule: EitherTypes = {
   equals: (x, y) => x ? x.equals(y) : !y
 }
 
@@ -1029,11 +1039,16 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
     }
   }
 
+  /**
+   * Returns the type-class instances of `Option`.
+   */
+  static module() { return OptionModule }
+
   /** See {@link https://github.com/fantasyland/fantasy-land}. */
   ["fantasy-land/equals"] = this.equals;
 
   /** See {@link https://github.com/rpominov/static-land}. */
-  static ["static-land/canonical"]() { return OptionModule }
+  static ["static-land/canonical"] = Option.module
 }
 
 /**
@@ -1063,10 +1078,15 @@ function emptyOptionRef() {
 export const None: Option<never> = emptyOptionRef()
 
 /**
+ * Type enumerating the type classes implemented by `Option`.
+ */
+export type OptionTypes = Setoid<Option<any>>
+
+/**
  * Type-class implementations, compatible with the `static-land`
  * specification.
  */
-export const OptionModule: Setoid<Option<any>> = {
+export const OptionModule: OptionTypes = {
   equals: (x, y) => x ? x.equals(y) : !y
 }
 
@@ -1778,11 +1798,16 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
     }
   }
 
+  /**
+   * Returns the type-class instances of `Try`.
+   */
+  static module() { return TryModule }
+
   /** See {@link https://github.com/fantasyland/fantasy-land}. */
   ["fantasy-land/equals"] = this.equals;
 
   /** See {@link https://github.com/rpominov/static-land}. */
-  static ["static-land/canonical"]() { return TryModule }
+  static ["static-land/canonical"] = Try.module
 }
 
 /**
@@ -1802,10 +1827,15 @@ export function Failure(e: Throwable): Try<never> {
 }
 
 /**
+ * Type enumerating the type classes implemented by `Try`.
+ */
+export type TryTypes = Setoid<Try<any>>
+
+/**
  * Type-class implementations, compatible with the `static-land`
  * specification.
  */
-export const TryModule: Setoid<Try<any>> = {
+export const TryModule: TryTypes = {
   equals: (x, y) => x ? x.equals(y) : !y
 }
 
