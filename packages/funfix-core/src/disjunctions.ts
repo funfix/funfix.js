@@ -654,36 +654,6 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
   }
 
   /**
-   * Returns an optioning containing the result of the source mapped
-   * by the given function `f`.
-   *
-   * Similar to `map`, except that if the mapping function `f` returns
-   * `null`, then the final result returned will be [[Option.none]].
-   *
-   * Comparison:
-   *
-   * ```typescript
-   * Option.of(1).mapN(x => null) // None
-   * Option.of(1).map(x => null)  // Some(null)
-   *
-   * Option.of(1).mapN(x => x+1)  // 2
-   * Option.of(1).map(x => x+1)   // 2
-   * ```
-   *
-   * What this operation does is to allow for safe chaining of multiple
-   * method calls or functions that might produce `null` results:
-   *
-   * ```typescript
-   * Option.of(user)
-   *   .mapN(_ => _.contacts)
-   *   .mapN(_ => _.length)
-   * ```
-   */
-  mapN<B>(f: (a: A) => B | null | undefined): Option<B> {
-    return this._isEmpty ? None : Option.of(f(this._ref))
-  }
-
-  /**
    * Returns the result of applying `f` to this option's value if
    * the option is nonempty, otherwise returns an empty option.
    *

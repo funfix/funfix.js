@@ -141,7 +141,7 @@ import {
  *
  * ```typescript
  * function retryOnFailure<A>(times: number, io: IO<A>): IO<A> {
- *   return source.recoverWith(err => {
+ *   return source.onErrorHandleWith(err => {
  *     // No more retries left? Re-throw error:
  *     if (times <= 0) return IO.raise(err)
  *     // Recursive call, yes we can!
@@ -498,7 +498,7 @@ export class IO<A> implements HK<"funfix/io", A> {
    *   ))
    * ```
    *
-   * For other error handling capabilities, see {@link IO.recoverWith}
+   * For other error handling capabilities, see {@link IO.onErrorHandleWith}
    * and {@link IO.transformWith}.
    */
   attempt(): IO<Either<Throwable, A>> {
@@ -858,14 +858,14 @@ export class IO<A> implements HK<"funfix/io", A> {
    * or the equivalent of {@link IO.map .map} for errors.
    *
    * ```typescript
-   * io.recover(err => {
+   * io.onErrorHandle(err => {
    *   console.error(err)
    *   fallback
    * })
    * ```
    */
-  recover<AA>(f: (e: Throwable) => AA): IO<A | AA> {
-    return this.recoverWith(a => IO.now(f(a)))
+  onErrorHandle<AA>(f: (e: Throwable) => AA): IO<A | AA> {
+    return this.onErrorHandleWith(a => IO.now(f(a)))
   }
 
   /**
@@ -881,7 +881,7 @@ export class IO<A> implements HK<"funfix/io", A> {
    *
    * ```typescript
    * function retryOnFailure<A>(times: number, io: IO<A>): IO<A> {
-   *   return source.recoverWith(err => {
+   *   return source.onErrorHandleWith(err => {
    *     // No more retries left? Re-throw error:
    *     if (times <= 0) return IO.raise(err)
    *     // Recursive call, yes we can!
@@ -892,7 +892,7 @@ export class IO<A> implements HK<"funfix/io", A> {
    * }
    * ```
    */
-  recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA> {
+  onErrorHandleWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA> {
     return this.transformWith(f, IO.now as any)
   }
 

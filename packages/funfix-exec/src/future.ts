@@ -227,7 +227,7 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
   /**
    * Transforms the source, regardless if the result is a failure or a success.
    *
-   * This function is a combination of {@link flatMap} and {@link recoverWith},
+   * This function is a combination of {@link flatMap} and {@link onErrorHandleWith},
    * being the (type safe) alternative to JavaScript's
    * [then]{@link IPromiseLike.then} from the
    * [Promises/A+](https://promisesaplus.com/) specification.
@@ -267,7 +267,7 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
   /**
    * Transforms the sources, regardless if the result is a failure or a success.
    *
-   * This function is a combination of {@link map} and {@link recover},
+   * This function is a combination of {@link map} and {@link onErrorHandle},
    * being the (type safe) alternative to JavaScript's
    * [then]{@link IPromiseLike.then} from the
    * [Promises/A+](https://promisesaplus.com/) specification.
@@ -362,9 +362,6 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
    * Creates a new future that will handle any matching throwable that this
    * future might contain by assigning it a value of another future.
    *
-   * If there is no match, or if this future contains a valid result then the
-   * new future will contain the same result.
-   *
    * This operation is the equivalent of {@link flatMap} for handling errors.
    * Also see {@link transformWith}, which can handle both successful results
    * and failures.
@@ -372,35 +369,44 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
    * ```typescript
    * const f = Future.of<number>(() => { throw new DummyError() })
    *
-   * f.recoverWith(e => e instanceof DummyError
+   * f.onErrorHandleWith(e => e instanceof DummyError
    *   ? Future.pure(10) // Fallback
    *   : Future.raise(e) // Re-throw
    * )
    * ```
    */
-  recoverWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA> {
+  onErrorHandleWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA> {
     return this.transformWith<A | AA>(f, Future.pure)
   }
 
   /**
+   * Creates a new future that will handle any matching throwable that this
+   * future might contain by assigning it a value.
    *
+   * This operation is the equivalent of {@link map} for handling errors.
+   * Also see {@link transform}, which can handle both successful results
+   * and failures.
    *
    * ```typescript
    * const f = Future.of<number>(() => { throw new DummyError() })
    *
-   * f.recover(e => {
+   * f.onErrorHandle(e => {
    *   if (e instanceof DummyError) return 10
-   *   // Don't re-throw exceptions like this, use `recoverWith` instead!
+   *   // Don't re-throw exceptions like this, use `onErrorHandleWith` instead!
    *   throw e
    * })
    * ```
    */
-  recover<AA>(f: (e: Throwable) => AA): Future<A | AA> {
+  onErrorHandle<AA>(f: (e: Throwable) => AA): Future<A | AA> {
     return this.transformWith<A | AA>(
       e => Future.pure(f(e), this._scheduler),
       a => Future.pure(a, this._scheduler))
   }
 
+  /**
+   * JavaScript `Thenable` implementation, needed in order to `await` `Future`
+   * values in `async` functions.
+   */
   then<TResult1, TResult2>(
     onFulfilled?: ((value: A) => (IPromiseLike<TResult1> | TResult1)) | undefined | null,
     onRejected?: ((reason: Throwable) => (IPromiseLike<TResult2> | TResult2)) | undefined | null): Future<TResult2 | TResult1> {

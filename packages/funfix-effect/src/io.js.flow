@@ -43,8 +43,8 @@ declare export class IO<+A> {
   map<B>(f: (a: A) => B): IO<B>;
   memoize(): IO<A>;
   memoizeOnSuccess(): IO<A>;
-  recover<AA>(f: (e: Throwable) => AA): IO<A | AA>;
-  recoverWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA>;
+  onErrorHandle<AA>(f: (e: Throwable) => AA): IO<A | AA>;
+  onErrorHandleWith<AA>(f: (e: Throwable) => IO<AA>): IO<A | AA>;
   timeout(after: number | Duration): IO<A>;
   timeoutTo<AA>(after: number | Duration, fallback: IO<AA>): IO<A | AA>;
   transform<R>(failure: (e: Throwable) => R, success: (a: A) => R): IO<R>;

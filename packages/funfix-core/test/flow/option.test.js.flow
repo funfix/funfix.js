@@ -82,9 +82,6 @@ const r14: boolean =
 const r15: Option<string> =
   Option.of(1).map((n: number) => String(n))
 
-const r16: Option<string> =
-  Option.of(1).mapN((n: number): string | null => null)
-
 const r17: boolean =
   Option.of(1).nonEmpty()
 

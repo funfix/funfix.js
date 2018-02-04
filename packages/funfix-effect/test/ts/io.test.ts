@@ -246,7 +246,7 @@ describe("IO (error recovery)", () => {
 
   it("recovers from failure with run()", () => {
     const ec = scheduler()
-    const io = IO.raise<number>("error").recoverWith(e => {
+    const io = IO.raise<number>("error").onErrorHandleWith(e => {
       if (e === "error") return IO.pure(100)
       return IO.raise(e)
     })
@@ -258,7 +258,7 @@ describe("IO (error recovery)", () => {
 
   it("recovers from failure with runOnComplete()", () => {
     const ec = scheduler()
-    const io = IO.raise<number>("error").recoverWith(e => {
+    const io = IO.raise<number>("error").onErrorHandleWith(e => {
       if (e === "error") return IO.pure(100)
       return IO.raise(e)
     })
@@ -296,7 +296,7 @@ describe("IO (error recovery)", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
     const io = IO.pure(1).flatMap(() => { throw dummy })
-      .recoverWith(e => {
+      .onErrorHandleWith(e => {
         if (e === dummy) return IO.pure(100)
         return IO.raise(e)
       })
@@ -311,7 +311,7 @@ describe("IO (error recovery)", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
     const io = IO.pure(1).flatMap(() => { throw dummy })
-      .recoverWith(e => {
+      .onErrorHandleWith(e => {
         if (e === dummy) return IO.pure(100)
         return IO.raise(e)
       })
@@ -323,14 +323,14 @@ describe("IO (error recovery)", () => {
     assert.equal(result, Some(Success(100)))
   })
 
-  it("protects against user errors in recoverWith (run)", () => {
+  it("protects against user errors in onErrorHandleWith (run)", () => {
     const ec = scheduler()
     const dummy1 = new DummyError("dummy1")
     const dummy2 = new DummyError("dummy2")
 
     const io = IO.raise<number>(dummy1)
-      .recoverWith(() => { throw dummy2 })
-      .recoverWith(() => {
+      .onErrorHandleWith(() => { throw dummy2 })
+      .onErrorHandleWith(() => {
         return IO.pure(100)
         // return IO.raise(e)
       })
@@ -340,13 +340,13 @@ describe("IO (error recovery)", () => {
     assert.equal(f.value(), Some(Success(100)))
   })
 
-  it("protects against user errors in recoverWith (runOnComplete)", () => {
+  it("protects against user errors in onErrorHandleWith (runOnComplete)", () => {
     const ec = scheduler()
     const dummy1 = new DummyError("dummy1")
     const dummy2 = new DummyError("dummy2")
 
-    const io = IO.raise<number>(dummy1).recoverWith(() => { throw dummy2 })
-      .recoverWith(e => {
+    const io = IO.raise<number>(dummy1).onErrorHandleWith(() => { throw dummy2 })
+      .onErrorHandleWith(e => {
         if (e === dummy2) return IO.pure(100)
         return IO.raise(e)
       })
@@ -361,7 +361,7 @@ describe("IO (error recovery)", () => {
   it("recovers with recover", () => {
     const ec = scheduler()
     const dummy = new DummyError("dummy")
-    const io = IO.raise<number>(dummy).recover(e => e === dummy ? 10 : 0)
+    const io = IO.raise<number>(dummy).onErrorHandle(e => e === dummy ? 10 : 0)
 
     const f = io.run(ec); ec.tick()
     assert.equal(f.value(), Some(Success(10)))

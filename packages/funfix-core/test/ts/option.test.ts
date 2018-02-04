@@ -24,8 +24,7 @@ import { NoSuchElementError } from "../../src/"
 import { is, hashCode } from "../../src/"
 import { HK } from "funfix-types"
 import { Equiv } from "../../../funfix-laws/src"
-import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
-import { functorCheck } from "../../../funfix-laws/test-common/functor-tests"
+import { setoidCheck, functorCheck } from "../../../funfix-laws/test-common"
 
 describe("Option", () => {
   describe("constructor", () => {
@@ -243,23 +242,6 @@ describe("Option", () => {
     jv.property("Some(n).map(_ => null) == Some(null)",
       inst.arbOptNonempty,
       opt => is(opt.map(_ => null), Some(null))
-    )
-  })
-
-  describe("#mapN", () => {
-    jv.property("pure(n).mapN(f) === pure(f(n))",
-      jv.number, jv.fn(jv.number),
-      (n, f) => is(Option.pure(n).mapN(f), Option.pure(f(n)))
-    )
-
-    jv.property("covariant identity",
-      inst.arbOpt,
-      opt => opt.mapN(x => x).equals(opt)
-    )
-
-    jv.property("Some(n).mapN(_ => null) == None",
-      inst.arbOptNonempty,
-      opt => is(opt.mapN(_ => null), None)
     )
   })
 
