@@ -17,18 +17,18 @@
 
 /* @flow */
 
-import { HK, Setoid, Functor } from "../../src"
+import { HK, Setoid, Functor, Apply, Applicative } from "../../src"
 
 type BoxURI = BoxURI
 
-class Box<A> implements HK<BoxURI, A> {
+class Box<+A> implements HK<BoxURI, A> {
   +_URI: BoxURI
   +_A: A
-  value: A;
+  +value: A;
   constructor(value: A) { this.value = value }
 }
 
-class Module implements Setoid<Box<any>>, Functor<BoxURI> {
+class BoxFunctor implements Setoid<Box<any>>, Functor<BoxURI> {
   equals(x, y): boolean {
     return (x : Box<any>).value === (y : Box<any>).value
   }
@@ -36,4 +36,16 @@ class Module implements Setoid<Box<any>>, Functor<BoxURI> {
   map<A, B>(f: (a: A) => B, fa: HK<BoxURI, A>): Box<B> {
     return new Box(f((fa : any).value))
   }
+}
+
+class BoxApply extends BoxFunctor implements Apply<BoxURI> {
+  ap<A, B>(ff: HK<BoxURI, (a: A) => B>, fa: HK<BoxURI, A>): HK<BoxURI, B> {
+    const f = (ff : any).value
+    const a = (fa : any).value
+    return new Box(f(a))
+  }
+}
+
+class BoxApplicative extends BoxApply implements Applicative<BoxURI> {
+  of<A>(a: A): HK<BoxURI, A> { return new Box(a) }
 }

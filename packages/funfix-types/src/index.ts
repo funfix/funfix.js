@@ -18,3 +18,5 @@
 export * from "./kinds"
 export * from "./setoid"
 export * from "./functor"
+export * from "./apply"
+export * from "./applicative"

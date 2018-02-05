@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { HK, Setoid, Functor } from "funfix-types"
+import { HK, Setoid, Functor, Apply, Applicative } from "funfix-types"
 import * as jv from "jsverify"
 
 export class Box<A> implements HK<"box", A> {
@@ -41,4 +41,16 @@ export class BoxFunctor implements Functor<"box"> {
   map<A, B>(f: (a: A) => B, fa: HK<"box", A>) {
     return new Box(f((fa as Box<A>).value))
   }
+}
+
+export class BoxApply extends BoxFunctor implements Apply<"box"> {
+  ap<A, B>(ff: HK<"box", (a: A) => B>, fa: HK<"box", A>): HK<"box", B> {
+    const f = (ff as Box<(a: A) => B>).value
+    const a = (fa as Box<A>).value
+    return new Box(f(a))
+  }
+}
+
+export class BoxApplicative extends BoxApply implements Applicative<"box"> {
+  of<A>(a: A) { return new Box(a) }
 }

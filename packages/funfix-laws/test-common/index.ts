@@ -18,3 +18,5 @@
 
 export * from "./setoid-tests"
 export * from "./functor-tests"
+export * from "./apply-tests"
+export * from "./applicative-tests"

@@ -18,14 +18,25 @@
 import * as jv from "jsverify"
 import { HK } from "funfix-types"
 import { Equiv } from "../../src"
-import { functorCheck } from "../../test-common"
-import { Box, BoxArbitrary, BoxFunctor } from "./box"
+import { applicativeCheck } from "../../test-common"
+import { Box, BoxApplicative, BoxArbitrary } from "./box"
 
-describe("Functor<Box>", () => {
-  functorCheck(
-    BoxArbitrary() as jv.Arbitrary<HK<"box", number>>,
+describe("Applicative<Box>", () => {
+  const arbBox = BoxArbitrary()
+  const genFAtoB =
+    jv.fun(jv.string).smap(f => new Box(f), box => box.value) as
+      jv.Arbitrary<HK<"box", (a: number) => string>>
+  const genFBtoC =
+    jv.fun(jv.int32).smap(f => new Box(f), box => box.value) as
+      jv.Arbitrary<HK<"box", (a: string) => number>>
+
+  applicativeCheck(
+    arbBox as jv.Arbitrary<HK<"box", number>>,
     jv.fun(jv.string),
     jv.fun(jv.int16),
+    genFAtoB,
+    genFBtoC,
+    jv.int32,
     (eq: Equiv<HK<"box", any>>) => (eq.lh as Box<any>).value === (eq.rh as Box<any>).value,
-    new BoxFunctor)
+    new BoxApplicative)
 })

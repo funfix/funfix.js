@@ -13,12 +13,14 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 /* @flow */
 
-declare export * from "./equiv"
-declare export * from "./setoid"
-declare export * from "./functor"
-declare export * from "./apply"
-declare export * from "./applicative"
+import { HK } from "./kinds"
+import { Apply } from "./apply"
+
+export interface Applicative<F> extends Apply<F> {
+  of<A>(a: A): HK<F, A>;
+}

@@ -16,16 +16,22 @@
  */
 
 import * as jv from "jsverify"
-import { HK } from "funfix-types"
-import { Equiv } from "../../src"
-import { functorCheck } from "../../test-common"
-import { Box, BoxArbitrary, BoxFunctor } from "./box"
+import { HK, Apply } from "funfix-types"
+import { Equiv, ApplyLaws } from "../src"
+import { functorCheck } from "./functor-tests"
 
-describe("Functor<Box>", () => {
-  functorCheck(
-    BoxArbitrary() as jv.Arbitrary<HK<"box", number>>,
-    jv.fun(jv.string),
-    jv.fun(jv.int16),
-    (eq: Equiv<HK<"box", any>>) => (eq.lh as Box<any>).value === (eq.rh as Box<any>).value,
-    new BoxFunctor)
-})
+export function applyCheck<F, A, B, C>(
+  genFA: jv.Arbitrary<HK<F, A>>,
+  genAtoB: jv.Arbitrary<(a: A) => B>,
+  genBtoC: jv.Arbitrary<(b: B) => C>,
+  genFAtoB: jv.Arbitrary<HK<F, (a: A) => B>>,
+  genFBtoC: jv.Arbitrary<HK<F, (b: B) => C>>,
+  check: <T>(e: Equiv<HK<F, T>>) => boolean,
+  F: Apply<F>) {
+
+  const laws = new ApplyLaws<F>(F)
+  functorCheck(genFA, genAtoB, genBtoC, check, F)
+
+  jv.property("apply.composition", genFA, genFAtoB, genFBtoC,
+    (fa, fab, fbc) => check(laws.applyComposition(fa, fab, fbc)))
+}

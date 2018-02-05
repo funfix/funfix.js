@@ -27,13 +27,23 @@ class Box<A> implements HK<"box", A> {
 
 type Types =
   types.Setoid<Box<any>> &
-  types.Functor<"box">
+  types.Functor<"box"> &
+  types.Apply<"box"> &
+  types.Applicative<"box">
 
 const t: Types = {
   equals: (x, y) =>
     (x as Box<any>).value === (y as Box<any>).value,
   map: <A, B>(f: (a: A) => B, fa: HK<"box", A>) =>
-    new Box(f((fa as Box<A>).value))
+    new Box(f((fa as Box<A>).value)),
+  ap: <A, B>(ff: HK<"box", (a: A) => B>, fa: HK<"box", A>) => {
+    const f = (ff as Box<(a: A) => B>).value
+    const a = (fa as Box<A>).value
+    return new Box(f(a))
+  },
+  of<A>(a: A) {
+    return new Box(a)
+  }
 }
 
 describe("type tests", () => {
@@ -46,6 +56,16 @@ describe("type tests", () => {
 
   it("functor", () => {
     const fb = t.map(x => x + 1, new Box(1))
+    assert.equal((fb as Box<number>).value, 2)
+  })
+
+  it("apply", () => {
+    const fb = t.ap(new Box((a: number) => a + 1), new Box(1))
+    assert.equal((fb as Box<number>).value, 2)
+  })
+
+  it("applicative", () => {
+    const fb = t.ap(new Box((a: number) => a + 1), t.of(1))
     assert.equal((fb as Box<number>).value, 2)
   })
 })

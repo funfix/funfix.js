@@ -13,12 +13,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 /* @flow */
 
-declare export * from "./equiv"
-declare export * from "./setoid"
-declare export * from "./functor"
-declare export * from "./apply"
-declare export * from "./applicative"
+import { HK, Applicative } from "funfix-types"
+import { Equiv } from "./equiv"
+import { ApplyLaws } from "./apply"
+
+declare export class ApplicativeLaws<F> extends ApplyLaws<F> {
+  +F: Applicative<F>;
+  constructor(F: Applicative<F>): Applicative<F>;
+  applicativeIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>>;
+  applicativeHomomorphism<A, B>(a: A, f: (a: A) => B): Equiv<HK<F, B>>;
+  applicativeInterchange<A, B>(a: A, ff: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
+  applicativeMap<A, B>(fa: HK<F, A>, f: (a: A) => B): Equiv<HK<F, B>>;
+}

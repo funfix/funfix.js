@@ -20,3 +20,5 @@
 declare export * from "./kinds"
 declare export * from "./setoid"
 declare export * from "./functor"
+declare export * from "./apply"
+declare export * from "./applicative"
