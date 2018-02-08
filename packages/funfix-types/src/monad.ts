@@ -13,23 +13,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-import { HK } from "./kinds"
+import { Applicative } from "./applicative"
+import { Chain } from "./chain"
 
-/**
- * The `Functor` is a type class providing the `map` operation that
- * allows lifting an `f` function into the functor context and
- * applying it.
- *
- * Instances must obey these laws:
- *
- * 1. Identity: `F.map(fa, x => x) <-> fa`
- * 2. Composition: `F.map(fa, x => f(g(x))) <-> F.map(F.map(fa, g), f)`
- *
- * Equivalent with the `Functor` type class in the
- * [Fantasy-Land](https://github.com/fantasyland/fantasy-land) specification.
- */
-export interface Functor<F> {
-  map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B>
+interface Monad<F> extends Applicative<F>, Chain<F> {
+  chainRec<A, B, C>(a: A, fa: H)
 }

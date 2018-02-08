@@ -18,7 +18,8 @@
 
 /* @flow */
 
-import { HK, Apply } from "funfix-types"
+import type { HK } from "funfix-types"
+import { Apply } from "funfix-types"
 import { Equiv } from "./equiv"
 import { FunctorLaws } from "./functor"
 

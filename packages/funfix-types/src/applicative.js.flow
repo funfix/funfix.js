@@ -18,7 +18,7 @@
 
 /* @flow */
 
-import { HK } from "./kinds"
+import type { HK } from "./kinds"
 import { Apply } from "./apply"
 
 export interface Applicative<F> extends Apply<F> {

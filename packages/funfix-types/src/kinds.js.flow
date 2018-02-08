@@ -19,15 +19,21 @@
 
 export type Constructor<T> = Class<T> | { +_Class: T }
 
-export interface HK<URI, A> {
-  +_URI: URI;
-  +_A: A;
-}
+/*
+ * Higher kinded types encoding specific to Flow.
+ *
+ * Usage:
+ *
+ * ```
+ * export type IO_URI = <U, L, A>(x: [U, L, A]) => IO<A>
+ *
+ * const IOModule: Functor<IO_URI> = {
+ *   ...
+ * }
+ * ```
+ */
+export type HK3<F, U, L, A> = $PropertyType<$ObjMap<{ Self: [U, L, A] }, F>, 'Self'>
 
-export interface HK2<URI, L, A> extends HK<URI, A> {
-  +_L: L
-}
+export type HK2<F, L, A> = HK3<F, *, L, A>
 
-export interface HK3<URI, U, L, A> extends HK2<URI, L, A> {
-  +_U: U
-}
+export type HK<F, A> = HK2<F, *, A>

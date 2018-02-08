@@ -17,6 +17,7 @@
 
 import { HK, Setoid, Functor, Apply, Applicative } from "funfix-types"
 import * as jv from "jsverify"
+import {Chain} from "funfix-types/dist/chain";
 
 export class Box<A> implements HK<"box", A> {
   readonly _URI: "box"
@@ -30,15 +31,15 @@ export function BoxSetoid<A>(): Setoid<Box<A>> {
   }
 }
 
-export function BoxArbitrary(): jv.Arbitrary<Box<number>> {
-  return jv.integer.smap(
+export function BoxArbitrary<A>(arb: jv.Arbitrary<A>): jv.Arbitrary<Box<A>> {
+  return arb.smap(
     i => new Box(i),
     b => b.value
   )
 }
 
 export class BoxFunctor implements Functor<"box"> {
-  map<A, B>(f: (a: A) => B, fa: HK<"box", A>) {
+  map<A, B>(fa: HK<"box", A>, f: (a: A) => B) {
     return new Box(f((fa as Box<A>).value))
   }
 }
@@ -53,4 +54,10 @@ export class BoxApply extends BoxFunctor implements Apply<"box"> {
 
 export class BoxApplicative extends BoxApply implements Applicative<"box"> {
   of<A>(a: A) { return new Box(a) }
+}
+
+export class BoxChain extends BoxApply implements Chain<"box"> {
+  chain<A, B>(fa: HK<"box", A>, f: (a: A) => HK<"box", B>) {
+    return f((fa as Box<A>).value)
+  }
 }

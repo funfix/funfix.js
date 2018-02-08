@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-import { setoidCheck } from "../../test-common/setoid-tests"
+import * as jv from "jsverify"
+import { setoidCheck } from "../../test-common"
 import { BoxArbitrary, BoxSetoid } from "./box"
 
 describe("Setoid<Box>", () => {
-  setoidCheck(BoxArbitrary(), BoxSetoid())
+  setoidCheck(BoxArbitrary(jv.number), BoxSetoid())
 })

@@ -17,7 +17,8 @@
 
 /* @flow */
 
-import { HK, Functor } from "funfix-types";
+import type { HK } from "funfix-types"
+import { Functor } from "funfix-types";
 import { Equiv } from "./equiv";
 
 declare export class FunctorLaws<F> {

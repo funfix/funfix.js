@@ -31,8 +31,8 @@ import { Functor } from "./functor"
  *
  * 1. Composition: `A.ap(A.ap(A.map(f => g => x => f(g(x)), a), u), v) <-> A.ap(a, A.ap(u, v))`
  *
- * Equivalent with the `Apply` specification in the
- * [static-land]{@link https://github.com/rpominov/static-land/} spec.
+ * Equivalent with the `Applicative` type class in the
+ * [Fantasy-Land](https://github.com/fantasyland/fantasy-land) specification.
  */
 export interface Apply<F> extends Functor<F> {
   ap<A, B>(ff: HK<F, (a: A) => B>, fa: HK<F, A>): HK<F, B>

@@ -29,12 +29,13 @@ type Types =
   types.Setoid<Box<any>> &
   types.Functor<"box"> &
   types.Apply<"box"> &
-  types.Applicative<"box">
+  types.Applicative<"box"> &
+  types.Chain<"box">
 
 const t: Types = {
   equals: (x, y) =>
     (x as Box<any>).value === (y as Box<any>).value,
-  map: <A, B>(f: (a: A) => B, fa: HK<"box", A>) =>
+  map: <A, B>(fa: HK<"box", A>, f: (a: A) => B) =>
     new Box(f((fa as Box<A>).value)),
   ap: <A, B>(ff: HK<"box", (a: A) => B>, fa: HK<"box", A>) => {
     const f = (ff as Box<(a: A) => B>).value
@@ -43,6 +44,9 @@ const t: Types = {
   },
   of<A>(a: A) {
     return new Box(a)
+  },
+  chain<A, B>(fa: HK<"box", A>, f: (a: A) => HK<"box", B>) {
+    return f((fa as Box<A>).value)
   }
 }
 
@@ -55,7 +59,7 @@ describe("type tests", () => {
   })
 
   it("functor", () => {
-    const fb = t.map(x => x + 1, new Box(1))
+    const fb = t.map(new Box(1), x => x + 1)
     assert.equal((fb as Box<number>).value, 2)
   })
 
@@ -66,6 +70,11 @@ describe("type tests", () => {
 
   it("applicative", () => {
     const fb = t.ap(new Box((a: number) => a + 1), t.of(1))
+    assert.equal((fb as Box<number>).value, 2)
+  })
+
+  it("chain", () => {
+    const fb = t.chain(new Box(1), a => new Box(a + 1))
     assert.equal((fb as Box<number>).value, 2)
   })
 })

@@ -23,7 +23,7 @@ import { Box, BoxArbitrary, BoxFunctor } from "./box"
 
 describe("Functor<Box>", () => {
   functorCheck(
-    BoxArbitrary() as jv.Arbitrary<HK<"box", number>>,
+    BoxArbitrary(jv.number) as jv.Arbitrary<HK<"box", number>>,
     jv.fun(jv.string),
     jv.fun(jv.int16),
     (eq: Equiv<HK<"box", any>>) => (eq.lh as Box<any>).value === (eq.rh as Box<any>).value,

@@ -17,13 +17,13 @@
 
 /* @flow */
 
-import { HK, Setoid, Functor, Apply, Applicative } from "../../src"
+import type { HK } from "../../src"
+import { Setoid, Functor, Apply, Applicative, Chain } from "../../src"
 
-type BoxURI = BoxURI
+type BoxURI = <U, L, A>(x: [U, L, A]) => Box<A>
+type BoxK<A> = HK<BoxURI, A>
 
-class Box<+A> implements HK<BoxURI, A> {
-  +_URI: BoxURI
-  +_A: A
+class Box<+A> {
   +value: A;
   constructor(value: A) { this.value = value }
 }
@@ -33,13 +33,13 @@ class BoxFunctor implements Setoid<Box<any>>, Functor<BoxURI> {
     return (x : Box<any>).value === (y : Box<any>).value
   }
 
-  map<A, B>(f: (a: A) => B, fa: HK<BoxURI, A>): Box<B> {
+  map<A, B>(fa: BoxK<A>, f: (a: A) => B): Box<B> {
     return new Box(f((fa : any).value))
   }
 }
 
 class BoxApply extends BoxFunctor implements Apply<BoxURI> {
-  ap<A, B>(ff: HK<BoxURI, (a: A) => B>, fa: HK<BoxURI, A>): HK<BoxURI, B> {
+  ap<A, B>(ff: BoxK<(a: A) => B>, fa: BoxK<A>): Box<B> {
     const f = (ff : any).value
     const a = (fa : any).value
     return new Box(f(a))
@@ -47,5 +47,11 @@ class BoxApply extends BoxFunctor implements Apply<BoxURI> {
 }
 
 class BoxApplicative extends BoxApply implements Applicative<BoxURI> {
-  of<A>(a: A): HK<BoxURI, A> { return new Box(a) }
+  of<A>(a: A): BoxK<A> { return new Box(a) }
+}
+
+class BoxChain extends BoxApply implements Chain<BoxURI> {
+  chain<A, B>(fa: BoxK<A>, f: (a: A) => BoxK<B>): BoxK<B> {
+    return f((fa : any).value)
+  }
 }

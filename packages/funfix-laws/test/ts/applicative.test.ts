@@ -22,7 +22,7 @@ import { applicativeCheck } from "../../test-common"
 import { Box, BoxApplicative, BoxArbitrary } from "./box"
 
 describe("Applicative<Box>", () => {
-  const arbBox = BoxArbitrary()
+  const arbBox = BoxArbitrary(jv.number)
   const genFAtoB =
     jv.fun(jv.string).smap(f => new Box(f), box => box.value) as
       jv.Arbitrary<HK<"box", (a: number) => string>>

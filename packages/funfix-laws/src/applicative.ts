@@ -29,7 +29,7 @@ import { ApplyLaws } from "./apply"
  * 1. Identity: `A.ap(A.of(x => x), v) <-> v`
  * 2. Homomorphism: `A.ap(A.of(f), A.of(x)) <-> A.of(f(x))`
  * 3. Interchange: A.ap(u, A.of(y)) <-> A.ap(A.of(f => f(y)), u)
- * 4. Functor's `map` can be derived: `A.map(f, u) <-> A.ap(A.of(f), u)`
+ * 4. Functor's `map` can be derived: `A.map(u, f) <-> A.ap(A.of(f), u)`
  */
 export class ApplicativeLaws<F> extends ApplyLaws<F> {
   constructor(public readonly F: Applicative<F>) {
@@ -63,7 +63,7 @@ export class ApplicativeLaws<F> extends ApplyLaws<F> {
   applicativeMap<A, B>(fa: HK<F, A>, f: (a: A) => B): Equiv<HK<F, B>> {
     const F = this.F
     return Equiv.of(
-      F.map(f, fa),
+      F.map(fa, f),
       F.ap(F.of(f), fa)
     )
   }

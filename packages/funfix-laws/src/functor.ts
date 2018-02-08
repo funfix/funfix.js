@@ -24,18 +24,18 @@ import { Equiv } from "./equiv"
  *
  * Laws defined for `Functor`:
  *
- * 1. Identity: `F.map(x => x, a) <-> a`
- * 2. Composition: `F.map(x => f(g(x)), a) <-> F.map(f, F.map(g, a))`
+ * 1. Identity: `F.map(fa, x => x) <-> fa`
+ * 2. Composition: `F.map(fa, x => f(g(x))) <-> F.map(F.map(fa, g), f)`
  */
 export class FunctorLaws<F> {
   constructor(public readonly F: Functor<F>) {}
 
   identity<A>(fa: HK<F, A>): Equiv<HK<F, A>> {
-    return Equiv.of(this.F.map(x => x, fa), fa)
+    return Equiv.of(this.F.map(fa, x => x), fa)
   }
 
   composition<A, B, C>(fa: HK<F, A>, f: (a: B) => C, g: (a: A) => B) {
     const F = this.F
-    return Equiv.of(F.map(x => f(g(x)), fa), F.map(f, F.map(g, fa)))
+    return Equiv.of(F.map(fa, x => f(g(x))), F.map(F.map(fa, g), f))
   }
 }

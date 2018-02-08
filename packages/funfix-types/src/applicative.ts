@@ -25,6 +25,11 @@ import { Apply } from "./apply"
  * Allows application of a function in an Applicative context to a
  * value in an `Applicative` context.
  *
+ * This structure is an intermediate between a functor and a monad
+ * (technically, a strong lax monoidal functor). Compared with monads,
+ * this interface lacks the full power of the binding operation (`chain`),
+ * but it has more instances and it is sufficient for many uses.
+ *
  * References:
  *
  * - [The Essence of the Iterator Pattern]{@link https://www.cs.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf}
@@ -41,8 +46,8 @@ import { Apply } from "./apply"
  * 3. Interchange: A.ap(u, A.of(y)) <-> A.ap(A.of(f => f(y)), u)
  * 4. Functor's `map` (can be derived): `A.map(f, u) <-> A.ap(A.of(f), u)`
  *
- * Equivalent with the `Applicative` specification in the
- * [static-land]{@link https://github.com/rpominov/static-land/} spec.
+ * Equivalent with the `Applicative` type class in the
+ * [Fantasy-Land](https://github.com/fantasyland/fantasy-land) specification.
  */
 export interface Applicative<F> extends Apply<F> {
   of<A>(a: A): HK<F, A>
