@@ -39,9 +39,20 @@ import { Apply } from "./apply"
  * 2. Apply's `ap` can be derived:
  *    `A.ap = (uf, ux) => A.chain(uf, f => A.map(f, ux))`
  *
- * Equivalent with the `Chain` type class in the
+ * Equivalent with the `Chain` and `ChainRec` type classes in the
  * [Fantasy-Land](https://github.com/fantasyland/fantasy-land) specification.
  */
 export interface Chain<F> extends Apply<F> {
   chain<A, B>(fa: HK<F, A>, f: (a: A) => HK<F, B>): HK<F, B>
+
+  /**
+   * Keeps calling `f` until a `done(b)` is returned.
+   *
+   * Based on Phil Freeman's
+   * [Stack Safety for Free]{@link http://functorial.com/stack-safety-for-free/index.pdf}.
+   *
+   * Implementations of this function should use constant stack space
+   * relative to `f`.
+   */
+  chainRec<A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => HK<F, C>, a: A): HK<F, B>
 }

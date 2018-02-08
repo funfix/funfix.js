@@ -25,12 +25,24 @@ class Box<A> implements HK<"box", A> {
   constructor(public readonly value: A) {}
 }
 
+type Either<L, R> = Left<L> | Right<R>
+type Left<L> = { tag: "left", value: L }
+type Right<R> = { tag: "right", value: R }
+
 type Types =
   types.Setoid<Box<any>> &
   types.Functor<"box"> &
   types.Apply<"box"> &
   types.Applicative<"box"> &
   types.Chain<"box">
+
+function left<L, R>(value: L): Either<L, R> {
+  return { tag: "left", value }
+}
+
+function right<L, R>(value: R): Either<L, R> {
+  return { tag: "right", value }
+}
 
 const t: Types = {
   equals: (x, y) =>
@@ -47,6 +59,14 @@ const t: Types = {
   },
   chain<A, B>(fa: HK<"box", A>, f: (a: A) => HK<"box", B>) {
     return f((fa as Box<A>).value)
+  },
+  chainRec<A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => HK<"box", C>, a: A) {
+    const ff = (a: A) => f(l => left<A, B>(l), b => right<A, B>(b), a)
+    let cursor = left<A, B>(a)
+    while (cursor.tag !== "right") {
+      cursor = (ff(cursor.value) as Box<Either<A, B>>).value
+    }
+    return new Box(cursor.value)
   }
 }
 
@@ -76,5 +96,13 @@ describe("type tests", () => {
   it("chain", () => {
     const fb = t.chain(new Box(1), a => new Box(a + 1))
     assert.equal((fb as Box<number>).value, 2)
+  })
+
+  it("chainRec", () => {
+    const fb = t.chainRec<number, number>(
+      (next, done, a) => new Box(a < 10 ? next(a + 1) : done(a)),
+      0
+    )
+    assert.equal((fb as Box<number>).value, 10)
   })
 })

@@ -19,6 +19,4 @@
 import { Applicative } from "./applicative"
 import { Chain } from "./chain"
 
-interface Monad<F> extends Applicative<F>, Chain<F> {
-  chainRec<A, B, C>(a: A, fa: H)
-}
+interface Monad<F> extends Applicative<F>, Chain<F> {}
