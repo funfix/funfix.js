@@ -34,6 +34,7 @@ export interface IPromiseLike<+T> {
 declare export class Future<+A> {
   value(): Option<Try<A>>;
   onComplete(f: (a: Try<A>) => void): void;
+  forEach(f: (A) => void): void;
   cancel(): void;
 
   withScheduler(ec: Scheduler): Future<A>;

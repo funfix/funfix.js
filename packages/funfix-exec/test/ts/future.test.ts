@@ -124,6 +124,14 @@ describe("PureFuture", () => {
     assert.equal(f.value(), Some(Failure(dummy)))
   })
 
+  it("pure.forEach", () => {
+    const ec = new TestScheduler()
+
+    let num = 0;
+    Future.pure(1, ec).forEach(n => num = n)
+    assert.equal(num, 1)
+  })
+
   it("pure.attempt", () => {
     const f = Future.pure(1).attempt()
     assert.equal(f.value(), Some(Success(Right(1))))
