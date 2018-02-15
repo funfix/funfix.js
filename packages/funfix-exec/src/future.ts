@@ -338,6 +338,17 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
   }
 
   /**
+   * Asynchronously processes the value in the future once the value becomes available.
+   *
+   *  WARNING: Will not be called if this future is never completed or if it is completed with a failure.
+   *
+   * @param f the function which will be executed if this `Future` completes with a result
+   */
+  forEach (f: (a: A) => void): void {
+    this.onComplete(r => r.forEach(f))
+  }
+
+  /**
    * Given a mapping function, transforms the successful result of the source.
    *
    * If the source is completed with an exception, then the new future will
