@@ -1,0 +1,30 @@
+/*!
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+/* @flow */
+
+import type { HK, Chain } from "funfix-types"
+import { Equiv } from "./equiv"
+import { ApplyLaws } from "./apply"
+
+declare export class ChainLaws<F> extends ApplyLaws<F> {
+  +F: Chain<F>;
+  constructor(F: Chain<F>): Chain<F>;
+  chainAssociativity<A, B, C>(fa: HK<F, A>, f: (a: A) => HK<F, B>, g: (b: B) => HK<F, C>): Equiv<HK<F, C>>;
+  chainConsistentApply<A, B>(fa: HK<F, A>, fab: HK<F, (a: A) => B>): Equiv<HK<F, B>>;
+}

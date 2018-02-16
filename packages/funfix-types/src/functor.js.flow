@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,24 +17,8 @@
 
 /* @flow */
 
-import type { Constructor } from "./kinds"
-import { HK, Equiv } from "./kinds"
+import type { HK } from "./kinds";
 
 export interface Functor<F> {
   map<A, B>(fa: HK<F, A>, f: (a: A) => B): HK<F, B>;
-
-  // Implements TypeClass<F>
-  static +_funTypeId: string;
-  static +_funSupertypeIds: string[];
-  static +_funErasure: Functor<any>;
 }
-
-export interface FunctorLaws<F> {
-  +F: Functor<F>;
-
-  covariantIdentity<A>(fa: HK<F, A>): Equiv<HK<F, A>>;
-  covariantComposition<A, B, C>(fa: HK<F, A>, f: (a: A) => B, g: (b: B) => C): Equiv<HK<F, C>>;
-}
-
-declare export function functorOf<F>(c: Constructor<F>): Functor<F>;
-declare export function functorLawsOf<F>(instance: Functor<F>): FunctorLaws<F>;

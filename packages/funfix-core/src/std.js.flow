@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,8 @@
 
 /* @flow */
 
+import type { Setoid } from "funfix-types"
+
 export interface IEquals<A> {
   equals(other: A): boolean;
   hashCode(): number;
@@ -25,6 +27,7 @@ export interface IEquals<A> {
 declare export function isValueObject(ref: any): boolean;
 declare export function is<A>(lh: A, rh: A): boolean;
 declare export function equals<A>(lh: A, rh: A): boolean;
+declare export var universalSetoid: Setoid<any>;
 declare export function hashCode(ref: any): number;
 declare export function hashCodeOfString(str: string): number;
 declare export function applyMixins(derivedCtor: Class<any>, baseCtors: Class<any>[]): void;

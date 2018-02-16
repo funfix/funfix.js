@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
+import { HK } from "funfix-types"
 import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
 
-import { Try, Success, Failure, DummyError, NoSuchElementError } from "../../src/"
+import { Try, TryModule, Success, Failure, DummyError, NoSuchElementError } from "../../src/"
 import { None, Some, Left, Right } from "../../src/"
 import { IllegalStateError } from "../../src/"
 import { is, hashCode } from "../../src/"
+import { Equiv } from "../../../funfix-laws/src"
+import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
+import { functorCheck } from "../../../funfix-laws/test-common/functor-tests"
 
 describe("Try.of", () => {
   jv.property("should work for successful functions",
@@ -512,3 +516,47 @@ describe("Try.tailRecM", () => {
     assert.equal(fa.failed().get(), "dummy")
   })
 })
+
+
+describe("Setoid<Try> (static-land)", () => {
+  setoidCheck(inst.arbTry, TryModule)
+
+  it("protects against null", () => {
+    assert.ok(TryModule.equals(null as any, null as any))
+    assert.not(TryModule.equals(null as any, Success(1)))
+    assert.not(TryModule.equals(Success(1), null as any))
+  })
+})
+
+describe("Setoid<Try> (fantasy-land)", () => {
+  setoidCheck(inst.arbOpt, {
+    equals: (x, y) => (x as any)["fantasy-land/equals"](y)
+  })
+})
+
+describe("Functor<Try> (static-land)", () => {
+  const check = (e: Equiv<HK<"funfix/try", any>>) =>
+    (e.lh as Try<any>).equals(e.rh as Try<any>)
+
+  functorCheck(
+    inst.arbTry as jv.Arbitrary<HK<"funfix/try", any>>,
+    jv.fun(jv.string),
+    jv.fun(jv.int32),
+    check,
+    TryModule)
+})
+
+describe("Functor<Try> (fantasy-land)", () => {
+  const check = (e: Equiv<HK<"funfix/try", any>>) =>
+    (e.lh as Try<any>).equals(e.rh as Try<any>)
+
+  functorCheck(
+    inst.arbTry as jv.Arbitrary<HK<"funfix/try", any>>,
+    jv.fun(jv.string),
+    jv.fun(jv.int32),
+    check,
+    {
+      map: (f, fa) => (fa as any)["fantasy-land/map"](f)
+    })
+})
+

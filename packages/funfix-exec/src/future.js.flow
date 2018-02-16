@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
 /* @flow */
 
 import type { Throwable } from "funfix-core"
+import { Functor } from "funfix-types"
 import { Option, Try, Either } from "funfix-core"
 import { Scheduler } from "./scheduler"
 import { ICancelable } from "./cancelable"
@@ -43,8 +44,8 @@ declare export class Future<+A> {
 
   flatMap<B>(f: (a: A) => Future<B>): Future<B>;
   map<B>(f: (a: A) => B): Future<B>;
-  recoverWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA>;
-  recover<AA>(f: (e: Throwable) => AA): Future<A | AA>;
+  onErrorHandleWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA>;
+  onErrorHandle<AA>(f: (e: Throwable) => AA): Future<A | AA>;
   toPromise(): Promise<A>;
 
   delayResult(delay: number | Duration): Future<A>;
@@ -54,15 +55,13 @@ declare export class Future<+A> {
   // From IPromiseLike
   then(onFulfilled?: (value: A) => any, onRejected?: (error: Throwable) => any): Future<any>;
 
-  +_funKindF: Future<any>;
-  +_funKindA: A;
-
-  // Implements Constructor<T>
-  static +_funErasure: Future<any>;
+  +_URI: "funfix/future";
+  +_A: A;
+  static +_Class: Future<any>;
 
   static of<A>(thunk: () => A, ec?: Scheduler): Future<A>;
   static pure<A>(a: A, ec?: Scheduler): Future<A>;
-  static raise(e: Throwable, ec?: Scheduler): Future<empty>;
+  static raise<A>(e: Throwable, ec?: Scheduler): Future<A>;
   static create<A>(register: (cb: (a: Try<A>) => void) => (ICancelable | void), ec?: Scheduler): Future<A>;
   static unit(): Future<void>;
   static delayedTick<A>(delay: number | Duration, ec?: Scheduler): Future<void>;
@@ -95,6 +94,9 @@ declare export class Future<+A> {
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R,
     ec?: Scheduler): Future<R>;
 }
+
+export type FutureTypes = Functor<"funfix/future">;
+declare export var FutureModule: FutureTypes;
 
 declare export class FutureMaker<A> {
   +tryComplete: (result: Try<A>) => boolean;

@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import { Setoid } from "funfix-types"
 
 /**
  * Interface for testing the equality of value objects.
@@ -116,6 +118,12 @@ export function is<A>(lh: A, rh: A): boolean {
 export function equals<A>(lh: A, rh: A): boolean {
   return is(lh, rh)
 }
+
+/**
+ * Returns a `Setoid` type-class instance that depends
+ * universal equality, as defined by {@link is}.
+ */
+export const universalSetoid: Setoid<any> = { equals }
 
 /**
  * Universal hash-code function.

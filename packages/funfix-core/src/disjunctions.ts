@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
+import { Setoid, Functor } from "funfix-types"
 import * as std from "./std"
+import { HK, HK2 } from "./kinds"
 import { Throwable, NoSuchElementError } from "./errors"
+import { fantasyLandRegister } from "./internals"
 
 /**
  * Represents a value of one of two possible types (a disjoint union).
@@ -50,7 +53,7 @@ import { Throwable, NoSuchElementError } from "./errors"
  *
  * @final
  */
-export class Either<L, R> implements std.IEquals<Either<L, R>> {
+export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/either", L, R> {
   private _isRight: boolean
   private _rightRef: R
   private _leftRef: L
@@ -288,12 +291,16 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
       : Option.none()
   }
 
-  /** Implements {@link IEquals.equals}. */
-  equals(other: Either<L, R>): boolean {
+  /**
+   * Implements {@link IEquals.equals}.
+   *
+   * @param that is the right hand side of the equality check
+   */
+  equals(that: Either<L, R>): boolean {
     // tslint:disable-next-line:strict-type-predicates
-    if (other == null) return false
-    if (this._isRight) return std.is(this._rightRef, other._rightRef)
-    return std.is(this._leftRef, other._leftRef)
+    if (that == null) return false
+    if (this._isRight) return std.is(this._rightRef, that._rightRef)
+    return std.is(this._leftRef, that._leftRef)
   }
 
   /** Implements {@link IEquals.hashCode}. */
@@ -304,11 +311,12 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Either<L, any>
-  /** @hidden */ readonly _funKindA: R
+  /** @hidden */ readonly _URI: "funfix/either"
+  /** @hidden */ readonly _A: R
+  /** @hidden */ readonly _L: L
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Either<any, any>
+  /** @hidden */ static readonly _Class: Either<any, any>
 
   static left<L, R>(value: L): Either<L, R> {
     return Left(value)
@@ -480,6 +488,9 @@ export class Either<L, R> implements std.IEquals<Either<L, R>> {
   }
 }
 
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Either)
+
 /**
  * The `Left` data constructor represents the left side of the
  * [[Either]] disjoint union, as opposed to the [[Right]] side.
@@ -497,6 +508,25 @@ export function Right<R>(value: R): Either<never, R> {
 }
 
 /**
+ * Type enumerating the type-classes that `Either` implements.
+ */
+export type EitherTypes =
+  Setoid<Either<any, any>> &
+  Functor<"funfix/either">
+
+/**
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
+ */
+export const EitherModule: EitherTypes = {
+  // Setoid
+  equals: (x, y) => x ? x.equals(y) : !y,
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/either", A>) =>
+    (fa as Either<never, A>).map(f)
+}
+
+/**
  * Represents optional values, inspired by Scala's `Option` and by
  * Haskell's `Maybe` data types.
  *
@@ -510,7 +540,7 @@ export function Right<R>(value: R): Either<never, R> {
  *
  * @final
  */
-export class Option<A> implements std.IEquals<Option<A>> {
+export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A> {
   // tslint:disable-next-line:variable-name
   private _isEmpty: boolean
   private _ref: A
@@ -621,36 +651,6 @@ export class Option<A> implements std.IEquals<Option<A>> {
    */
   map<B>(f: (a: A) => B): Option<B> {
     return this._isEmpty ? None : Some(f(this._ref))
-  }
-
-  /**
-   * Returns an optioning containing the result of the source mapped
-   * by the given function `f`.
-   *
-   * Similar to `map`, except that if the mapping function `f` returns
-   * `null`, then the final result returned will be [[Option.none]].
-   *
-   * Comparison:
-   *
-   * ```typescript
-   * Option.of(1).mapN(x => null) // None
-   * Option.of(1).map(x => null)  // Some(null)
-   *
-   * Option.of(1).mapN(x => x+1)  // 2
-   * Option.of(1).map(x => x+1)   // 2
-   * ```
-   *
-   * What this operation does is to allow for safe chaining of multiple
-   * method calls or functions that might produce `null` results:
-   *
-   * ```typescript
-   * Option.of(user)
-   *   .mapN(_ => _.contacts)
-   *   .mapN(_ => _.length)
-   * ```
-   */
-  mapN<B>(f: (a: A) => B | null | undefined): Option<B> {
-    return this._isEmpty ? None : Option.of(f(this._ref))
   }
 
   /**
@@ -768,7 +768,11 @@ export class Option<A> implements std.IEquals<Option<A>> {
     if (!this._isEmpty) cb(this._ref)
   }
 
-  // Implemented from IEquals
+  /**
+   * Implements {@link IEquals.equals}.
+   *
+   * @param that is the right hand side of the equality check
+   */
   equals(that: Option<A>): boolean {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
@@ -788,11 +792,11 @@ export class Option<A> implements std.IEquals<Option<A>> {
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Option<any>
-  /** @hidden */ readonly _funKindA: A
+  /** @hidden */ readonly _URI: "funfix/option"
+  /** @hidden */ readonly _A: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Option<any>
+  /** @hidden */ static readonly _Class: Option<any>
 
   /**
    * Builds an [[Option]] reference that contains the given value.
@@ -831,7 +835,7 @@ export class Option<A> implements std.IEquals<Option<A>> {
    * NOTE: Because `Option` is immutable, this function returns the
    * same cached reference is on different calls.
    */
-  static none(): Option<never> {
+  static none<A = never>(): Option<A> {
     return None
   }
 
@@ -1005,6 +1009,9 @@ export class Option<A> implements std.IEquals<Option<A>> {
   }
 }
 
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Option)
+
 /**
  * The `Some<A>` data constructor for [[Option]] represents existing
  * values of type `A`.
@@ -1030,6 +1037,25 @@ function emptyOptionRef() {
  * Using this reference directly is equivalent with [[Option.none]].
  */
 export const None: Option<never> = emptyOptionRef()
+
+/**
+ * Type enumerating the type classes implemented by `Option`.
+ */
+export type OptionTypes =
+  Setoid<Option<any>> &
+  Functor<"funfix/option">
+
+/**
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
+ */
+export const OptionModule: OptionTypes = {
+  // Setoid
+  equals: (x, y) => x ? x.equals(y) : !y,
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/option", A>) =>
+    (fa as Option<A>).map(f)
+}
 
 /**
  * The `Try` type represents a computation that may either result in an
@@ -1077,7 +1103,7 @@ export const None: Option<never> = emptyOptionRef()
  * NOTE: all `Try` combinators will catch exceptions and return failure
  * unless otherwise specified in the documentation.
  */
-export class Try<A> implements std.IEquals<Try<A>> {
+export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   private _isSuccess: boolean
   private _successRef: A
   private _failureRef: Throwable
@@ -1284,9 +1310,7 @@ export class Try<A> implements std.IEquals<Try<A>> {
   }
 
   /** Alias for [[flatMap]]. */
-  chain<B>(f: (a: A) => Try<B>): Try<B> {
-    return this.flatMap(f)
-  }
+  readonly chain = this.flatMap
 
   /**
    * Returns a `Try` containing the result of applying `f` to
@@ -1402,7 +1426,9 @@ export class Try<A> implements std.IEquals<Try<A>> {
       : Left(this._failureRef)
   }
 
-  // Implemented from IEquals
+  /**
+   * Implements {@link IEquals.equals} with overridable equality for `A`.
+   */
   equals(that: Try<A>): boolean {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
@@ -1419,11 +1445,11 @@ export class Try<A> implements std.IEquals<Try<A>> {
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Try<any>
-  /** @hidden */ readonly _funKindA: A
+  /** @hidden */ readonly _URI: "funfix/try"
+  /** @hidden */ readonly _A: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Try<any>
+  /** @hidden */ static readonly _Class: Try<any>
 
   /**
    * Evaluates the given `thunk` and returns either a [[Success]],
@@ -1740,6 +1766,9 @@ export class Try<A> implements std.IEquals<Try<A>> {
   }
 }
 
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Try)
+
 /**
  * The `Success` data constructor is for building [[Try]] values that
  * are successful results of computations, as opposed to [[Failure]].
@@ -1754,6 +1783,25 @@ export function Success<A>(value: A): Try<A> {
  */
 export function Failure(e: Throwable): Try<never> {
   return new (Try as any)(null as never, e, false)
+}
+
+/**
+ * Type enumerating the type classes implemented by `Try`.
+ */
+export type TryTypes =
+  Setoid<Try<any>> &
+  Functor<"funfix/try">
+
+/**
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
+ */
+export const TryModule: TryTypes = {
+  // Setoid
+  equals: (x, y) => x ? x.equals(y) : !y,
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/try", A>) =>
+    (fa as Try<A>).map(f)
 }
 
 /**

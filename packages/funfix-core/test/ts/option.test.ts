@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +19,12 @@ import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
 
-import { Option, Some, None, Left, Right } from "../../src/"
+import { Option, Some, None, Left, Right, OptionModule } from "../../src/"
 import { NoSuchElementError } from "../../src/"
 import { is, hashCode } from "../../src/"
+import { HK } from "funfix-types"
+import { Equiv } from "../../../funfix-laws/src"
+import { setoidCheck, functorCheck } from "../../../funfix-laws/test-common"
 
 describe("Option", () => {
   describe("constructor", () => {
@@ -239,23 +242,6 @@ describe("Option", () => {
     jv.property("Some(n).map(_ => null) == Some(null)",
       inst.arbOptNonempty,
       opt => is(opt.map(_ => null), Some(null))
-    )
-  })
-
-  describe("#mapN", () => {
-    jv.property("pure(n).mapN(f) === pure(f(n))",
-      jv.number, jv.fn(jv.number),
-      (n, f) => is(Option.pure(n).mapN(f), Option.pure(f(n)))
-    )
-
-    jv.property("covariant identity",
-      inst.arbOpt,
-      opt => opt.mapN(x => x).equals(opt)
-    )
-
-    jv.property("Some(n).mapN(_ => null) == None",
-      inst.arbOptNonempty,
-      opt => is(opt.mapN(_ => null), None)
     )
   })
 
@@ -483,5 +469,47 @@ describe("Option", () => {
       const fa = Option.tailRecM(0, a => None)
       assert.equal(fa, None)
     })
+  })
+
+  describe("Setoid<Option> (static-land)", () => {
+    setoidCheck(inst.arbOpt, OptionModule)
+
+    it("protects against null", () => {
+      assert.ok(OptionModule.equals(null as any, null as any))
+      assert.not(OptionModule.equals(null as any, None))
+      assert.not(OptionModule.equals(None, null as any))
+    })
+  })
+
+  describe("Setoid<Option> (fantasy-land)", () => {
+    setoidCheck(inst.arbOpt, {
+      equals: (x, y) => (x as any)["fantasy-land/equals"](y)
+    })
+  })
+
+  describe("Functor<Option> (static-land)", () => {
+    const check = (e: Equiv<HK<"funfix/option", any>>) =>
+      (e.lh as Option<any>).equals(e.rh as Option<any>)
+
+    functorCheck(
+      inst.arbOpt as jv.Arbitrary<HK<"funfix/option", any>>,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check,
+      OptionModule)
+  })
+
+  describe("Functor<Option> (fantasy-land)", () => {
+    const check = (e: Equiv<HK<"funfix/option", any>>) =>
+      (e.lh as Option<any>).equals(e.rh as Option<any>)
+
+    functorCheck(
+      inst.arbOpt as jv.Arbitrary<HK<"funfix/option", any>>,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check,
+      {
+        map: (f, fa) => (fa as any)["fantasy-land/map"](f)
+      })
   })
 })

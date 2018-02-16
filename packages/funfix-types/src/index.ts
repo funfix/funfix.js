@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,8 @@
  */
 
 export * from "./kinds"
-export * from "./eq"
+export * from "./setoid"
 export * from "./functor"
+export * from "./apply"
 export * from "./applicative"
-export * from "./monad"
-export * from "./comonad"
-export * from "./instances"
+export * from "./chain"

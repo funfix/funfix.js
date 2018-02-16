@@ -1,0 +1,57 @@
+/*!
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
+ * Some rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* @flow */
+
+import type { HK } from "../../src"
+import { Setoid, Functor, Apply, Applicative, Chain } from "../../src"
+
+type BoxURI = <U, L, A>(x: [U, L, A]) => Box<A>
+type BoxK<A> = HK<BoxURI, A>
+
+class Box<+A> {
+  +value: A;
+  constructor(value: A) { this.value = value }
+}
+
+class BoxFunctor implements Setoid<Box<any>>, Functor<BoxURI> {
+  equals(x, y): boolean {
+    return (x : Box<any>).value === (y : Box<any>).value
+  }
+
+  map<A, B>(fa: BoxK<A>, f: (a: A) => B): Box<B> {
+    return new Box(f((fa : any).value))
+  }
+}
+
+class BoxApply extends BoxFunctor implements Apply<BoxURI> {
+  ap<A, B>(ff: BoxK<(a: A) => B>, fa: BoxK<A>): Box<B> {
+    const f = (ff : any).value
+    const a = (fa : any).value
+    return new Box(f(a))
+  }
+}
+
+class BoxApplicative extends BoxApply implements Applicative<BoxURI> {
+  of<A>(a: A): BoxK<A> { return new Box(a) }
+}
+
+class BoxChain extends BoxApply implements Chain<BoxURI> {
+  chain<A, B>(fa: BoxK<A>, f: (a: A) => BoxK<B>): BoxK<B> {
+    return f((fa : any).value)
+  }
+}

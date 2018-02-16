@@ -1,0 +1,12 @@
+[ignore]
+<PROJECT_ROOT>/coverage/.*
+<PROJECT_ROOT>/dist/.*
+<PROJECT_ROOT>/node_modules/.*
+<PROJECT_ROOT>/index.js.flow
+
+[include]
+
+[libs]
+
+[options]
+suppress_comment=\\(.\\|\n\\)*\\$ExpectError

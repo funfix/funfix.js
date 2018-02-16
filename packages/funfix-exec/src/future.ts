@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,11 @@
 
 import {
   Try, Success, Failure, Option, Some, None, Either, Left, Right,
-  IllegalStateError, IllegalArgumentError, TimeoutError, Throwable
+  IllegalStateError, IllegalArgumentError, TimeoutError, Throwable,
+  coreInternals
 } from "funfix-core"
 
+import { HK, Functor } from "funfix-types"
 import { Scheduler } from "./scheduler"
 import { Duration } from "./time"
 import { ICancelable, Cancelable, ChainedCancelable, DummyCancelable } from "./cancelable"
@@ -115,7 +117,7 @@ export interface IPromiseLike<T> {
  * is "thenable", so you can await on functions returning `Future`
  * just fine.
  */
-export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
+export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<A>, ICancelable {
   /**
    * Reference to the current {@link Scheduler} available for subsequent
    * data transformations. Can be set in `Future`'s constructors, or by
@@ -225,7 +227,7 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
   /**
    * Transforms the source, regardless if the result is a failure or a success.
    *
-   * This function is a combination of {@link flatMap} and {@link recoverWith},
+   * This function is a combination of {@link flatMap} and {@link onErrorHandleWith},
    * being the (type safe) alternative to JavaScript's
    * [then]{@link IPromiseLike.then} from the
    * [Promises/A+](https://promisesaplus.com/) specification.
@@ -265,7 +267,7 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
   /**
    * Transforms the sources, regardless if the result is a failure or a success.
    *
-   * This function is a combination of {@link map} and {@link recover},
+   * This function is a combination of {@link map} and {@link onErrorHandle},
    * being the (type safe) alternative to JavaScript's
    * [then]{@link IPromiseLike.then} from the
    * [Promises/A+](https://promisesaplus.com/) specification.
@@ -371,9 +373,6 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * Creates a new future that will handle any matching throwable that this
    * future might contain by assigning it a value of another future.
    *
-   * If there is no match, or if this future contains a valid result then the
-   * new future will contain the same result.
-   *
    * This operation is the equivalent of {@link flatMap} for handling errors.
    * Also see {@link transformWith}, which can handle both successful results
    * and failures.
@@ -381,35 +380,44 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * ```typescript
    * const f = Future.of<number>(() => { throw new DummyError() })
    *
-   * f.recoverWith(e => e instanceof DummyError
+   * f.onErrorHandleWith(e => e instanceof DummyError
    *   ? Future.pure(10) // Fallback
    *   : Future.raise(e) // Re-throw
    * )
    * ```
    */
-  recoverWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA> {
+  onErrorHandleWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA> {
     return this.transformWith<A | AA>(f, Future.pure)
   }
 
   /**
+   * Creates a new future that will handle any matching throwable that this
+   * future might contain by assigning it a value.
    *
+   * This operation is the equivalent of {@link map} for handling errors.
+   * Also see {@link transform}, which can handle both successful results
+   * and failures.
    *
    * ```typescript
    * const f = Future.of<number>(() => { throw new DummyError() })
    *
-   * f.recover(e => {
+   * f.onErrorHandle(e => {
    *   if (e instanceof DummyError) return 10
-   *   // Don't re-throw exceptions like this, use `recoverWith` instead!
+   *   // Don't re-throw exceptions like this, use `onErrorHandleWith` instead!
    *   throw e
    * })
    * ```
    */
-  recover<AA>(f: (e: Throwable) => AA): Future<A | AA> {
+  onErrorHandle<AA>(f: (e: Throwable) => AA): Future<A | AA> {
     return this.transformWith<A | AA>(
       e => Future.pure(f(e), this._scheduler),
       a => Future.pure(a, this._scheduler))
   }
 
+  /**
+   * JavaScript `Thenable` implementation, needed in order to `await` `Future`
+   * values in `async` functions.
+   */
   then<TResult1, TResult2>(
     onFulfilled?: ((value: A) => (IPromiseLike<TResult1> | TResult1)) | undefined | null,
     onRejected?: ((reason: Throwable) => (IPromiseLike<TResult2> | TResult2)) | undefined | null): Future<TResult2 | TResult1> {
@@ -459,8 +467,8 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    */
   delayResult(delay: number | Duration): Future<A> {
     return this.transformWith(
-      err => Future.delayedTick(delay, this._scheduler).flatMap(_ => Future.raise(err, this._scheduler)),
-      a => Future.delayedTick(delay, this._scheduler).map(_ => a)
+      err => Future.delayedTick(delay, this._scheduler).flatMap(() => Future.raise(err, this._scheduler)),
+      a => Future.delayedTick(delay, this._scheduler).map(() => a)
     )
   }
 
@@ -502,17 +510,17 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * @param fallback is a thunk generating a fallback `Future` to timeout to
    */
   timeoutTo<AA>(after: number | Duration, fallback: () => Future<AA>): Future<A | AA> {
-    const other = Future.delayedTick(after, this._scheduler).flatMap(_ => fallback())
+    const other = Future.delayedTick(after, this._scheduler).flatMap(() => fallback())
     const lst: Future<A | AA>[] = [this, other]
     return Future.firstCompletedOf(lst, this._scheduler)
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Future<any>
-  /** @hidden */ readonly _funKindA: A
+  /** @hidden */ readonly _URI: "funfix/future"
+  /** @hidden */ readonly _A: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Future<any>
+  /** @hidden */ static readonly _Class: Future<any>
 
   /**
    * Given a function that executes immediately, executes it asynchronously
@@ -581,7 +589,7 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        then {@link Scheduler.global} gets used, which also allows for
    *        local overrides, being a {@link DynamicRef}
    */
-  static raise(e: Throwable, ec: Scheduler = Scheduler.global.get()): Future<never> {
+  static raise<A = never>(e: Throwable, ec: Scheduler = Scheduler.global.get()): Future<A> {
     return new PureFuture(Failure(e), ec)
   }
 
@@ -1205,6 +1213,25 @@ class AsyncFutureState<A> {
   }
 }
 
+// Registers Fantasy-Land compatible symbols
+coreInternals.fantasyLandRegister(Future)
+
+/**
+ * Type enumerating the type classes implemented by `Future`.
+ */
+export type FutureTypes =
+  Functor<"funfix/future">
+
+/**
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
+ */
+export const FutureModule: FutureTypes = {
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/future", A>) =>
+    (fa as Future<A>).map(f)
+}
+
 /**
  * Internal `Future` implementation that's the result of a
  * {@link FutureMaker.future}.
@@ -1729,10 +1756,10 @@ function futureTraverseLoop<A, B>(
 
     if (index >= list.length) {
       // We are done, signal final result
-      return fa.map(_ => result)
+      return fa.map(() => result)
     } else {
       // Continue with the next batch
-      return fa.flatMap(_ => futureTraverseLoop(list, f, parallelism, ec, index, result))
+      return fa.flatMap(() => futureTraverseLoop(list, f, parallelism, ec, index, result))
     }
   } catch (e) {
     // Batch generation triggered an error

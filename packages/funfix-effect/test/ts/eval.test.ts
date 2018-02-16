@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,10 +21,14 @@ import {
   Right, DummyError
 } from "funfix-core"
 
+import { HK } from "funfix-types"
+import { Try } from "funfix-core"
 import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
-import { Eval } from "../../src/"
+import { Eval, EvalModule } from "../../src/"
+import { Equiv } from "../../../funfix-laws/src"
+import { functorCheck } from "../../../funfix-laws/test-common"
 
 describe("Eval basic data constructors tests", () => {
   it("now(a) should yield value", () => {
@@ -333,5 +337,32 @@ describe("Eval.sequence", () => {
 
     const seq = Eval.sequence(iter as any).map(_ => _[0]).get()
     assert.equal(seq, 1)
+  })
+})
+
+describe("Eval type classes", () => {
+  const check = (eq: Equiv<Eval<any>>) => is(
+    Try.of(() => eq.lh.get()),
+    Try.of(() => eq.rh.get())
+  )
+
+  describe("Functor<Eval> (static-land)", () => {
+    functorCheck(
+      inst.arbEval as any,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check as any,
+      EvalModule)
+  })
+
+  describe("Functor<Eval> (fantasy-land)", () => {
+    functorCheck(
+      inst.arbEval as any,
+      jv.fun(jv.string),
+      jv.fun(jv.int32),
+      check as any,
+      {
+        map: (f: any, fa: any) => fa['fantasy-land/map'](f)
+      })
   })
 })

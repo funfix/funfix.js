@@ -1,0 +1,22 @@
+{
+  "extends": [
+    "tslint-config-standard",
+    "tslint-eslint-rules"
+  ],
+  "rules": {
+    "file-header": [true, "Copyright"],
+    "space-before-function-paren": false,
+    "no-use-before-declare": false,
+    "no-empty": false,
+    "no-unused-expression": false,
+    "no-duplicate-variable": true,
+    "no-var-keyword": true,
+    "member-ordering": ["error", "fields-first"],
+    "quotemark": [true, "double", "avoid-escape"],
+    "curly": false,
+    "ter-indent": false,
+    "no-unused-variable": false,
+    "brace-style": false,
+    "one-line": false
+  }
+}

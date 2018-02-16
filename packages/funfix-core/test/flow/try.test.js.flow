@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,12 @@
 
 /* @flow */
 
+import type { HK, Constructor, Setoid, Functor } from "funfix-types"
 import {
   Failure,
   Success,
-  Try
+  Try,
+  TryModule
 } from "../../src/"
 
 const failure: Try<string> = Failure(1)
@@ -54,3 +56,13 @@ const fail2: Try<number> = Try.failure("error")
 
 const rel1: Dog | null = dogTry.orNull()
 const rel2: Dog | void = dogTry.orUndefined()
+
+const setoid: Setoid<Try<number>> =
+  TryModule
+const functor: Functor<"funfix/try"> =
+  TryModule
+
+const hk1: HK<"funfix/try", number> =
+  Success(1)
+const tp: Constructor<Try<any>> =
+  Try

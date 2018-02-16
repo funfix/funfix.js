@@ -7,7 +7,7 @@
   "es5module": "dist/es5.js",
   "typings": "dist/index.d.ts",
   "scripts": {
-    "lint": "flow check && tslint --type-check --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
+    "lint": "flow check && tslint --project tsconfig.json -e **/node_modules/** -e **/dist/** -t codeFrame src/**/*.ts",
     "doc": "../../scripts/generate-docs.js .",
     "clean": "rimraf dist && rimraf coverage && rimraf .nyc_output",
     "prebuild": "npm run clean",
@@ -19,11 +19,6 @@
     "rollup": "rollup -c && npm run fix-modules && npm run fix-types",
     "fix-modules": "node ../../scripts/fix-es5.js dist/es5.js",
     "fix-types": "../../scripts/fix-types.js ."
-  },
-  "dependencies": {
-    "funfix-core": "0.0.0-development",
-    "funfix-effect": "0.0.0-development",
-    "funfix-exec": "0.0.0-development"
   },
   "files": [
     "dist",
