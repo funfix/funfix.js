@@ -18,8 +18,8 @@
 import * as jv from "jsverify"
 import { HK } from "funland"
 import * as assert from "./asserts"
-import { Equiv } from "../../../funfix-laws/src"
-import { functorCheck } from "../../../funfix-laws/test-common"
+import { Equiv } from "funland-laws"
+import { monadCheck } from "../../../../test-common"
 import * as inst from "./instances"
 
 import {
@@ -1506,24 +1506,49 @@ describe("Future type classes", () => {
     Scheduler.global.revert()
   })
 
-  describe("Functor<Future> (static-land)", () => {
-    functorCheck(
-      arb,
+  describe("Monad<Future> (static-land)", () => {
+    const arbFA = inst.arbFutureFrom(jv.int32, ec)
+    const arbFB = inst.arbFutureFrom(jv.string, ec)
+    const arbFC = inst.arbFutureFrom(jv.int16, ec)
+    const arbFAtoB = inst.arbFutureFrom(jv.fun(jv.string), ec)
+    const arbFBtoC = inst.arbFutureFrom(jv.fun(jv.int16), ec)
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
       jv.fun(jv.string),
-      jv.fun(jv.int32),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
       check,
       FutureModule)
   })
 
-  describe("Functor<Future> (fantasy-land)", () => {
-    const arb = inst.arbFuture(ec) as jv.Arbitrary<HK<"funfix/future", number>>
-    functorCheck(
-      arb,
+  describe("Monad<Future> (fantasy-land)", () => {
+    const arbFA = inst.arbFutureFrom(jv.int32, ec)
+    const arbFB = inst.arbFutureFrom(jv.string, ec)
+    const arbFC = inst.arbFutureFrom(jv.int16, ec)
+    const arbFAtoB = inst.arbFutureFrom(jv.fun(jv.string), ec)
+    const arbFBtoC = inst.arbFutureFrom(jv.fun(jv.int16), ec)
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
       jv.fun(jv.string),
-      jv.fun(jv.int32),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
       check,
       {
-        map: (f: any, fa: any) => fa['fantasy-land/map'](f)
+        map: (f, fa) => (fa as any)["fantasy-land/map"](f),
+        ap: (ff, fa) => (fa as any)["fantasy-land/ap"](ff),
+        chain: (f, fa) => (fa as any)["fantasy-land/chain"](f),
+        chainRec: (f, a) => (Future as any)["fantasy-land/chainRec"](f, a),
+        of: a => (Future as any)["fantasy-land/of"](a)
       })
   })
 })

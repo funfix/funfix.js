@@ -17,10 +17,11 @@
 
 /* @flow */
 
-import type { HK, Constructor, Functor } from "funland"
+import type { HK, Constructor, Monad } from "funland"
 import type { Throwable } from "funfix-core"
 import { Try, Either, Left, Right, Success, Option } from "funfix-core"
 import { ICancelable, Future, Scheduler, StackedCancelable, ExecutionModel, Duration } from "funfix-exec"
+import type { IOURI, IOK } from "../../src"
 import { IO, IOModule, IOContext } from "../../src/"
 
 const ec = Scheduler.global.get()
@@ -160,6 +161,6 @@ const firstOf1: IO<number> = IO.firstCompletedOf([IO.pure(1), IO.pure(2), IO.pur
 const flat1: IO<number> = IO.pure("Hello").followedBy(IO.pure(1))
 const flat2: IO<string> = IO.pure("Hello").forEffect(IO.pure(1))
 
-const hk: HK<"funfix/io", number> = IO.pure(1)
+const hk: IOK<number> = IO.pure(1)
 const tp: Constructor<IO<any>> = IO
-const functor: Functor<"funfix/io"> = IOModule
+const functor: Monad<IOURI> = IOModule

@@ -21,7 +21,7 @@ import {
   coreInternals
 } from "funfix-core"
 
-import { HK, Functor } from "funland"
+import { HK, Monad } from "funland"
 import { Scheduler } from "./scheduler"
 import { Duration } from "./time"
 import { ICancelable, Cancelable, ChainedCancelable, DummyCancelable } from "./cancelable"
@@ -128,7 +128,7 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
    *
    * @protected
    */
-  protected readonly _scheduler: Scheduler
+  protected readonly _scheduler!: Scheduler
 
   /**
    * Reference to the current {@link ICancelable} available for
@@ -339,6 +339,21 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
     return this.transformWith(Future.raise, f)
   }
 
+  /** Alias for {@link flatMap}. */
+  chain<B>(f: (a: A) => Future<B>): Future<B> {
+    return this.flatMap(f)
+  }
+
+  /**
+   * `Applicative` apply operator.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<B>(ff: Future<(a: A) => B>): Future<B> {
+    return ff.flatMap(f => this.map(f))
+  }
+
   /**
    * Asynchronously processes the value in the future once the value becomes available.
    *
@@ -516,8 +531,8 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _URI: "funfix/future"
-  /** @hidden */ readonly _A: A
+  /** @hidden */ readonly _URI!: "funfix/future"
+  /** @hidden */ readonly _A!: A
 
   // Implements Constructor<T>
   /** @hidden */ static readonly _Class: Future<any>
@@ -1213,14 +1228,10 @@ class AsyncFutureState<A> {
   }
 }
 
-// Registers Fantasy-Land compatible symbols
-coreInternals.fantasyLandRegister(Future)
-
 /**
  * Type enumerating the type classes implemented by `Future`.
  */
-export type FutureTypes =
-  Functor<"funfix/future">
+export type FutureTypes = Monad<"funfix/future">
 
 /**
  * Type-class implementations, compatible with the `static-land`
@@ -1228,9 +1239,23 @@ export type FutureTypes =
  */
 export const FutureModule: FutureTypes = {
   // Functor
-  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/future", A>) =>
-    (fa as Future<A>).map(f)
+  map: <A, B>(f: (a: A) => B, fa: Future<A>) =>
+    fa.map(f),
+  // Apply
+  ap: <A, B>(ff: Future<(a: A) => B>, fa: Future<A>): Future<B> =>
+    fa.ap(ff),
+  // Applicative
+  of: Future.pure,
+  // Chain
+  chain: <A, B>(f: (a: A) => Future<B>, fa: Future<A>): Future<B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Future<C>, a: A): Future<B> =>
+    Future.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
 }
+
+// Registering Fantasy-Land compatible symbols
+coreInternals.fantasyLandRegister(Future, FutureModule)
 
 /**
  * Internal `Future` implementation that's the result of a
@@ -1239,23 +1264,23 @@ export const FutureModule: FutureTypes = {
  * @Hidden
  */
 class AsyncFuture<A> extends Future<A> {
-  readonly _state: AsyncFutureState<A>
+  readonly ["_state"]: AsyncFutureState<A>
   readonly _scheduler: Scheduler
   _cancelable?: ICancelable
 
   constructor(state: AsyncFutureState<A>, cRef: ICancelable | undefined, ec: Scheduler) {
     super()
-    this._state = state
+    this["_state"] = state
     this._scheduler = ec
     if (cRef) this._cancelable = cRef
   }
 
   value(): Option<Try<A>> {
-    return this._state.value()
+    return this["_state"].value()
   }
 
   onComplete(f: (a: Try<A>) => void): void {
-    return this._state.onComplete(f, this._scheduler)
+    return this["_state"].onComplete(f, this._scheduler)
   }
 
   cancel(): void {
@@ -1267,7 +1292,7 @@ class AsyncFuture<A> extends Future<A> {
 
   withScheduler(ec: Scheduler): Future<A> {
     if (this._scheduler === ec) return this
-    return new AsyncFuture(this._state, this._cancelable, ec)
+    return new AsyncFuture(this["_state"], this._cancelable, ec)
   }
 
   transformWith<B>(failure: (e: Throwable) => Future<B>, success: (a: A) => Future<B>): Future<B> {
@@ -1299,7 +1324,7 @@ class AsyncFuture<A> extends Future<A> {
  * ```
  */
 export class FutureMaker<A> {
-  private readonly _state: AsyncFutureState<A>
+  private readonly ["_state"]: AsyncFutureState<A>
   private readonly _scheduler: Scheduler
 
   private constructor(state: AsyncFutureState<A>, ec: Scheduler) {
@@ -1446,7 +1471,7 @@ export class FutureMaker<A> {
    *        cancellation logic to be baked into the created future
    */
   future(cancelable?: ICancelable): Future<A> {
-    switch (this._state.id) {
+    switch (this["_state"].id) {
       case "complete":
         return new PureFuture(this["_state"].ref as Try<A>, this._scheduler)
       default:
@@ -1469,7 +1494,7 @@ export class FutureMaker<A> {
    */
   withScheduler(ec: Scheduler): FutureMaker<A> {
     if (this._scheduler === ec) return this
-    return new FutureMaker(this._state, ec)
+    return new FutureMaker(this["_state"], ec)
   }
 
   /**
@@ -1511,6 +1536,7 @@ export class FutureMaker<A> {
  * Internal, common `transformWith` implementation.
  *
  * @Hidden
+ * @private
  */
 function genericTransformWith<A, B>(
   self: Future<A>,
@@ -1549,7 +1575,7 @@ function genericTransformWith<A, B>(
     }
 
     if (fb instanceof AsyncFuture) {
-      fb._state.chainTo(defer["_state"] as AsyncFutureState<B>, scheduler)
+      fb["_state"].chainTo(defer["_state"] as AsyncFutureState<B>, scheduler)
     } else {
       (fb as Future<B>).onComplete(defer.tryComplete)
     }

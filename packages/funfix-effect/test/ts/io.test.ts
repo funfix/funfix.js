@@ -31,8 +31,8 @@ import {
 } from "funfix-core"
 
 import { HK } from "funland"
-import { Equiv } from "../../../funfix-laws/src"
-import { functorCheck } from "../../../funfix-laws/test-common"
+import { Equiv } from "funland-laws"
+import { monadCheck } from "../../../../test-common"
 import { TestScheduler, Future, ExecutionModel, Duration } from "funfix-exec"
 import { IO, IOModule } from "../../src/"
 
@@ -448,7 +448,7 @@ describe("IO.map", () => {
   })
 
   jv.property("map(f) <-> flatMap(x => pure(f(x)))",
-    inst.arbIO, jv.fun(jv.number),
+    inst.arbIONum, jv.fun(jv.number),
     (fa, f) => {
       const ec = scheduler()
       const f1 = fa.map(f).run(ec)
@@ -458,7 +458,7 @@ describe("IO.map", () => {
     })
 
   jv.property("map(f) <-> transform(_, f)",
-    inst.arbIO, jv.fun(jv.number),
+    inst.arbIONum, jv.fun(jv.number),
     (fa, f) => {
       const ec = scheduler()
       const f1 = fa.map(f).run(ec)
@@ -618,7 +618,7 @@ describe("IO builders", () => {
 
 describe("IO aliases", () => {
   jv.property("chain(f) <-> flatMap(f)",
-    inst.arbIO, jv.fun(inst.arbIO),
+    inst.arbIONum, jv.fun(inst.arbIONum),
     (fa, f) => {
       const ec = scheduler()
       const f1 = fa.flatMap(f).run(ec)
@@ -628,7 +628,7 @@ describe("IO aliases", () => {
     })
 
   jv.property("fa.followedBy(fb) <-> fa.flatMap(_ => fb)",
-    inst.arbIO, inst.arbIO,
+    inst.arbIONum, inst.arbIONum,
     (fa, fb) => {
       const ec = scheduler()
       const f1 = fa.followedBy(fb).run(ec)
@@ -638,7 +638,7 @@ describe("IO aliases", () => {
     })
 
   jv.property("fa.forEffect(fb) <-> fa.flatMap(a => fb.map(_ => a))",
-    inst.arbIO, inst.arbIO,
+    inst.arbIONum, inst.arbIONum,
     (fa, fb) => {
       const ec = scheduler()
       const f1 = fa.forEffect(fb).run(ec)
@@ -658,7 +658,7 @@ describe("IO aliases", () => {
     })
 
   jv.property("suspend(f) <-> unit.flatMap(_ => f())",
-    inst.arbIO,
+    inst.arbIONum,
     (fa) => {
       const ec = scheduler()
       const f1 = IO.suspend(() => fa).run(ec)
@@ -668,7 +668,7 @@ describe("IO aliases", () => {
     })
 
   jv.property("defer(f) <-> unit.flatMap(_ => f())",
-    inst.arbIO,
+    inst.arbIONum,
     (fa) => {
       const ec = scheduler()
       const f1 = IO.defer(() => fa).run(ec)
@@ -958,7 +958,7 @@ describe("IO.memoize", () => {
   })
 
   jv.property("returns same reference on double call",
-    inst.arbIO,
+    inst.arbIONum,
     fa => {
       const mem = fa.memoize()
       return mem === mem.memoize()
@@ -1072,14 +1072,14 @@ describe("IO.memoizeOnSuccess", () => {
   })
 
   jv.property("returns same reference on double call",
-    inst.arbIO,
+    inst.arbIONum,
     fa => {
       const mem = fa.memoizeOnSuccess()
       return mem === mem.memoizeOnSuccess()
     })
 
   jv.property("returns same reference after memoize()",
-    inst.arbIO,
+    inst.arbIONum,
     fa => {
       const mem = fa.memoize()
       return mem === mem.memoizeOnSuccess()
@@ -1738,8 +1738,6 @@ describe("IO.firstCompletedOf", () => {
 })
 
 describe("IO type classes", () => {
-  const arbIO = inst.arbIO as jv.Arbitrary<HK<"funfix/io", number>>
-
   function check(ec: TestScheduler): <A>(eq: Equiv<HK<"funfix/io", A>>) => boolean {
     return eq => {
       const a = (eq.lh as IO<any>).run(ec)
@@ -1749,25 +1747,51 @@ describe("IO type classes", () => {
     }
   }
 
-  describe("Functor<IO> (static-land)", () => {
+  describe("Monad<IO> (static-land)", () => {
     const sc = new TestScheduler()
-    functorCheck(
-      arbIO,
+    const arbFA = inst.arbIO(jv.int32)
+    const arbFB = inst.arbIO(jv.string)
+    const arbFC = inst.arbIO(jv.int16)
+    const arbFAtoB = inst.arbIO(jv.fun(jv.string))
+    const arbFBtoC = inst.arbIO(jv.fun(jv.int16))
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
       jv.fun(jv.string),
-      jv.fun(jv.int32),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
       check(sc),
       IOModule)
   })
 
   describe("Functor<IO> (fantasy-land)", () => {
     const sc = new TestScheduler()
-    functorCheck(
-      arbIO,
+    const arbFA = inst.arbIO(jv.int32)
+    const arbFB = inst.arbIO(jv.string)
+    const arbFC = inst.arbIO(jv.int16)
+    const arbFAtoB = inst.arbIO(jv.fun(jv.string))
+    const arbFBtoC = inst.arbIO(jv.fun(jv.int16))
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
       jv.fun(jv.string),
-      jv.fun(jv.int32),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
       check(sc),
       {
-        map: (f: any, fa: any) => fa['fantasy-land/map'](f)
+        map: (f, fa) => (fa as any)["fantasy-land/map"](f),
+        ap: (ff, fa) => (fa as any)["fantasy-land/ap"](ff),
+        chain: (f, fa) => (fa as any)["fantasy-land/chain"](f),
+        chainRec: (f, a) => (IO as any)["fantasy-land/chainRec"](f, a),
+        of: a => (IO as any)["fantasy-land/of"](a)
       })
   })
 })

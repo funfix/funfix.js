@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { HK, Functor } from "funland"
+import { HK, Monad } from "funland"
 import { Either, Throwable, coreInternals } from "funfix-core"
 import {
   IteratorLike,
@@ -146,11 +146,19 @@ export class Eval<A> implements HK<"funfix/eval", A> {
     return new FlatMap(this, f)
   }
 
-  /**
-   * Alias for {@link Eval.flatMap .flatMap}.
-   */
+  /** Alias for {@link flatMap}. */
   chain<B>(f: (a: A) => Eval<B>): Eval<B> {
     return this.flatMap(f)
+  }
+
+  /**
+   * `Applicative` apply operator.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<B>(ff: Eval<(a: A) => B>): Eval<B> {
+    return ff.flatMap(f => this.map(f))
   }
 
   /**
@@ -202,11 +210,11 @@ export class Eval<A> implements HK<"funfix/eval", A> {
    *
    * @hidden
    */
-  readonly _tag: "now" | "always" | "once" | "suspend" | "flatMap"
+  readonly _tag!: "now" | "always" | "once" | "suspend" | "flatMap"
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _URI: "funfix/eval"
-  /** @hidden */ readonly _A: A
+  /** @hidden */ readonly _URI!: "funfix/eval"
+  /** @hidden */ readonly _A!: A
   // Implements Constructor<T>
   /** @hidden */ static readonly _Class: Eval<any>
 
@@ -566,14 +574,10 @@ class FlatMap<A, B> extends Eval<B> {
   }
 }
 
-// Registers Fantasy-Land compatible symbols
-coreInternals.fantasyLandRegister(Eval)
-
 /**
  * Type enumerating the type classes implemented by `Eval`.
  */
-export type EvalTypes =
-  Functor<"funfix/eval">
+export type EvalTypes = Monad<"funfix/eval">
 
 /**
  * Type-class implementations, compatible with the `static-land`
@@ -581,9 +585,23 @@ export type EvalTypes =
  */
 export const EvalModule: EvalTypes = {
   // Functor
-  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/eval", A>) =>
-    (fa as Eval<A>).map(f)
+  map: <A, B>(f: (a: A) => B, fa: Eval<A>) =>
+    fa.map(f),
+  // Apply
+  ap: <A, B>(ff: Eval<(a: A) => B>, fa: Eval<A>): Eval<B> =>
+    fa.ap(ff),
+  // Applicative
+  of: Eval.pure,
+  // Chain
+  chain: <A, B>(f: (a: A) => Eval<B>, fa: Eval<A>): Eval<B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Eval<C>, a: A): Eval<B> =>
+    Eval.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
 }
+
+// Registers Fantasy-Land compatible symbols
+coreInternals.fantasyLandRegister(Eval, EvalModule)
 
 /** @hidden */
 type Current = Eval<any>

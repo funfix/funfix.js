@@ -43,10 +43,6 @@ declare export class Either<+L, +R> {
   equals(that: Either<L, R>, eqL?: (x: L, y: L) => boolean, eqR?: (x: R, y: R) => boolean): boolean;
   hashCode(): number;
 
-  +_URI: "funfix/either";
-  +_A: R;
-  +_L: L;
-
   // Implements Constructor<T>
   static +_Class: Either<any, any>;
 
@@ -113,10 +109,6 @@ declare export class Option<+A> {
   isEmpty(): boolean;
   map<B>(f: (a: A) => B): Option<B>;
   nonEmpty(): boolean;
-
-  // Implements HK<F, A>
-  +_URI: "funfix/option";
-  +_A: A;
 
   // Implements Constructor<T>
   static +_Class: Option<any>;
@@ -189,10 +181,6 @@ declare export class Try<+A> {
   toEither(): Either<Throwable, A>;
   equals(that: Try<A>, eq?: (x: A, y: A) => boolean): boolean;
   hashCode(): number;
-
-  // Implements HK<F, A>
-  +_URI: "funfix/try";
-  +_A: A;
 
   // Implements Constructor<T>
   static +_Class: Try<any>;

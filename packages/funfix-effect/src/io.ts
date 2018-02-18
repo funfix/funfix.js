@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-import { HK, Functor } from "funland"
-
+import { HK, Monad } from "funland"
 import {
   Either,
   Try,
@@ -731,6 +730,16 @@ export class IO<A> implements HK<"funfix/io", A> {
   }
 
   /**
+   * `Applicative` apply operator.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<B>(ff: IO<(a: A) => B>): IO<B> {
+    return ff.flatMap(f => this.map(f))
+  }
+
+  /**
    * Sequentially compose two `IO` actions, discarding any value
    * produced by the first.
    *
@@ -981,11 +990,11 @@ export class IO<A> implements HK<"funfix/io", A> {
    *
    * @hidden
    */
-  readonly _tag: "pure" | "always" | "once" | "flatMap" | "async" | "memoize"
+  readonly _tag!: "pure" | "always" | "once" | "flatMap" | "async" | "memoize"
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _URI: "funfix/io"
-  /** @hidden */ readonly _A: A
+  /** @hidden */ readonly _URI!: "funfix/io"
+  /** @hidden */ readonly _A!: A
 
   // Implements Constructor<T>
   /** @hidden */ static readonly _Class: IO<any>
@@ -1848,7 +1857,7 @@ class IOOnce<A> extends IO<A> {
   readonly _tag: "once" = "once"
 
   private _thunk: () => A
-  public cache: Try<A>
+  public cache!: Try<A>
   public onlyOnSuccess: boolean
 
   constructor(thunk: () => A, onlyOnSuccess: boolean) {
@@ -2023,14 +2032,10 @@ export type IOOptions = {
   autoCancelableRunLoops: boolean
 }
 
-// Registers Fantasy-Land compatible symbols
-coreInternals.fantasyLandRegister(IO)
-
 /**
  * Type enumerating the type classes implemented by `Io`.
  */
-export type IOTypes =
-  Functor<"funfix/io">
+export type IOTypes = Monad<"funfix/io">
 
 /**
  * Type-class implementations, compatible with the `static-land`
@@ -2038,9 +2043,23 @@ export type IOTypes =
  */
 export const IOModule: IOTypes = {
   // Functor
-  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/io", A>) =>
-    (fa as IO<A>).map(f)
+  map: <A, B>(f: (a: A) => B, fa: IO<A>) =>
+    fa.map(f),
+  // Apply
+  ap: <A, B>(ff: IO<(a: A) => B>, fa: IO<A>): IO<B> =>
+    fa.ap(ff),
+  // Applicative
+  of: IO.pure,
+  // Chain
+  chain: <A, B>(f: (a: A) => IO<B>, fa: IO<A>): IO<B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => IO<C>, a: A): IO<B> =>
+    IO.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
 }
+
+// Registers Fantasy-Land compatible symbols
+coreInternals.fantasyLandRegister(IO, IOModule)
 
 /** @hidden */
 function ioShift(ec?: Scheduler): IO<void> {
@@ -2200,7 +2219,7 @@ function ioGenericRunLoop(
         }
 
         try {
-          current = bind(current.failed().get())
+          current = bind((current as Try<never>).failed().get())
         } catch (e) {
           current = Try.failure(e)
         }
@@ -2302,7 +2321,7 @@ function taskToFutureRunLoop(
           current = new IOPure(Try.failure(e))
         }
       } else {
-        const err = current.failed().get()
+        const err = (current as Try<never>).failed().get()
         const bind = _ioFindErrorHandler(bFirst, bRest)
         if (!bind) {
           scheduler.batchIndex = frameIndex

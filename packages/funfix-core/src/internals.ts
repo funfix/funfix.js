@@ -15,7 +15,19 @@
  * limitations under the License.
  */
 
-import { Constructor } from "funland"
+import { Constructor, Setoid, Monad } from "funland"
+
+/**
+ * Given a function, converts it into a method where `this` gets
+ * passed around as the last argument.
+ */
+export function convertToMethod(f: Function): Function {
+  return function (this: any) {
+    const args = Array.prototype.slice.call(arguments)
+    args.push(this)
+    return f.apply(undefined, args)
+  }
+}
 
 /**
  * Given a constructor, searches for all Fantasy-Land compatible
@@ -48,7 +60,11 @@ import { Constructor } from "funland"
  * @private
  * @Hidden
  */
-export function fantasyLandRegister<A>(cls: Constructor<A>): void {
+export function fantasyLandRegister<A>(
+  cls: Constructor<A>,
+  monad?: Monad<any>,
+  setoid?: Setoid<any>): void {
+
   const c = cls as any
   const p = c.prototype
 
@@ -66,33 +82,45 @@ export function fantasyLandRegister<A>(cls: Constructor<A>): void {
   const flChainRec = fl + chainRec
 
   // Setoid
-  /* istanbul ignore else */
   if (p[equals]) {
     p[flEquals] = p[equals]
+  } else {
+    /* istanbul ignore else */
+    if (setoid) p[flEquals] = convertToMethod(setoid.equals)
   }
   // Functor
-  /* istanbul ignore else */
   if (p[map]) {
     p[flMap] = p[map]
+  } else {
+    /* istanbul ignore else */
+    if (monad) p[flMap] = convertToMethod(monad.map)
   }
   // Apply
-  /* istanbul ignore else */
   if (p[ap]) {
     p[flAp] = p[ap]
+  } else {
+    /* istanbul ignore else */
+    if (monad) p[flAp] = convertToMethod(monad.ap)
   }
   // Applicative
-  /* istanbul ignore else */
   if (c["pure"]) {
     c[flOf] = c["pure"]
+  } else {
+    /* istanbul ignore else */
+    if (monad) c[flOf] = monad.of
   }
   // Chain
-  /* istanbul ignore else */
   if (p[chain]) {
     p[flChain] = p[chain]
+  } else {
+    /* istanbul ignore else */
+    if (monad) p[flChain] = convertToMethod(monad.chain)
   }
   // ChainRec
-  /* istanbul ignore else */
   if (c[chainRec]) {
     c[flChainRec] = c[chainRec]
+  } else {
+    /* istanbul ignore else */
+    if (monad) c[flChainRec] = monad.chainRec
   }
 }

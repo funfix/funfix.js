@@ -102,7 +102,7 @@ export abstract class Scheduler {
    * immediately (trampolined), a counter that's reset when reaching
    * the threshold or when an `executeAsync` happens.
    */
-  public readonly executeBatched: (runnable: () => void) => void
+  public readonly executeBatched!: (runnable: () => void) => void
 
   /**
    * Schedules the given `command` for async execution.
@@ -335,7 +335,7 @@ export class ExecutionModel implements IEquals<ExecutionModel> {
    * nr = (nr + 1) & modulus
    * ```
    */
-  public recommendedBatchSize: number
+  public readonly recommendedBatchSize!: number
 
   /**
    * The type of the execution model, which can be:
@@ -750,8 +750,8 @@ export class TestScheduler extends Scheduler {
 class TestSchedulerState {
   public clock: number
   public triggeredFailures: Array<any>
-  public tasks: Array<[number, () => void]>
-  public tasksSearch: (search: number) => number
+  public tasks!: Array<[number, () => void]>
+  public tasksSearch!: (search: number) => number
 
   constructor() {
     this.clock = 0

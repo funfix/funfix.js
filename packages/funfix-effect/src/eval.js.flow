@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import { Functor } from "funland"
+import type { HK, Monad } from "funland"
 import { Either } from "funfix-core"
 
 declare export class Eval<+A> {
@@ -26,12 +26,11 @@ declare export class Eval<+A> {
   map<B>(f: (a: A) => B): Eval<B>;
   flatMap<B>(f: (a: A) => Eval<B>): Eval<B>;
   chain<B>(f: (a: A) => Eval<B>): Eval<B>;
+  ap<B>(ff: Eval<(a: A) => B>): Eval<B>;
   memoize(): Eval<A>;
   forEachL(cb: (a: A) => void): Eval<void>;
   forEach(cb: (a: A) => void): void;
 
-  +_URI: "funfix/eval";
-  +_A: A;
   static +_Class: Eval<any>;
 
   static of<A>(thunk: () => A): Eval<A>;
@@ -52,5 +51,8 @@ declare export class Eval<+A> {
   static map6<A1, A2, A3, A4, A5, A6, R>(fa1: Eval<A1>, fa2: Eval<A2>, fa3: Eval<A3>, fa4: Eval<A4>, fa5: Eval<A5>, fa6: Eval<A6>, f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Eval<R>;
 }
 
-export type EvalTypes = Functor<"funfix/eval">;
+export type EvalURI = <U, L, A>(x: [U, L, A]) => Eval<A>;
+export type EvalK<A> = HK<EvalURI, A>;
+
+export type EvalTypes = Monad<EvalURI>;
 declare export var EvalModule: EvalTypes;

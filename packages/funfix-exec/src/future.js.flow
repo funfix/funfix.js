@@ -18,7 +18,8 @@
 /* @flow */
 
 import type { Throwable } from "funfix-core"
-import { Functor } from "funland"
+import type { HK } from "funland"
+import { Monad } from "funland"
 import { Option, Try, Either } from "funfix-core"
 import { Scheduler } from "./scheduler"
 import { ICancelable } from "./cancelable"
@@ -43,6 +44,8 @@ declare export class Future<+A> {
   attempt(): Future<Either<Throwable, A>>;
 
   flatMap<B>(f: (a: A) => Future<B>): Future<B>;
+  chain<B>(f: (a: A) => Future<B>): Future<B>;
+  ap<B>(ff: Future<(a: A) => B>): Future<B>;
   map<B>(f: (a: A) => B): Future<B>;
   recoverWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA>;
   recover<AA>(f: (e: Throwable) => AA): Future<A | AA>;
@@ -55,8 +58,6 @@ declare export class Future<+A> {
   // From IPromiseLike
   then(onFulfilled?: (value: A) => any, onRejected?: (error: Throwable) => any): Future<any>;
 
-  +_URI: "funfix/future";
-  +_A: A;
   static +_Class: Future<any>;
 
   static of<A>(thunk: () => A, ec?: Scheduler): Future<A>;
@@ -95,7 +96,10 @@ declare export class Future<+A> {
     ec?: Scheduler): Future<R>;
 }
 
-export type FutureTypes = Functor<"funfix/future">;
+export type FutureURI = <U, L, A>(x: [U, L, A]) => Future<A>;
+export type FutureK<A> = HK<FutureURI, A>;
+
+export type FutureTypes = Monad<FutureURI>;
 declare export var FutureModule: FutureTypes;
 
 declare export class FutureMaker<A> {

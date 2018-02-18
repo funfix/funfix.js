@@ -17,8 +17,9 @@
 
 /* @flow */
 
-import type { HK, Constructor, Functor } from "funland"
+import type { HK, Constructor, Monad } from "funland"
 import { Either, Try, Option, Success, Failure } from "funfix-core"
+import type { FutureK, FutureURI } from "../../src"
 import {
   Future,
   FutureMaker,
@@ -165,6 +166,6 @@ maker2.failure("err")
 const fm1: Future<number> = maker2.future()
 const fm2: Future<number> = maker2.future(Cancelable.empty())
 
-const hk: HK<"funfix/future", number> = fm1
-const functor: Functor<"funfix/future"> = FutureModule
+const hk: FutureK<number> = fm1
+const functor: Monad<FutureURI> = FutureModule
 const tp: Constructor<Future<any>> = Future

@@ -161,7 +161,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
   }
 
   /**
-   * `Apply`/`Applicative` `ap` operation.
+   * `Applicative` apply operator.
    *
    * Resembles {@link map}, but the passed mapping function is
    * lifted in the `Either` context.
@@ -513,18 +513,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
       cursor = some.value as A
     }
   }
-
-  /**
-   * `Fantasy-Land / `static-land` compliant version of {@link tailRecM}
-   * that uses an implementation independent encoding.
-   */
-  static chainRec<L, A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Either<L, C>, a: A): Either<L, B> {
-    return Either.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
-  }
 }
-
-// Registers Fantasy-Land compatible symbols
-fantasyLandRegister(Either)
 
 /**
  * Result of the [[Left]] data constructor, representing
@@ -590,8 +579,12 @@ export const EitherModule: EitherTypes = {
   chain: <L, A, B>(f: (a: A) => Either<L, B>, fa: Either<L, A>): Either<L, B> =>
     fa.flatMap(f),
   // ChainRec
-  chainRec: Either.chainRec
+  chainRec: <L, A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Either<L, C>, a: A): Either<L, B> =>
+    Either.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
 }
+
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Either, EitherModule, EitherModule)
 
 /**
  * Represents optional values, inspired by Scala's `Option` and by
@@ -758,7 +751,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
   }
 
   /**
-   * `Apply`/`Applicative` `ap` operation.
+   * `Applicative` apply operator.
    *
    * Resembles {@link map}, but the passed mapping function is
    * lifted in the `Either` context.
@@ -1087,18 +1080,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
       }
     }
   }
-
-  /**
-   * `Fantasy-Land / `static-land` compliant version of {@link tailRecM}
-   * that uses an implementation independent encoding.
-   */
-  static chainRec<A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Option<C>, a: A): Option<B> {
-    return Option.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
-  }
 }
-
-// Registers Fantasy-Land compatible symbols
-fantasyLandRegister(Option)
 
 /**
  * Result of the [[Some]] data constructor, representing
@@ -1165,8 +1147,12 @@ export const OptionModule: OptionTypes = {
   chain: <A, B>(f: (a: A) => Option<B>, fa: Option<A>): Option<B> =>
     fa.flatMap(f),
   // ChainRec
-  chainRec: Option.chainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Option<C>, a: A): Option<B> =>
+    Option.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
 }
+
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Option, OptionModule, OptionModule)
 
 /**
  * The `Try` type represents a computation that may either result in an
@@ -1424,7 +1410,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   }
 
   /**
-   * `Apply`/`Applicative` `ap` operation.
+   * `Applicative` apply operator.
    *
    * Resembles {@link map}, but the passed mapping function is
    * lifted in the `Either` context.
@@ -1891,18 +1877,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
       }
     }
   }
-
-  /**
-   * `Fantasy-Land / `static-land` compliant version of {@link tailRecM}
-   * that uses an implementation independent encoding.
-   */
-  static chainRec<A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Try<C>, a: A): Try<B> {
-    return Try.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
-  }
 }
-
-// Registers Fantasy-Land compatible symbols
-fantasyLandRegister(Try)
 
 /**
  * Result of the [[Success]] data constructor, representing
@@ -1970,8 +1945,12 @@ export const TryModule: TryTypes = {
   chain: <A, B>(f: (a: A) => Try<B>, fa: Try<A>): Try<B> =>
     fa.flatMap(f),
   // ChainRec
-  chainRec: Try.chainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Try<C>, a: A): Try<B> =>
+    Try.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
 }
+
+// Registers Fantasy-Land compatible symbols
+fantasyLandRegister(Try, TryModule, TryModule)
 
 /**
  * Reusable reference, to use in {@link Try.unit}.

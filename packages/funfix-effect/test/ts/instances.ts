@@ -19,8 +19,8 @@ import * as jv from "jsverify"
 import { Eval, IO } from "../../src/"
 import { Failure, Success } from "funfix-core"
 
-export const arbEval: jv.Arbitrary<Eval<number>> =
-  jv.pair(jv.number, jv.number).smap(
+export function arbEval<A>(arbA: jv.Arbitrary<A>): jv.Arbitrary<Eval<A>> {
+  return jv.pair(jv.number, arbA).smap(
     v => {
       switch (Math.abs(v[0] % 7)) {
         case 0:
@@ -39,11 +39,15 @@ export const arbEval: jv.Arbitrary<Eval<number>> =
           return Eval.now(0).flatMap(() => Eval.now(v[1]))
       }
     },
-    u => [u.get(), u.get()]
+    e => [0, e.get()]
   )
+}
 
-export const arbIO: jv.Arbitrary<IO<number>> =
-  jv.pair(jv.number, jv.number).smap(
+export const arbEvalNum: jv.Arbitrary<Eval<number>> =
+  arbEval(jv.int32)
+
+export function arbIO<A>(arbA: jv.Arbitrary<A>): jv.Arbitrary<IO<A>> {
+  return jv.pair(jv.number, arbA).smap(
     v => {
       switch (Math.abs(v[0] % 11)) {
         case 0:
@@ -57,11 +61,11 @@ export const arbIO: jv.Arbitrary<IO<number>> =
         case 4:
           return IO.suspend(() => IO.now(v[1]))
         case 5:
-          return IO.async<number>((ec, cb) => cb(Success(v[1])))
+          return IO.async<A>((ec, cb) => cb(Success(v[1])))
         case 6:
-          return IO.async<number>((ec, cb) => cb(Failure(v[1])))
+          return IO.async<A>((ec, cb) => cb(Failure(v[1])))
         case 7:
-          return IO.async<number>((ec, cb) => cb(Success(v[1]))).flatMap(IO.now)
+          return IO.async<A>((ec, cb) => cb(Success(v[1]))).flatMap(IO.now)
         case 8:
           return IO.now(0).flatMap(() => IO.now(v[1]))
         case 9:
@@ -70,5 +74,9 @@ export const arbIO: jv.Arbitrary<IO<number>> =
           return IO.suspend(() => IO.pure(v[1])).memoize()
       }
     },
-    () => [0, 0]
+    io => [0, arbA.generator(0)]
   )
+}
+
+export const arbIONum: jv.Arbitrary<IO<number>> =
+  arbIO(jv.int32)

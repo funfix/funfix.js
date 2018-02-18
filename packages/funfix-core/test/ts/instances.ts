@@ -32,12 +32,12 @@ export function arbOpt<A>(arbA: jv.Arbitrary<A>): jv.Arbitrary<Option<A>> {
   return jv.pair(jv.int32, arbA).smap(
     tuple => {
       const [i, a] = tuple
-      return i % 2 === 0 ? Some(a) : None
+      return i % 3 !== 0 ? Some(a) : None
     },
     opt => {
       return opt.nonEmpty()
-        ? [0, opt.value]
-        : [1, undefined]
+        ? [1, opt.value]
+        : [0, undefined]
     }
   )
 }
@@ -52,12 +52,12 @@ export function arbEither<R>(arbR: jv.Arbitrary<R>): jv.Arbitrary<Either<number,
   return jv.pair(jv.int32, arbR).smap(
     tuple => {
       const [l, r] = tuple
-      return l % 2 === 0 ? Either.right(r) : Either.left(l)
+      return l % 3 !== 0 ? Either.right(r) : Either.left(l)
     },
     either => {
       return either.isLeft()
         ? [either.value, undefined as any]
-        : [0, either.value]
+        : [1, either.value]
     }
   )
 }
@@ -75,11 +75,11 @@ export function arbTry<A>(arbA: jv.Arbitrary<A>): jv.Arbitrary<Try<A>> {
   return jv.pair(jv.int32, arbA).smap(
     tuple => {
       const [i, a] = tuple
-      return i % 2 === 0 ? Success(a) : Failure(i)
+      return i % 3 !== 0 ? Success(a) : Failure(i)
     },
     opt => {
       return opt.isSuccess()
-        ? [0, opt.value]
+        ? [1, opt.value]
         : [opt.failed().get() as number, undefined]
     }
   )

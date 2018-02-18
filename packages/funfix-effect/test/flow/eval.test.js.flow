@@ -17,9 +17,10 @@
 
 /* @flow */
 
-import type { HK, Constructor, Functor } from "funland"
+import type { HK, Constructor, Monad } from "funland"
 import { Right } from "funfix-core"
 import * as ff from "../../src/"
+import type { EvalK, EvalURI } from "../../src"
 import { Eval, EvalModule } from "../../src/"
 
 const ref1: ff.Eval<number> = ff.Eval.always(() => 1)
@@ -91,6 +92,6 @@ const map4: Eval<number> = Eval.map4(Eval.pure(1), Eval.pure(1), Eval.pure(1), E
 const map5: Eval<number> = Eval.map5(Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c, d, e) => a + b + c + d + e)
 const map6: Eval<number> = Eval.map6(Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c, d, e, f) => a + b + c + d + e + f)
 
-const hk: HK<"funfix/eval", number> = Eval.pure(1)
+const hk: EvalK<number> = Eval.pure(1)
 const tp: Constructor<Eval<any>> = Eval
-const functor: Functor<"funfix/eval"> = EvalModule
+const functor: Monad<EvalURI> = EvalModule

@@ -59,27 +59,32 @@ export const arbDuration: jv.Arbitrary<Duration> =
   )
 
 export function arbFuture(sc: Scheduler): jv.Arbitrary<Future<number>> {
-  return jv.int32.smap(
-    i => {
+  return arbFutureFrom(jv.int32, sc)
+}
+
+export function arbFutureFrom<A>(arbA: jv.Arbitrary<A>, sc: Scheduler): jv.Arbitrary<Future<A>> {
+  return jv.pair(jv.int32, arbA).smap(
+    arr => {
+      const [i, a] = arr
       switch (Math.abs(i % 7)) {
         case 0:
-          return Future.pure(i, sc)
+          return Future.pure(a, sc)
         case 1:
-          return Future.raise(new DummyError(`dummy${i}`), sc)
+          return Future.raise(new DummyError(`dummy${a}`), sc)
         case 2:
-          return Future.of(() => i, sc)
+          return Future.of(() => a, sc)
         case 3:
-          return Future.of(() => { throw new DummyError(`dummy${i}`) }, sc)
+          return Future.of(() => { throw new DummyError(`dummy${a}`) }, sc)
         case 4:
-          return Future.of(() => i, sc).map(x => x)
+          return Future.of(() => a, sc).map(x => x)
         case 5:
-          return Future.of(() => i, sc).flatMap(x => Future.pure(x, sc))
+          return Future.of(() => a, sc).flatMap(x => Future.pure(x, sc))
         default:
           return Future.create(cb => {
-            sc.trampoline(() => cb(Success(i)))
+            sc.trampoline(() => cb(Success(a)))
           }, sc)
       }
     },
-    fa => fa.value().getOrElse(Success(0)).getOrElse(0)
+    () => undefined
   )
 }
