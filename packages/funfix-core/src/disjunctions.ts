@@ -1977,5 +1977,6 @@ export const TryModule: TryTypes = {
  * Reusable reference, to use in {@link Try.unit}.
  *
  * @private
+ * @hidden
  */
 const tryUnitRef: Try<void> = Success(undefined)

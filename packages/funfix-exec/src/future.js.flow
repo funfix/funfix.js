@@ -44,8 +44,8 @@ declare export class Future<+A> {
 
   flatMap<B>(f: (a: A) => Future<B>): Future<B>;
   map<B>(f: (a: A) => B): Future<B>;
-  onErrorHandleWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA>;
-  onErrorHandle<AA>(f: (e: Throwable) => AA): Future<A | AA>;
+  recoverWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA>;
+  recover<AA>(f: (e: Throwable) => AA): Future<A | AA>;
   toPromise(): Promise<A>;
 
   delayResult(delay: number | Duration): Future<A>;

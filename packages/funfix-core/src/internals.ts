@@ -45,6 +45,7 @@ import { Constructor } from "funland"
  * The above registration call would make `fantasy-land/equals` and
  * `fantasy-land/functor` available on `Box.prototype`.
  *
+ * @private
  * @Hidden
  */
 export function fantasyLandRegister<A>(cls: Constructor<A>): void {

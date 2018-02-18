@@ -139,12 +139,12 @@ describe("PureFuture", () => {
 
   it("pure.recover <-> pure", () => {
     const f = Future.pure(1)
-    assert.equal(f.value(), f.onErrorHandle(() => 0).value())
+    assert.equal(f.value(), f.recover(() => 0).value())
   })
 
-  it("pure.onErrorHandleWith <-> pure", () => {
+  it("pure.recoverWith <-> pure", () => {
     const f = Future.pure(1)
-    assert.equal(f.value(), f.onErrorHandleWith(Future.raise).value())
+    assert.equal(f.value(), f.recoverWith(Future.raise).value())
   })
 
   it("raise(err).map <-> raise(err)", () => {
@@ -163,29 +163,29 @@ describe("PureFuture", () => {
 
   it("raise.recover", () => {
     const dummy = new DummyError("dummy")
-    const f: Future<string> = Future.raise(dummy).onErrorHandle(ex => (ex as any).message)
+    const f: Future<string> = Future.raise(dummy).recover(ex => (ex as any).message)
     assert.equal(f.value(), Some(Success("dummy")))
   })
 
   it("raise.recover protects against user error", () => {
     const dummy = new DummyError("dummy")
     const dummy2 = new DummyError("dummy2")
-    const f: Future<string> = Future.raise(dummy).onErrorHandle(() => { throw dummy2 })
+    const f: Future<string> = Future.raise(dummy).recover(() => { throw dummy2 })
 
     assert.equal(f.value(), Some(Failure(dummy2)))
   })
 
-  it("raise.onErrorHandleWith", () => {
+  it("raise.recoverWith", () => {
     const dummy = new DummyError("dummy")
-    const f: Future<string> = Future.raise(dummy).onErrorHandleWith(ex => Future.pure((ex as any).message))
+    const f: Future<string> = Future.raise(dummy).recoverWith(ex => Future.pure((ex as any).message))
 
     assert.equal(f.value(), Some(Success("dummy")))
   })
 
-  it("raise.onErrorHandleWith protects against user error", () => {
+  it("raise.recoverWith protects against user error", () => {
     const dummy = new DummyError("dummy")
     const dummy2 = new DummyError("dummy2")
-    const f = Future.raise(dummy).onErrorHandleWith(() => { throw dummy2 })
+    const f = Future.raise(dummy).recoverWith(() => { throw dummy2 })
     assert.equal(f.value(), Some(Failure(dummy2)))
   })
 
@@ -209,10 +209,10 @@ describe("PureFuture", () => {
     f.cancel() // no-op
   })
 
-  it("raise(x).onErrorHandleWith(f) yields cancelable future", () => {
+  it("raise(x).recoverWith(f) yields cancelable future", () => {
     const c = BoolCancelable.empty()
     const never = Future.create(() => c)
-    const f = Future.raise(new DummyError()).onErrorHandleWith(() => never)
+    const f = Future.raise(new DummyError()).recoverWith(() => never)
 
     assert.ok(f.value().isEmpty())
     assert.equal(c.isCanceled(), false)
@@ -414,14 +414,14 @@ describe("FutureBuilder", () => {
 
   it("Future.of(() => v).recover <-> Future.pure(v)", () => {
     const ec = new TestScheduler()
-    const f = Future.of(() => 1, ec).onErrorHandle(() => 0)
+    const f = Future.of(() => 1, ec).recover(() => 0)
     ec.tick()
     assert.equal(f.value(), Some(Success(1)))
   })
 
-  it("Future.of(() => v).onErrorHandleWith <-> Future.pure(v)", () => {
+  it("Future.of(() => v).recoverWith <-> Future.pure(v)", () => {
     const ec = new TestScheduler()
-    const f = Future.of(() => 1, ec).onErrorHandleWith(Future.raise)
+    const f = Future.of(() => 1, ec).recoverWith(Future.raise)
     ec.tick()
     assert.equal(f.value(), Some(Success(1)))
   })
@@ -429,7 +429,7 @@ describe("FutureBuilder", () => {
   it("Future.of(throw err).recover", () => {
     const s = new TestScheduler()
     const dummy = new DummyError("dummy")
-    const f: Future<string> = Future.of(() => { throw dummy }, s).onErrorHandle(ex => (ex as any).message)
+    const f: Future<string> = Future.of(() => { throw dummy }, s).recover(ex => (ex as any).message)
 
     assert.equal(f.value(), None); s.tick()
     assert.equal(f.value(), Some(Success("dummy")))
@@ -440,27 +440,27 @@ describe("FutureBuilder", () => {
 
     const dummy = new DummyError("dummy")
     const dummy2 = new DummyError("dummy2")
-    const f: Future<string> = Future.of(() => { throw dummy }, s).onErrorHandle(() => { throw dummy2 })
+    const f: Future<string> = Future.of(() => { throw dummy }, s).recover(() => { throw dummy2 })
 
     assert.equal(f.value(), None); s.tick()
     assert.equal(f.value(), Some(Failure(dummy2)))
   })
 
-  it("Future.of(throw err).onErrorHandleWith", () => {
+  it("Future.of(throw err).recoverWith", () => {
     const s = new TestScheduler()
     const dummy = new DummyError("dummy")
-    const f: Future<string> = Future.of(() => { throw dummy }, s).onErrorHandleWith(ex => Future.pure((ex as any).message))
+    const f: Future<string> = Future.of(() => { throw dummy }, s).recoverWith(ex => Future.pure((ex as any).message))
 
     assert.equal(f.value(), None); s.tick()
     assert.equal(f.value(), Some(Success("dummy")))
   })
 
-  it("Future.of(throw err).onErrorHandleWith protects against user error", () => {
+  it("Future.of(throw err).recoverWith protects against user error", () => {
     const s = new TestScheduler()
 
     const dummy = new DummyError("dummy")
     const dummy2 = new DummyError("dummy2")
-    const f: Future<string> = Future.of(() => { throw dummy }, s).onErrorHandleWith(() => { throw dummy2 })
+    const f: Future<string> = Future.of(() => { throw dummy }, s).recoverWith(() => { throw dummy2 })
 
     assert.equal(f.value(), None); s.tick()
     assert.equal(f.value(), Some(Failure(dummy2)))
@@ -502,7 +502,7 @@ describe("FutureBuilder", () => {
     })
   })
 
-  it("raise(x).onErrorHandleWith(f) yields cancelable future", () => {
+  it("raise(x).recoverWith(f) yields cancelable future", () => {
     const s = new TestScheduler()
 
     Scheduler.global.bind(s, () => {
@@ -510,7 +510,7 @@ describe("FutureBuilder", () => {
       const never = Future.create(() => c)
 
       let effect = 0
-      const f = Future.of(() => { effect += 1; throw new DummyError() }).onErrorHandleWith(() => never)
+      const f = Future.of(() => { effect += 1; throw new DummyError() }).recoverWith(() => never)
 
       assert.equal(effect, 0); s.tick()
       assert.equal(effect, 1)

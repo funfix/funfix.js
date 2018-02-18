@@ -227,7 +227,7 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
   /**
    * Transforms the source, regardless if the result is a failure or a success.
    *
-   * This function is a combination of {@link flatMap} and {@link onErrorHandleWith},
+   * This function is a combination of {@link flatMap} and {@link recoverWith},
    * being the (type safe) alternative to JavaScript's
    * [then]{@link IPromiseLike.then} from the
    * [Promises/A+](https://promisesaplus.com/) specification.
@@ -267,7 +267,7 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
   /**
    * Transforms the sources, regardless if the result is a failure or a success.
    *
-   * This function is a combination of {@link map} and {@link onErrorHandle},
+   * This function is a combination of {@link map} and {@link recover},
    * being the (type safe) alternative to JavaScript's
    * [then]{@link IPromiseLike.then} from the
    * [Promises/A+](https://promisesaplus.com/) specification.
@@ -380,13 +380,13 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
    * ```typescript
    * const f = Future.of<number>(() => { throw new DummyError() })
    *
-   * f.onErrorHandleWith(e => e instanceof DummyError
+   * f.recoverWith(e => e instanceof DummyError
    *   ? Future.pure(10) // Fallback
    *   : Future.raise(e) // Re-throw
    * )
    * ```
    */
-  onErrorHandleWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA> {
+  recoverWith<AA>(f: (e: Throwable) => Future<AA>): Future<A | AA> {
     return this.transformWith<A | AA>(f, Future.pure)
   }
 
@@ -401,14 +401,14 @@ export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<
    * ```typescript
    * const f = Future.of<number>(() => { throw new DummyError() })
    *
-   * f.onErrorHandle(e => {
+   * f.recover(e => {
    *   if (e instanceof DummyError) return 10
-   *   // Don't re-throw exceptions like this, use `onErrorHandleWith` instead!
+   *   // Don't re-throw exceptions like this, use `recoverWith` instead!
    *   throw e
    * })
    * ```
    */
-  onErrorHandle<AA>(f: (e: Throwable) => AA): Future<A | AA> {
+  recover<AA>(f: (e: Throwable) => AA): Future<A | AA> {
     return this.transformWith<A | AA>(
       e => Future.pure(f(e), this._scheduler),
       a => Future.pure(a, this._scheduler))

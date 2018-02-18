@@ -71,17 +71,17 @@ class Dog extends Animal { isDog: boolean }
 class Cat extends Animal { isCat: boolean }
 
 const cv1: Future<Animal> = Future.pure(new Dog)
-const cv2: Future<Animal> = Future.pure(new Dog).onErrorHandle(e => new Cat)
-const cv3: Future<Animal> = Future.pure(new Dog).onErrorHandleWith(e => Future.pure(new Cat))
+const cv2: Future<Animal> = Future.pure(new Dog).recover(e => new Cat)
+const cv3: Future<Animal> = Future.pure(new Dog).recoverWith(e => Future.pure(new Cat))
 
 // $ExpectError
 const cve1: Future<Dog> = Future.pure(new Animal)
 // $ExpectError
 const cve2: Future<Cat> = Future.pure(new Dog)
 // $ExpectError
-const cve3: Future<Dog> = Future.pure(new Dog).onErrorHandle(_ => new Cat)
+const cve3: Future<Dog> = Future.pure(new Dog).recover(_ => new Cat)
 // $ExpectError
-const cve4: Future<Dog> = Future.pure(new Dog).onErrorHandleWith(_ => Future.pure(new Cat))
+const cve4: Future<Dog> = Future.pure(new Dog).recoverWith(_ => Future.pure(new Cat))
 
 const tick1: Future<void> = Future.delayedTick(1000)
 const tick2: Future<void> = Future.delayedTick(1000, Scheduler.global.get())
