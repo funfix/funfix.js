@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-import { Either, Throwable } from "funfix-core"
+import { HK, Monad } from "funland"
+import { Either, Throwable, coreInternals } from "funfix-core"
 import {
   IteratorLike,
   iteratorOf
@@ -97,7 +98,7 @@ import {
  *
  * @final
  */
-export class Eval<A> {
+export class Eval<A> implements HK<"funfix/eval", A> {
   /**
    * Evaluates the source `Eval` and returns the result.
    *
@@ -145,11 +146,19 @@ export class Eval<A> {
     return new FlatMap(this, f)
   }
 
-  /**
-   * Alias for {@link Eval.flatMap .flatMap}.
-   */
+  /** Alias for {@link flatMap}. */
   chain<B>(f: (a: A) => Eval<B>): Eval<B> {
     return this.flatMap(f)
+  }
+
+  /**
+   * `Applicative` apply operator.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<B>(ff: Eval<(a: A) => B>): Eval<B> {
+    return ff.flatMap(f => this.map(f))
   }
 
   /**
@@ -161,7 +170,7 @@ export class Eval<A> {
    * as evaluating it once.
    */
   memoize(): Eval<A> {
-    switch (this._funADType) {
+    switch (this._tag) {
       case "now":
       case "once":
         return this
@@ -201,14 +210,13 @@ export class Eval<A> {
    *
    * @hidden
    */
-  readonly _funADType: "now" | "always" | "once" | "suspend" | "flatMap"
+  readonly _tag!: "now" | "always" | "once" | "suspend" | "flatMap"
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Eval<any>
-  /** @hidden */ readonly _funKindA: A
-
+  /** @hidden */ readonly _URI!: "funfix/eval"
+  /** @hidden */ readonly _A!: A
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Eval<any>
+  /** @hidden */ static readonly _Class: Eval<any>
 
   /**
    * Alias for {@link Eval.always}.
@@ -456,7 +464,7 @@ export class Eval<A> {
  * @private
  */
 class Now<A> extends Eval<A> {
-  readonly _funADType: "now" = "now"
+  readonly _tag: "now" = "now"
 
   /**
    * @param value is the value that's going to be returned
@@ -485,7 +493,7 @@ const evalUnitRef: Now<void> = new Now(undefined)
  * @private
  */
 class Once<A> extends Eval<A> {
-  readonly _funADType: "once" = "once"
+  readonly _tag: "once" = "once"
 
   private _thunk: () => A
   private _cache?: Throwable | A
@@ -523,7 +531,7 @@ class Once<A> extends Eval<A> {
  * @private
  */
 class Always<A> extends Eval<A> {
-  readonly _funADType: "always" = "always"
+  readonly _tag: "always" = "always"
 
   constructor(thunk: () => A) {
     super()
@@ -540,7 +548,7 @@ class Always<A> extends Eval<A> {
  * @private
  */
 class Suspend<A> extends Eval<A> {
-  readonly _funADType: "suspend" = "suspend"
+  readonly _tag: "suspend" = "suspend"
 
   constructor(public readonly thunk: () => Eval<A>) { super() }
   toString(): string { return `Eval.suspend([thunk])` }
@@ -555,7 +563,7 @@ class Suspend<A> extends Eval<A> {
  * @private
  */
 class FlatMap<A, B> extends Eval<B> {
-  readonly _funADType: "flatMap" = "flatMap"
+  readonly _tag: "flatMap" = "flatMap"
 
   constructor(
     public readonly source: Eval<A>,
@@ -565,6 +573,35 @@ class FlatMap<A, B> extends Eval<B> {
     return `Eval#FlatMap(${String(this.source)}, [function])`
   }
 }
+
+/**
+ * Type enumerating the type classes implemented by `Eval`.
+ */
+export type EvalTypes = Monad<"funfix/eval">
+
+/**
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
+ */
+export const EvalModule: EvalTypes = {
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: Eval<A>) =>
+    fa.map(f),
+  // Apply
+  ap: <A, B>(ff: Eval<(a: A) => B>, fa: Eval<A>): Eval<B> =>
+    fa.ap(ff),
+  // Applicative
+  of: Eval.pure,
+  // Chain
+  chain: <A, B>(f: (a: A) => Eval<B>, fa: Eval<A>): Eval<B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Eval<C>, a: A): Eval<B> =>
+    Eval.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
+}
+
+// Registers Fantasy-Land compatible symbols
+coreInternals.fantasyLandRegister(Eval, EvalModule)
 
 /** @hidden */
 type Current = Eval<any>
@@ -587,7 +624,7 @@ function evalRunLoop<A>(start: Eval<A>): A {
   let bRest: CallStack | null = null
 
   while (true) {
-    switch (current._funADType) {
+    switch (current._tag) {
       case "now":
         const now = current as Now<A>
         const bind = _popNextBind(bFirst, bRest)

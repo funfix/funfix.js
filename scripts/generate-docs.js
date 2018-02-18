@@ -41,4 +41,4 @@ if (!fs.existsSync(path.join(currentDir, "rootdoc.md"))) {
   process.exit(0)
 }
 
-exec(`./node_modules/.bin/typedoc --mode file --theme minimal --listInvalidSymbolLinks --excludeNotExported --excludePrivate --out dist/docs --target es6 --name ${pkg.name} --readme rootdoc.md src`)
+exec(`./node_modules/.bin/typedoc --mode file --theme minimal --listInvalidSymbolLinks --excludePrivate --out .docs --target es6 --name ${pkg.name} --readme rootdoc.md src`)

@@ -11,3 +11,5 @@ coverage
 dist
 compiled
 .rpt2_cache
+package-lock.json
+.docs

@@ -12,8 +12,7 @@
     "test:prod": "lerna run test:prod",
     "lint": "lerna run lint",
     "build": "lerna run build",
-    "clean": "lerna run clean",
-    "commitmsg": "validate-commit-msg"
+    "clean": "lerna run clean"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.42",
@@ -23,14 +22,13 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.0",
     "babel-preset-es2015-rollup": "^3.0.0",
-    "commitizen": "^2.9.6",
-    "cz-conventional-changelog": "^2.0.0",
     "flow-bin": "^0.65.0",
     "fs-extra": "^5.0.0",
+    "funland-laws": "^0.1.4",
     "husky": "^0.14.3",
-    "jsverify": "^0.8.2",
-    "lerna": "^2.2.0",
     "mocha": "^5.0.1",
+    "jsverify": "^0.8.3",
+    "lerna": "^2.9.0",
     "nyc": "^11.2.1",
     "rimraf": "^2.6.1",
     "rollup": "^0.56.0",
@@ -40,20 +38,11 @@
     "rollup-plugin-sourcemaps": "^0.4.2",
     "source-map-support": "^0.5.0",
     "ts-node": "^4.1.0",
-    "tslint": "^5.5.0",
+    "tsc-watch": "^1.0.16",
+    "tslint": "^5.9.1",
     "tslint-config-standard": "^7.0.0",
     "tslint-eslint-rules": "^5.0.0",
     "typedoc": "^0.10.0",
-    "typescript": "^2.5.3",
-    "validate-commit-msg": "^2.14.0"
-  },
-  "config": {
-    "commitizen": {
-      "path": "node_modules/cz-conventional-changelog"
-    },
-    "validate-commit-msg": {
-      "types": "conventional-commit-types",
-      "helpMessage": "Use \"npm run commit\" instead, we use conventional-changelog format :) (https://github.com/commitizen/cz-cli)"
-    }
+    "typescript": "~2.7.2"
   }
 }

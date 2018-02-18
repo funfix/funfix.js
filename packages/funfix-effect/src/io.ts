@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import { HK, Monad } from "funland"
 import {
   Either,
   Try,
@@ -22,7 +23,8 @@ import {
   Failure,
   Throwable,
   TimeoutError,
-  Option, Some, None
+  Option, Some, None,
+  coreInternals
 } from "funfix-core"
 
 import {
@@ -351,7 +353,7 @@ import {
  *
  * @final
  */
-export class IO<A> {
+export class IO<A> implements HK<"funfix/io", A> {
   /**
    * Triggers the asynchronous execution.
    *
@@ -541,7 +543,7 @@ export class IO<A> {
    *        passed to `run()`) gets used
    */
   asyncBoundary(ec?: Scheduler): IO<A> {
-    return this.flatMap(a => IO.shift(ec).map(_ => a))
+    return this.flatMap(a => IO.shift(ec).map(() => a))
   }
 
   /**
@@ -565,7 +567,7 @@ export class IO<A> {
    *        final result
    */
   delayExecution(delay: number | Duration): IO<A> {
-    return IO.delayedTick(delay).flatMap(_ => this)
+    return IO.delayedTick(delay).flatMap(() => this)
   }
 
   /**
@@ -592,8 +594,8 @@ export class IO<A> {
    */
   delayResult(delay: number | Duration): IO<A> {
     return this.transformWith(
-      err => IO.delayedTick(delay).flatMap(_ => IO.raise(err)),
-      a => IO.delayedTick(delay).map(_ => a)
+      err => IO.delayedTick(delay).flatMap(() => IO.raise(err)),
+      a => IO.delayedTick(delay).map(() => a)
     )
   }
 
@@ -615,8 +617,8 @@ export class IO<A> {
    */
   doOnFinish(f: (e: Option<Throwable>) => IO<void>): IO<A> {
     return this.transformWith(
-      e => f(Some(e)).flatMap(_ => IO.raise(e)),
-      a => f(None).map(_ => a)
+      e => f(Some(e)).flatMap(() => IO.raise(e)),
+      a => f(None).map(() => a)
     )
   }
 
@@ -728,6 +730,16 @@ export class IO<A> {
   }
 
   /**
+   * `Applicative` apply operator.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<B>(ff: IO<(a: A) => B>): IO<B> {
+    return ff.flatMap(f => this.map(f))
+  }
+
+  /**
    * Sequentially compose two `IO` actions, discarding any value
    * produced by the first.
    *
@@ -744,7 +756,7 @@ export class IO<A> {
    * ```
    */
   followedBy<B>(fb: IO<B>): IO<B> {
-    return this.flatMap(_ => fb)
+    return this.flatMap(() => fb)
   }
 
   /**
@@ -773,7 +785,7 @@ export class IO<A> {
    * ```
    */
   forEffect<B>(fb: IO<B>): IO<A> {
-    return this.flatMap(a => fb.map(_ => a))
+    return this.flatMap(a => fb.map(() => a))
   }
 
   /**
@@ -806,7 +818,7 @@ export class IO<A> {
    *     successful results.
    */
   memoize(): IO<A> {
-    switch (this._funADType) {
+    switch (this._tag) {
       case "pure":
         return this
       case "always":
@@ -833,7 +845,7 @@ export class IO<A> {
    *     results and failures
    */
   memoizeOnSuccess(): IO<A> {
-    switch (this._funADType) {
+    switch (this._tag) {
       case "pure":
       case "once":
       case "memoize":
@@ -933,7 +945,7 @@ export class IO<A> {
    * @param fallback is a fallback `IO` to timeout to
    */
   timeoutTo<AA>(after: number | Duration, fallback: IO<AA>): IO<A | AA> {
-    const other = IO.delayedTick(after).flatMap(_ => fallback)
+    const other = IO.delayedTick(after).flatMap(() => fallback)
     const lst: IO<A | AA>[] = [this, other]
     return IO.firstCompletedOf(lst)
   }
@@ -978,14 +990,14 @@ export class IO<A> {
    *
    * @hidden
    */
-  readonly _funADType: "pure" | "always" | "once" | "flatMap" | "async" | "memoize"
+  readonly _tag!: "pure" | "always" | "once" | "flatMap" | "async" | "memoize"
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: IO<any>
-  /** @hidden */ readonly _funKindA: A
+  /** @hidden */ readonly _URI!: "funfix/io"
+  /** @hidden */ readonly _A!: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: IO<any>
+  /** @hidden */ static readonly _Class: IO<any>
 
   /**
    * Promote a `thunk` function to an `IO`, catching exceptions in
@@ -1082,7 +1094,7 @@ export class IO<A> {
    * Alias for {@link IO.suspend}.
    */
   static defer<A>(thunk: () => IO<A>): IO<A> {
-    return IO.unit().flatMap(_ => thunk())
+    return IO.unit().flatMap(() => thunk())
   }
 
   /**
@@ -1250,7 +1262,7 @@ export class IO<A> {
    *        scheduler passed on evaluation in {@link IO.run}
    */
   static fork<A>(fa: IO<A>, ec?: Scheduler): IO<A> {
-    return IO.shift(ec).flatMap(_ => fa)
+    return IO.shift(ec).flatMap(() => fa)
   }
 
   /**
@@ -1760,7 +1772,7 @@ export class IO<A> {
    * of the same type.
    */
   static suspend<A>(thunk: () => IO<A>): IO<A> {
-    return IO.unit().flatMap(_ => thunk())
+    return IO.unit().flatMap(() => thunk())
   }
 
   /**
@@ -1816,7 +1828,7 @@ export class IO<A> {
  * @private
  */
 class IOPure<A> extends IO<A> {
-  readonly _funADType: "pure" = "pure"
+  readonly _tag: "pure" = "pure"
 
   /**
    * @param value is the value that's going to be returned
@@ -1842,10 +1854,10 @@ const ioUnitRef: IOPure<void> = new IOPure(Try.unit())
  * @private
  */
 class IOOnce<A> extends IO<A> {
-  readonly _funADType: "once" = "once"
+  readonly _tag: "once" = "once"
 
   private _thunk: () => A
-  public cache: Try<A>
+  public cache!: Try<A>
   public onlyOnSuccess: boolean
 
   constructor(thunk: () => A, onlyOnSuccess: boolean) {
@@ -1883,7 +1895,7 @@ class IOOnce<A> extends IO<A> {
  * @private
  */
 class IOAlways<A> extends IO<A> {
-  readonly _funADType: "always" = "always"
+  readonly _tag: "always" = "always"
 
   constructor(public thunk: () => A) { super() }
 }
@@ -1897,7 +1909,7 @@ class IOAlways<A> extends IO<A> {
  * @private
  */
 class IOFlatMap<A, B> extends IO<B> {
-  readonly _funADType: "flatMap" = "flatMap"
+  readonly _tag: "flatMap" = "flatMap"
 
   constructor(
     public readonly source: IO<A>,
@@ -1924,13 +1936,13 @@ export type IORegister<A> =
  * @hidden
  */
 class IOAsync<A> extends IO<A> {
-  readonly _funADType: "async" = "async"
+  readonly _tag: "async" = "async"
 
   constructor(public readonly register: IORegister<A>) { super() }
 }
 
 class IOMemoize<A> extends IO<A> {
-  readonly _funADType: "memoize" = "memoize"
+  readonly _tag: "memoize" = "memoize"
 
   public result: Try<A> | Future<A> | null
   public source?: IO<A>
@@ -2019,6 +2031,35 @@ export class IOContext {
 export type IOOptions = {
   autoCancelableRunLoops: boolean
 }
+
+/**
+ * Type enumerating the type classes implemented by `Io`.
+ */
+export type IOTypes = Monad<"funfix/io">
+
+/**
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
+ */
+export const IOModule: IOTypes = {
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: IO<A>) =>
+    fa.map(f),
+  // Apply
+  ap: <A, B>(ff: IO<(a: A) => B>, fa: IO<A>): IO<B> =>
+    fa.ap(ff),
+  // Applicative
+  of: IO.pure,
+  // Chain
+  chain: <A, B>(f: (a: A) => IO<B>, fa: IO<A>): IO<B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => IO<C>, a: A): IO<B> =>
+    IO.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
+}
+
+// Registers Fantasy-Land compatible symbols
+coreInternals.fantasyLandRegister(IO, IOModule)
 
 /** @hidden */
 function ioShift(ec?: Scheduler): IO<void> {
@@ -2178,7 +2219,7 @@ function ioGenericRunLoop(
         }
 
         try {
-          current = bind(current.failed().get())
+          current = bind((current as Try<never>).failed().get())
         } catch (e) {
           current = Try.failure(e)
         }
@@ -2197,7 +2238,7 @@ function ioGenericRunLoop(
         return ctx.connection
       }
     }
-    else switch (current._funADType) {
+    else switch (current._tag) {
       case "pure":
         current = (current as IOPure<any>).value
         break
@@ -2280,7 +2321,7 @@ function taskToFutureRunLoop(
           current = new IOPure(Try.failure(e))
         }
       } else {
-        const err = current.failed().get()
+        const err = (current as Try<never>).failed().get()
         const bind = _ioFindErrorHandler(bFirst, bRest)
         if (!bind) {
           scheduler.batchIndex = frameIndex
@@ -2303,7 +2344,7 @@ function taskToFutureRunLoop(
         return ioToFutureGoAsync(current, scheduler, bFirst, bRest, true)
       }
     }
-    else switch (current._funADType) {
+    else switch (current._tag) {
       case "pure":
         current = (current as IOPure<any>).value
         break

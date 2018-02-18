@@ -32,7 +32,7 @@ if (!process.env["CI"]) {
 }
 
 const branch = process.env["TRAVIS_TAG"]
-const m = branch.match(/^v(\d+\.\d+\.\d+)$/)
+const m = branch.match(/^v(\d+\.\d+\.\d+([-][a-z]+\.\d+)?)$/)
 let version = m && m[1]
 
 if (!version) {
@@ -43,4 +43,8 @@ if (!version) {
 console.info(`Version detected: ${version}`)
 process.chdir(path.join(path.dirname(process.argv[1]), ".."))
 
-exec(`lerna publish --skip-git --yes --force-publish --repo-version ${version}`)
+const tag = version && m[2]
+  ? "--npm-tag next"
+  : ""
+
+exec(`lerna publish --skip-git --yes --force-publish --repo-version ${version} ${tag}`)

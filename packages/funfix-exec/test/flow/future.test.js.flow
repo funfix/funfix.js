@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,13 @@
 
 /* @flow */
 
+import type { HK, Constructor, Monad } from "funland"
 import { Either, Try, Option, Success, Failure } from "funfix-core"
+import type { FutureK, FutureURI } from "../../src"
 import {
   Future,
   FutureMaker,
+  FutureModule,
   Scheduler,
   ICancelable,
   IPromiseLike,
@@ -162,3 +165,7 @@ maker2.failure("err")
 
 const fm1: Future<number> = maker2.future()
 const fm2: Future<number> = maker2.future(Cancelable.empty())
+
+const hk: FutureK<number> = fm1
+const functor: Monad<FutureURI> = FutureModule
+const tp: Constructor<Future<any>> = Future

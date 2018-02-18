@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,11 @@
 
 /* @flow */
 
+import type { HK, Constructor, Monad } from "funland"
 import { Right } from "funfix-core"
 import * as ff from "../../src/"
-import { Eval } from "../../src/"
+import type { EvalK, EvalURI } from "../../src"
+import { Eval, EvalModule } from "../../src/"
 
 const ref1: ff.Eval<number> = ff.Eval.always(() => 1)
 const ref2: Eval<number> = Eval.always(() => 1)
@@ -89,3 +91,7 @@ const map3: Eval<number> = Eval.map3(Eval.pure(1), Eval.pure(1), Eval.pure(1), (
 const map4: Eval<number> = Eval.map4(Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c, d) => a + b + c + d)
 const map5: Eval<number> = Eval.map5(Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c, d, e) => a + b + c + d + e)
 const map6: Eval<number> = Eval.map6(Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), Eval.pure(1), (a, b, c, d, e, f) => a + b + c + d + e + f)
+
+const hk: EvalK<number> = Eval.pure(1)
+const tp: Constructor<Eval<any>> = Eval
+const functor: Monad<EvalURI> = EvalModule

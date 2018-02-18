@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,13 @@
 
 /* @flow */
 
+import type { HK, HK2 } from "funland"
+import { Setoid, Monad } from "funland"
 import type { Throwable } from "./errors"
 
 declare export class Either<+L, +R> {
+  +value: L | R;
+
   get(): R;
   getOrElse<RR>(fallback: RR): R | RR;
   getOrElseL<RR>(thunk: () => RR): R | RR;
@@ -36,22 +40,21 @@ declare export class Either<+L, +R> {
   forEach(cb: (r: R) => void): void;
   swap(): Either<R, L>;
   toOption(): Option<R>;
-  equals(other: Either<L, R>): boolean;
+  equals(that: Either<L, R>): boolean;
   hashCode(): number;
 
-  +_funKindF: Either<L, any>;
-  +_funKindA: R;
-
   // Implements Constructor<T>
-  static +_funErasure: Either<any, any>;
+  static +_Class: Either<any, any>;
 
   static left<L, R>(value: L): Either<L, R>;
   static right<L, R>(value: R): Either<L, R>;
 
-  static map2<A1,A2,L,R>(fa1: Either<L,A1>, fa2: Either<L,A2>,
-                         f: (A1, A2) => R): Either<L, R>;
-  static map3<A1,A2,A3,L,R>(fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>,
-                            f: (A1, A2, A3) => R): Either<L, R>;
+  static map2<A1,A2,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>,
+    f: (A1, A2) => R): Either<L, R>;
+  static map3<A1,A2,A3,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>,
+    f: (A1, A2, A3) => R): Either<L, R>;
   static map4<A1,A2,A3,A4,L,R>(
     fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>,
     f: (A1, A2, A3, A4) => R): Either<L, R>;
@@ -65,10 +68,26 @@ declare export class Either<+L, +R> {
   static tailRecM<L, A, B>(a: A, f: (a: A) => Either<L, Either<A, B>>): Either<L, B>;
 }
 
-declare export function Left<L>(value: L): Either<L, empty>;
-declare export function Right<R>(value: R): Either<empty, R>;
+declare export class TLeft<+L> extends Either<L, empty> {
+  +value: L;
+}
+
+declare export class TRight<+R> extends Either<empty, R> {
+  +value: R;
+}
+
+declare export function Left<L>(value: L): TLeft<L>;
+declare export function Right<R>(value: R): TRight<R>;
+
+export type EitherURI = <U, L, A>(x: [U, L, A]) => Either<L, A>;
+export type EitherK<L, R> = HK2<EitherURI, L, R>;
+
+export type EitherTypes = Setoid<Either<any, any>> & Monad<EitherURI>;
+declare export var EitherModule: EitherTypes;
 
 declare export class Option<+A> {
+  +value: void | A;
+
   get(): A;
   getOrElse<AA>(fallback: AA): A | AA;
   getOrElseL<AA>(thunk: () => AA): A | AA;
@@ -89,28 +108,26 @@ declare export class Option<+A> {
   hashCode(): number;
   isEmpty(): boolean;
   map<B>(f: (a: A) => B): Option<B>;
-  mapN<B>(f: (a: A) => ?B): Option<B>;
   nonEmpty(): boolean;
 
-  // Implements HK<F, A>
-  +_funKindF: Option<any>;
-  +_funKindA: A;
-
   // Implements Constructor<T>
-  static +_funErasure: Option<any>;
+  static +_Class: Option<any>;
 
   static empty<A>(): Option<A>;
-  static none(): Option<empty>;
+  static none<A>(): Option<A>;
   static of<A>(value: ?A): Option<A>;
   static pure<A>(value: A): Option<A>;
   static some<A>(value: A): Option<A>;
 
-  static map2<A1,A2,R>(fa1: Option<A1>, fa2: Option<A2>,
-                       f: (A1, A2) => R): Option<R>;
-  static map3<A1,A2,A3,R>(fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>,
-                          f: (A1, A2, A3) => R): Option<R>;
-  static map4<A1,A2,A3,A4,R>(fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>,
-                             f: (A1, A2, A3, A4) => R): Option<R>;
+  static map2<A1,A2,R>(
+    fa1: Option<A1>, fa2: Option<A2>,
+    f: (A1, A2) => R): Option<R>;
+  static map3<A1,A2,A3,R>(
+    fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>,
+    f: (A1, A2, A3) => R): Option<R>;
+  static map4<A1,A2,A3,A4,R>(
+    fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>,
+    f: (A1, A2, A3, A4) => R): Option<R>;
   static map5<A1,A2,A3,A4,A5,R>(
     fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>, fa4: Option<A4>, fa5: Option<A5>,
     f: (A1, A2, A3, A4, A5) => R): Option<R>;
@@ -121,10 +138,26 @@ declare export class Option<+A> {
   static tailRecM<A, B>(a: A, f: (a: A) => Option<Either<A, B>>): Option<B>;
 }
 
-declare export function Some<A>(value: A): Option<A>;
-declare export var None: Option<empty>;
+declare export class TSome<A> extends Option<A> {
+  +value: A;
+}
+
+declare export class TNone extends Option<empty> {
+  +value: void;
+}
+
+declare export function Some<A>(value: A): TSome<A>;
+declare export var None: TNone;
+
+export type OptionURI = <U, L, A>(x: [U, L, A]) => Option<A>;
+export type OptionK<A> = HK<OptionURI, A>;
+
+export type OptionTypes = Setoid<Option<any>> & Monad<OptionURI>;
+declare export var OptionModule: OptionTypes;
 
 declare export class Try<+A> {
+  +value: Throwable | A;
+
   get(): A;
   getOrElse<AA>(fallback: AA): A | AA;
   getOrElseL<AA>(thunk: () => AA): A | AA;
@@ -149,19 +182,15 @@ declare export class Try<+A> {
   equals(that: Try<A>): boolean;
   hashCode(): number;
 
-  // Implements HK<F, A>
-  +_funKindF: Try<any>;
-  +_funKindA: A;
-
   // Implements Constructor<T>
-  static +_funErasure: Try<any>;
+  static +_Class: Try<any>;
 
   static of<A>(thunk: () => A): Try<A>;
   static pure<A>(value: A): Try<A>;
   static unit(): Try<void>;
   static success<A>(value: A): Try<A>;
-  static failure(e: Throwable): Try<empty>;
-  static raise(e: Throwable): Try<empty>;
+  static failure<A>(e: Throwable): Try<A>;
+  static raise<A>(e: Throwable): Try<A>;
 
   static map2<A1,A2,R>(
     fa1: Try<A1>, fa2: Try<A2>,
@@ -182,5 +211,19 @@ declare export class Try<+A> {
   static tailRecM<A, B>(a: A, f: (a: A) => Try<Either<A, B>>): Try<B>;
 }
 
-declare export function Success<A>(value: A): Try<A>;
-declare export function Failure(e: Throwable): Try<empty>;
+declare export class TSuccess<A> extends Try<A> {
+  +value: A;
+}
+
+declare export class TFailure extends Try<empty> {
+  +value: void;
+}
+
+declare export function Success<A>(value: A): TSuccess<A>;
+declare export function Failure(e: Throwable): TFailure;
+
+export type TryURI = <U, L, A>(x: [U, L, A]) => Try<A>;
+export type TryK<A> = HK<TryURI, A>;
+
+export type TryTypes = Setoid<Try<any>> & Monad<TryURI>;
+declare export var TryModule: TryTypes;

@@ -23,7 +23,7 @@ are introduced for dealing with cancellation concerns:
 |----------------------------------------------------|--------------------------------------------------------------------------------------- |
 | {@link ICancelable} and {@link Cancelable}         | for expressing actions that can be triggered to cancel processes / dispose of resources |
 | {@link IBoolCancelable} and {@link BoolCancelable} | for cancelable references that can be queried for their `isCanceled` status |
-| {@link IAssignCancelable} and {AssignCancelable}   | for cancelable references that can be assigned (behave like a box for) another reference |
+| {@link IAssignCancelable} and {@link AssignCancelable} | for cancelable references that can be assigned (behave like a box for) another reference |
 | {@link MultiAssignCancelable}                      | being a mutable cancelable whose underlying reference can be updated multiple times |
 | {@link SingleAssignCancelable}                     | for building forward references, much like `MultiAssignCancelable` except that it can be assigned only once, triggering an error on the second attempt |
 | {@link SerialCancelable}                           | being like a `MultiAssignCancelable` that cancels its previous underlying reference on updates |
