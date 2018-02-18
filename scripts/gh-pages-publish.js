@@ -33,7 +33,7 @@ if (!process.env["CI"]) {
 }
 
 const branch = process.env["TRAVIS_BRANCH"] || process.env["TRAVIS_TAG"]
-const m = branch.match(/^v(\d+\.\d+\.\d+)$/)
+const m = branch.match(/^v(\d+\.\d+\.\d+([-][a-z]+\.\d+)?)$/)
 let version = m && m[1]
 
 if (!version && process.env["TRAVIS_BRANCH"] === "master" && process.env["TRAVIS_PULL_REQUEST"] === 'false') {
@@ -82,7 +82,7 @@ for (const p of fs.readdirSync(rootDir)) {
 if (version !== 'next') {
   exec(`rm -rf "${destDir}"/api`)
   exec(`ln -s ./archive/${version} "${destDir}"/api`)
-} 
+}
 
 cd(destDir)
 exec("git add .")
