@@ -16,7 +16,8 @@
  */
 
 import * as assert from "assert"
-import { Option, Future, is, Some, Success, Eval, Monad, monadOf } from "../../src"
+import { Monad } from "funland"
+import { Option, Future, is, Some, Success, Eval, EvalModule } from "../../src"
 
 function assertEquals<A>(lh: A, rh: A): void {
   assert.ok(is(lh, rh), `${lh} != ${rh}`)
@@ -36,8 +37,8 @@ describe("funfix module sanity test", () => {
   })
 
   it("works for Monad", () => {
-    const m = monadOf(Eval)
-    const v = m.flatMap(Eval.of(() => 1), a => Eval.of(() => a + 1)) as Eval<number>
+    const m: Monad<"funfix/eval"> = EvalModule
+    const v = m.chain(a => Eval.of(() => a + 1), Eval.of(() => 1)) as Eval<number>
     assertEquals(v.get(), 2)
   })
 })

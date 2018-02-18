@@ -51,7 +51,8 @@
   "dependencies": {
     "funfix-core": "0.0.0-development",
     "funfix-effect": "0.0.0-development",
-    "funfix-exec": "0.0.0-development"
+    "funfix-exec": "0.0.0-development",
+    "funland": "^0.1.4"
   },
   "nyc": {
     "include": [

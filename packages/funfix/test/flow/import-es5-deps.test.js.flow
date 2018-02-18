@@ -17,12 +17,13 @@
 
 /* @flow */
 
+import { Monad } from "funland"
 import { Option } from "funfix-core/dist/es5"
 import { Future } from "funfix-exec/dist/es5"
-import { Eval, IO } from "funfix-effect/dist/es5"
-import { Monad, monadOf } from "funfix-types/dist/es5"
+import type { EvalURI } from "funfix-effect/dist/es5"
+import { Eval, IO, EvalModule } from "funfix-effect/dist/es5"
 
 const opt: Option<number> = Option.of(10)
 const f: Future<string> = Future.of(() => "Hello!")
 const ev: Eval<number> = Eval.of(() => 10)
-const m: Monad<Eval<any>> = monadOf(Eval)
+const m: Monad<EvalURI> = EvalModule
