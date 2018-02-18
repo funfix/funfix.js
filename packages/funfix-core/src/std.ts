@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Setoid } from "funfix-types"
+import { Setoid } from "funland"
 
 /**
  * Interface for testing the equality of value objects.

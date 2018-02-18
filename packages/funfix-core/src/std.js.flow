@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import type { Setoid } from "funfix-types"
+import type { Setoid } from "funland"
 
 export interface IEquals<A> {
   equals(other: A): boolean;

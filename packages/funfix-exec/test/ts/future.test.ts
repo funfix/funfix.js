@@ -16,7 +16,7 @@
  */
 
 import * as jv from "jsverify"
-import { HK } from "funfix-types"
+import { HK } from "funland"
 import * as assert from "./asserts"
 import { Equiv } from "../../../funfix-laws/src"
 import { functorCheck } from "../../../funfix-laws/test-common"

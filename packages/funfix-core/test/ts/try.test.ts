@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { HK } from "funfix-types"
+import { HK } from "funland"
 import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"

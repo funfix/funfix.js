@@ -22,7 +22,7 @@ import * as assert from "./asserts"
 import { Option, Some, None, Left, Right, OptionModule } from "../../src/"
 import { NoSuchElementError } from "../../src/"
 import { is, hashCode } from "../../src/"
-import { HK } from "funfix-types"
+import { HK } from "funland"
 import { Equiv } from "../../../funfix-laws/src"
 import { setoidCheck, functorCheck } from "../../../funfix-laws/test-common"
 

@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "funfix-core": "0.0.0-development",
-    "funfix-types": "0.0.0-development"
+    "funland": "^0.1.4"
   },
   "files": [
     "dist",

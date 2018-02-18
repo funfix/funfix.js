@@ -21,7 +21,7 @@ import {
   Right, DummyError
 } from "funfix-core"
 
-import { HK } from "funfix-types"
+import { HK } from "funland"
 import { Try } from "funfix-core"
 import * as jv from "jsverify"
 import * as inst from "./instances"

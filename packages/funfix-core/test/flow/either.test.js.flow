@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import type { HK, HK2, Constructor, Setoid, Functor } from "funfix-types"
+import type { HK, HK2, Constructor, Setoid, Functor } from "funland"
 import {
   Either,
   Left,

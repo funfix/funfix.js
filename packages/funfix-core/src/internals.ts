@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Constructor } from "funfix-types"
+import { Constructor } from "funland"
 
 /**
  * Given a constructor, searches for all Fantasy-Land compatible

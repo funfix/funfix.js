@@ -18,7 +18,7 @@
 /* @flow */
 
 import type { Throwable } from "funfix-core"
-import { Functor } from "funfix-types"
+import { Functor } from "funland"
 import { Option, Try, Either } from "funfix-core"
 import { Scheduler } from "./scheduler"
 import { ICancelable } from "./cancelable"

@@ -17,10 +17,12 @@
 
 /* @flow */
 
+import { Setoid, Monad } from "funland"
 import type { Throwable } from "./errors"
-import { Setoid, Functor } from "funfix-types"
 
 declare export class Either<+L, +R> {
+  +value: L | R;
+
   get(): R;
   getOrElse<RR>(fallback: RR): R | RR;
   getOrElseL<RR>(thunk: () => RR): R | RR;

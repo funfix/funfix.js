@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import { Functor } from "funfix-types"
+import { Functor } from "funland"
 import { Either } from "funfix-core"
 
 declare export class Eval<+A> {

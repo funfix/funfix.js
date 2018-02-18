@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Setoid, Functor } from "funfix-types"
+import { Setoid, Monad } from "funland"
 import * as std from "./std"
 import { HK, HK2 } from "./kinds"
 import { Throwable, NoSuchElementError } from "./errors"
@@ -54,14 +54,12 @@ import { fantasyLandRegister } from "./internals"
  * @final
  */
 export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/either", L, R> {
-  private _isRight: boolean
-  private _rightRef: R
-  private _leftRef: L
+  public readonly value: L | R
+  private readonly _isRight: boolean
 
-  private constructor(_leftRef: L, _rightRef: R, _isRight: boolean) {
-    this._isRight = _isRight
-    if (_isRight) this._rightRef = _rightRef
-    else this._leftRef = _leftRef
+  protected constructor(value: L | R, tag: "left" | "right") {
+    this._isRight = tag === "right"
+    this.value = value
   }
 
   /**
@@ -72,7 +70,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * Right(10).isLeft() // false
    * ```
    */
-  isLeft(): boolean { return !this._isRight }
+  isLeft(): this is TLeft<L> { return !this._isRight }
 
   /**
    * Returns `true` if this is a `right`, `false` otherwise.
@@ -82,7 +80,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * Right(10).isRight() // true
    * ```
    */
-  isRight(): boolean { return this._isRight }
+  isRight(): this is TRight<R> { return this._isRight }
 
   /**
    * Returns true if this is a Right and its value is equal to `elem`
@@ -99,8 +97,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * Left("something").contains("something") // false
    * ```
    */
-  contains(elem: R): boolean {
-    return this._isRight && std.is(this._rightRef, elem)
+  contains(elem: R): this is TRight<R> {
+    return this._isRight && std.is(this.value, elem)
   }
 
   /**
@@ -118,8 +116,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * Left(10).exists(n => n == 10)
    * ```
    */
-  exists(p: (r: R) => boolean): boolean {
-    return this._isRight && p(this._rightRef)
+  exists(p: (r: R) => boolean): this is TRight<R> {
+    return this._isRight && p(this.value as R)
   }
 
   /**
@@ -141,10 +139,10 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * Left(7).filterOrElse(x => false, () => -1)    // Left(7)
    * ```
    */
-  filterOrElse(p: (r: R) => boolean, zero: () => L): Either<L, R> {
+  filterOrElse<LL>(p: (r: R) => boolean, zero: () => LL): Either<LL, R> {
     return this._isRight
-      ? (p(this._rightRef) ? (this as any) : Left(zero()))
-      : (this as any)
+      ? (p(this.value as R) ? this as any : Left(zero()))
+      : this as any
   }
 
   /**
@@ -154,8 +152,11 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * It can be used to *chain* multiple `Either` references.
    */
   flatMap<S>(f: (r: R) => Either<L, S>): Either<L, S> {
-    return this._isRight ? f(this._rightRef) : (this as any)
+    return this._isRight ? f(this.value as R) : (this as any)
   }
+
+  /** Alias for [[flatMap]]. */
+  chain = this.flatMap
 
   /**
    * Applies the `left` function to [[Left]] values, and the
@@ -173,7 +174,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * ```
    */
   fold<S>(left: (l: L) => S, right: (r: R) => S): S {
-    return this._isRight ? right(this._rightRef) : left(this._leftRef)
+    return this._isRight ? right(this.value as R) : left(this.value as L)
   }
 
   /**
@@ -193,7 +194,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * ```
    */
   forAll(p: (r: R) => boolean): boolean {
-    return !this._isRight || p(this._rightRef)
+    return !this._isRight || p(this.value as R)
   }
 
   /**
@@ -208,7 +209,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * @throws [[NoSuchElementError]] in case the the `Either` is a `Left`
    */
   get(): R {
-    if (this._isRight) return this._rightRef
+    if (this._isRight) return this.value as R
     throw new NoSuchElementError("left.get()")
   }
 
@@ -222,7 +223,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * ```
    */
   getOrElse<RR>(fallback: RR): R | RR {
-    return this._isRight ? this._rightRef : fallback
+    return this._isRight ? this.value as R : fallback
   }
 
   /**
@@ -235,7 +236,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * ```
    */
   getOrElseL<RR>(thunk: () => RR): R | RR {
-    return this._isRight ? this._rightRef : thunk()
+    return this._isRight ? this.value as R : thunk()
   }
 
   /**
@@ -249,7 +250,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    */
   map<C>(f: (r: R) => C): Either<L, C> {
     return this._isRight
-      ? Right(f(this._rightRef))
+      ? Right(f(this.value as R))
       : (this as any)
   }
 
@@ -263,7 +264,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * ```
    */
   forEach(cb: (r: R) => void): void {
-    if (this._isRight) cb(this._rightRef)
+    if (this._isRight) cb(this.value as R)
   }
 
   /**
@@ -277,8 +278,8 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    */
   swap(): Either<R, L> {
     return this._isRight
-      ? Left(this._rightRef)
-      : Right(this._leftRef)
+      ? Left(this.value as R)
+      : Right(this.value as L)
   }
 
   /**
@@ -286,9 +287,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * or `Option.none` in case the source is a `left` value.
    */
   toOption(): Option<R> {
-    return this._isRight
-      ? Option.some(this._rightRef)
-      : Option.none()
+    return this._isRight ? Some(this.value as R) : None
   }
 
   /**
@@ -299,21 +298,20 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
   equals(that: Either<L, R>): boolean {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
-    if (this._isRight) return std.is(this._rightRef, that._rightRef)
-    return std.is(this._leftRef, that._leftRef)
+    return this._isRight === that._isRight && std.is(this.value, that.value)
   }
 
   /** Implements {@link IEquals.hashCode}. */
   hashCode(): number {
     return this._isRight
-      ? std.hashCode(this._rightRef) << 2
-      : std.hashCode(this._leftRef) << 3
+      ? std.hashCode(this.value as R) << 2
+      : std.hashCode(this.value as L) << 3
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _URI: "funfix/either"
-  /** @hidden */ readonly _A: R
-  /** @hidden */ readonly _L: L
+  /** @hidden */ readonly _URI!: "funfix/either"
+  /** @hidden */ readonly _A!: R
+  /** @hidden */ readonly _L!: L
 
   // Implements Constructor<T>
   /** @hidden */ static readonly _Class: Either<any, any>
@@ -345,12 +343,13 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    *
    * This operation is the `Applicative.map2`.
    */
-  static map2<A1,A2,L,R>(fa1: Either<L,A1>, fa2: Either<L,A2>,
-                         f: (a1: A1, a2: A2) => R): Either<L, R> {
+  static map2<A1, A2, L, R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>,
+    f: (a1: A1, a2: A2) => R): Either<L, R> {
 
-    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
-    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
-    return Right(f(fa1._rightRef, fa2._rightRef))
+    if (fa1.isLeft()) return fa1
+    if (fa2.isLeft()) return fa2
+    return Right(f(fa1.value as A1, fa2.value as A2))
   }
 
   /**
@@ -370,14 +369,14 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * )
    * ```
    */
-  static map3<A1,A2,A3,L,R>(
-    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>,
+  static map3<A1, A2, A3, L, R>(
+    fa1: Either<L, A1>, fa2: Either<L, A2>, fa3: Either<L, A3>,
     f: (a1: A1, a2: A2, a3: A3) => R): Either<L, R> {
 
-    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
-    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
-    if (fa3.isLeft()) return ((fa3 as any) as Either<L, R>)
-    return Right(f(fa1._rightRef, fa2._rightRef, fa3._rightRef))
+    if (fa1.isLeft()) return fa1
+    if (fa2.isLeft()) return fa2
+    if (fa3.isLeft()) return fa3
+    return Right(f(fa1.value as A1, fa2.value as A2, fa3.value as A3))
   }
 
   /**
@@ -397,15 +396,15 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * )
    * ```
    */
-  static map4<A1,A2,A3,A4,L,R>(
+  static map4<A1, A2, A3, A4, L, R>(
     fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>,
     f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Either<L, R> {
 
-    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
-    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
-    if (fa3.isLeft()) return ((fa3 as any) as Either<L, R>)
-    if (fa4.isLeft()) return ((fa4 as any) as Either<L, R>)
-    return Right(f(fa1._rightRef, fa2._rightRef, fa3._rightRef, fa4._rightRef))
+    if (fa1.isLeft()) return fa1
+    if (fa2.isLeft()) return fa2
+    if (fa3.isLeft()) return fa3
+    if (fa4.isLeft()) return fa4
+    return Right(f(fa1.value as A1, fa2.value as A2, fa3.value as A3, fa4.value as A4))
   }
 
   /**
@@ -425,16 +424,16 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * )
    * ```
    */
-  static map5<A1,A2,A3,A4,A5,L,R>(
+  static map5<A1, A2, A3, A4, A5, L, R>(
     fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>, fa5: Either<L,A5>,
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Either<L, R> {
 
-    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
-    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
-    if (fa3.isLeft()) return ((fa3 as any) as Either<L, R>)
-    if (fa4.isLeft()) return ((fa4 as any) as Either<L, R>)
-    if (fa5.isLeft()) return ((fa5 as any) as Either<L, R>)
-    return Right(f(fa1._rightRef, fa2._rightRef, fa3._rightRef, fa4._rightRef, fa5._rightRef))
+    if (fa1.isLeft()) return fa1
+    if (fa2.isLeft()) return fa2
+    if (fa3.isLeft()) return fa3
+    if (fa4.isLeft()) return fa4
+    if (fa5.isLeft()) return fa5
+    return Right(f(fa1.value as A1, fa2.value as A2, fa3.value as A3, fa4.value as A4, fa5.value as A5))
   }
 
   /**
@@ -454,17 +453,17 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * )
    * ```
    */
-  static map6<A1,A2,A3,A4,A5,A6,L,R>(
+  static map6<A1, A2, A3, A4, A5, A6, L, R>(
     fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>, fa5: Either<L,A5>, fa6: Either<L,A6>,
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Either<L, R> {
 
-    if (fa1.isLeft()) return ((fa1 as any) as Either<L, R>)
-    if (fa2.isLeft()) return ((fa2 as any) as Either<L, R>)
-    if (fa3.isLeft()) return ((fa3 as any) as Either<L, R>)
-    if (fa4.isLeft()) return ((fa4 as any) as Either<L, R>)
-    if (fa5.isLeft()) return ((fa5 as any) as Either<L, R>)
-    if (fa6.isLeft()) return ((fa6 as any) as Either<L, R>)
-    return Right(f(fa1._rightRef, fa2._rightRef, fa3._rightRef, fa4._rightRef, fa5._rightRef, fa6._rightRef))
+    if (fa1.isLeft()) return fa1
+    if (fa2.isLeft()) return fa2
+    if (fa3.isLeft()) return fa3
+    if (fa4.isLeft()) return fa4
+    if (fa5.isLeft()) return fa5
+    if (fa6.isLeft()) return fa6
+    return Right(f(fa1.value as A1, fa2.value as A2, fa3.value as A3, fa4.value as A4, fa5.value as A5, fa6.value as A6))
   }
 
   /**
@@ -479,11 +478,11 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
     let cursor = a
     while (true) {
       const result = f(cursor)
-      if (result.isLeft()) return result as any
+      if (!result.isRight()) return result as any
 
-      const some = result.get()
-      if (some.isRight()) return Right(some.get())
-      cursor = some.swap().get()
+      const some = result.value
+      if (some.isRight()) return Right(some.value)
+      cursor = some.value as A
     }
   }
 }
@@ -492,38 +491,72 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
 fantasyLandRegister(Either)
 
 /**
+ * Result of the [[Left]] data constructor, representing
+ * "left" values in the [[Either]] disjunction.
+ *
+ * @final
+ */
+export class TLeft<L> extends Either<L, never> {
+  public readonly value!: L
+  constructor(value: L) { super(value, "left") }
+}
+
+/**
  * The `Left` data constructor represents the left side of the
  * [[Either]] disjoint union, as opposed to the [[Right]] side.
  */
-export function Left<L>(value: L): Either<L, never> {
-  return new (Either as any)(value, null as never, false)
+export function Left<L>(value: L): TLeft<L> {
+  return new TLeft(value)
+}
+
+/**
+ * Result of the [[Right]] data constructor, representing
+ * "right" values in the [[Either]] disjunction.
+ *
+ * @final
+ */
+export class TRight<R> extends Either<never, R> {
+  public readonly value!: R
+  constructor(value: R) { super(value, "right") }
 }
 
 /**
  * The `Right` data constructor represents the right side of the
  * [[Either]] disjoint union, as opposed to the [[Left]] side.
  */
-export function Right<R>(value: R): Either<never, R> {
-  return new (Either as any)(null as never, value, true)
+export function Right<R>(value: R): TRight<R> {
+  return new TRight(value)
 }
 
 /**
  * Type enumerating the type-classes that `Either` implements.
  */
-export type EitherTypes =
-  Setoid<Either<any, any>> &
-  Functor<"funfix/either">
+export type EitherTypes = Setoid<Either<any, any>> & Monad<"funfix/either">
 
 /**
  * Type-class implementations, compatible with the `static-land`
- * specification.
+ * and `funland` specifications.
+ *
+ * See [funland-js.org](https://funland-js.org).
  */
 export const EitherModule: EitherTypes = {
   // Setoid
   equals: (x, y) => x ? x.equals(y) : !y,
   // Functor
-  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/either", A>) =>
-    (fa as Either<never, A>).map(f)
+  map: <L, A, B>(f: (a: A) => B, fa: Either<L, A>) =>
+    fa.map(f),
+  // Apply
+  ap: <L, A, B>(ff: Either<L, (a: A) => B>, fa: Either<L, A>): Either<L, B> =>
+    ff.flatMap(f => fa.map(f)),
+  // Applicative
+  of: <L, A>(value: A): Either<L, A> =>
+    Either.right(value),
+  // Chain
+  chain: <L, A, B>(f: (a: A) => Either<L, B>, fa: Either<L, A>): Either<L, B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <L, A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Either<L, C>, a: A): Either<L, B> =>
+    Either.tailRecM<L, A, B>(a, a => f(Either.left as any, Either.right as any, a))
 }
 
 /**
@@ -542,13 +575,13 @@ export const EitherModule: EitherTypes = {
  */
 export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A> {
   // tslint:disable-next-line:variable-name
-  private _isEmpty: boolean
-  private _ref: A
+  private readonly _isEmpty: boolean
+  public readonly value: undefined | A
 
-  private constructor(ref: A, isEmpty?: boolean) {
+  protected constructor(ref: A | undefined, isEmpty?: boolean) {
     /* tslint:disable-next-line:strict-type-predicates */
     this._isEmpty = isEmpty != null ? isEmpty : (ref === null || ref === undefined)
-    this._ref = ref
+    this.value = ref
   }
 
   /**
@@ -562,8 +595,8 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * @throws [[NoSuchElementError]] in case the option is empty
    */
   get(): A {
-    if (!this._isEmpty) return this._ref
-    else throw new NoSuchElementError("Option.get")
+    if (!this._isEmpty) return this.value as A
+    throw new NoSuchElementError("Option.get")
   }
 
   /**
@@ -573,7 +606,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * See [[Option.getOrElseL]] for a lazy alternative.
    */
   getOrElse<AA>(fallback: AA): A | AA {
-    if (!this._isEmpty) return this._ref
+    if (!this._isEmpty) return this.value as A
     else return fallback
   }
 
@@ -583,7 +616,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * ```
    */
   orNull(): A | null {
-    return !this._isEmpty ? this._ref : null
+    return !this._isEmpty ? this.value as A : null
   }
 
   /**
@@ -591,7 +624,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * return `undefined`.
    */
   orUndefined(): A | undefined {
-    return !this._isEmpty ? this._ref : undefined
+    return !this._isEmpty ? this.value : undefined
   }
 
   /**
@@ -601,7 +634,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * See [[Option.getOrElse]] for a strict alternative.
    */
   getOrElseL<AA>(thunk: () => AA): A | AA {
-    if (!this._isEmpty) return this._ref
+    if (!this._isEmpty) return this.value as A
     else return thunk()
   }
 
@@ -629,12 +662,12 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
   /**
    * Returns `true` if the option is empty, `false` otherwise.
    */
-  isEmpty(): boolean { return this._isEmpty }
+  isEmpty(): this is TNone { return this._isEmpty }
 
   /**
    * Returns `true` if the option is not empty, `false` otherwise.
    */
-  nonEmpty(): boolean { return !this._isEmpty }
+  nonEmpty(): this is TSome<A> { return !this._isEmpty }
 
   /**
    * Returns an option containing the result of applying `f` to
@@ -650,7 +683,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    *         source mapped by the given function
    */
   map<B>(f: (a: A) => B): Option<B> {
-    return this._isEmpty ? None : Some(f(this._ref))
+    return this._isEmpty ? None : Some(f(this.value as A))
   }
 
   /**
@@ -682,13 +715,11 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    */
   flatMap<B>(f: (a: A) => Option<B>): Option<B> {
     if (this._isEmpty) return None
-    else return f(this._ref)
+    else return f(this.value as A)
   }
 
   /** Alias for [[flatMap]]. */
-  chain<B>(f: (a: A) => Option<B>): Option<B> {
-    return this.flatMap(f)
-  }
+  chain = this.flatMap
 
   /**
    * Returns this option if it is nonempty AND applying the
@@ -704,7 +735,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
   filter<B extends A>(p: (a: A) => a is B): Option<B>
   filter(p: (a: A) => boolean): Option<A>
   filter(p: (a: A) => boolean): Option<A> {
-    if (this._isEmpty || !p(this._ref)) return None
+    if (this._isEmpty || !p(this.value as A)) return None
     else return this
   }
 
@@ -727,7 +758,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    */
   fold<B>(fallback: () => B, f: (a: A) => B): B {
     if (this._isEmpty) return fallback()
-    else return f(this._ref)
+    return f(this.value as A)
   }
 
   /**
@@ -735,7 +766,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * holds is equal to the given `elem`.
    */
   contains(elem: A): boolean {
-    return !this._isEmpty && std.is(this._ref, elem)
+    return !this._isEmpty && std.is(this.value, elem)
   }
 
   /**
@@ -745,7 +776,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * @param p is the predicate function to test
    */
   exists(p: (a: A) => boolean): boolean {
-    return !this._isEmpty && p(this._ref)
+    return !this._isEmpty && p(this.value as A)
   }
 
   /**
@@ -755,7 +786,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * @param p is the predicate function to test
    */
   forAll(p: (a: A) => boolean): boolean {
-    return this._isEmpty || p(this._ref)
+    return this._isEmpty || p(this.value as A)
   }
 
   /**
@@ -765,7 +796,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * @param cb the procedure to apply
    */
   forEach(cb: (a: A) => void): void {
-    if (!this._isEmpty) cb(this._ref)
+    if (!this._isEmpty) cb(this.value as A)
   }
 
   /**
@@ -777,9 +808,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
     if (this.nonEmpty() && that.nonEmpty()) {
-      const l = this.get()
-      const r = that.get()
-      return std.is(l, r)
+      return std.is(this.value, that.value)
     }
     return this.isEmpty() && that.isEmpty()
   }
@@ -787,13 +816,13 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
   // Implemented from IEquals
   hashCode(): number {
     if (this._isEmpty) return 2433880
-    else if (this._ref == null) return 2433881 << 2
-    else return std.hashCode(this._ref) << 2
+    else if (this.value == null) return 2433881 << 2
+    else return std.hashCode(this.value) << 2
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _URI: "funfix/option"
-  /** @hidden */ readonly _A: A
+  /** @hidden */ readonly _URI!: "funfix/option"
+  /** @hidden */ readonly _A!: A
 
   // Implements Constructor<T>
   /** @hidden */ static readonly _Class: Option<any>
@@ -877,11 +906,12 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    *
    * This operation is the `Applicative.map2`.
    */
-  static map2<A1,A2,R>(fa1: Option<A1>, fa2: Option<A2>,
-                       f: (a1: A1, a2: A2) => R): Option<R> {
+  static map2<A1,A2,R>(
+    fa1: Option<A1>, fa2: Option<A2>,
+    f: (a1: A1, a2: A2) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty()
-      ? Some(f(fa1.get(), fa2.get()))
+      ? Some(f(fa1.value, fa2.value))
       : None
   }
 
@@ -902,11 +932,12 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
    * )
    * ```
    */
-  static map3<A1,A2,A3,R>(fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>,
-                          f: (a1: A1, a2: A2, a3: A3) => R): Option<R> {
+  static map3<A1,A2,A3,R>(
+    fa1: Option<A1>, fa2: Option<A2>, fa3: Option<A3>,
+    f: (a1: A1, a2: A2, a3: A3) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty()
-      ? Some(f(fa1.get(), fa2.get(), fa3.get()))
+      ? Some(f(fa1.value, fa2.value, fa3.value))
       : None
   }
 
@@ -932,7 +963,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
     f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty()
-      ? Some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get()))
+      ? Some(f(fa1.value, fa2.value, fa3.value, fa4.value))
       : None
   }
 
@@ -958,7 +989,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty() && fa5.nonEmpty()
-      ? Some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get()))
+      ? Some(f(fa1.value, fa2.value, fa3.value, fa4.value, fa5.value))
       : None
   }
 
@@ -984,7 +1015,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Option<R> {
 
     return fa1.nonEmpty() && fa2.nonEmpty() && fa3.nonEmpty() && fa4.nonEmpty() && fa5.nonEmpty() && fa6.nonEmpty()
-      ? Some(f(fa1.get(), fa2.get(), fa3.get(), fa4.get(), fa5.get(), fa6.get()))
+      ? Some(f(fa1.value, fa2.value, fa3.value, fa4.value, fa5.value, fa6.value))
       : None
   }
 
@@ -1000,11 +1031,13 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
     let cursor = a
     while (true) {
       const result = f(cursor)
-      if (result.isEmpty()) return None
-
-      const some = result.get()
-      if (some.isRight()) return Some(some.get())
-      cursor = some.swap().get()
+      if (result.nonEmpty()) {
+        const some = result.value
+        if (some.isRight()) return Some(some.value)
+        cursor = some.value as A
+      } else {
+        return None
+      }
     }
   }
 }
@@ -1013,21 +1046,31 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
 fantasyLandRegister(Option)
 
 /**
+ * Result of the [[Some]] data constructor, representing
+ * non-empty values in the [[Option]] disjunction.
+ */
+export class TSome<A> extends Option<A> {
+  public readonly value!: A
+  constructor(value: A) { super(value, false) }
+}
+
+/**
  * The `Some<A>` data constructor for [[Option]] represents existing
  * values of type `A`.
  *
  * Using this function is equivalent with [[Option.some]].
  */
-export function Some<A>(value: A): Option<A> {
-  return new (Option as any)(value, false)
+export function Some<A>(value: A): TSome<A> {
+  return new TSome(value)
 }
 
-/** @Hidden */
-function emptyOptionRef() {
-  // Ugly workaround to get around the limitation of
-  // Option's private constructor
-  const F: any = Option
-  return new F(null, true) as Option<never>
+/**
+ * Result of the [[Some]] data constructor, representing
+ * non-empty values in the [[Option]] disjunction.
+ */
+export class TNone extends Option<never> {
+  public readonly value!: undefined
+  private constructor() { super(undefined, true) }
 }
 
 /**
@@ -1036,25 +1079,39 @@ function emptyOptionRef() {
  *
  * Using this reference directly is equivalent with [[Option.none]].
  */
-export const None: Option<never> = emptyOptionRef()
+export const None: TNone =
+  new (TNone as any)()
 
 /**
  * Type enumerating the type classes implemented by `Option`.
  */
 export type OptionTypes =
   Setoid<Option<any>> &
-  Functor<"funfix/option">
+  Monad<"funfix/option">
 
 /**
  * Type-class implementations, compatible with the `static-land`
- * specification.
+ * and `funland` specification.
+ *
+ * See [funland-js.org](https://funland-js.org).
  */
 export const OptionModule: OptionTypes = {
   // Setoid
   equals: (x, y) => x ? x.equals(y) : !y,
   // Functor
-  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/option", A>) =>
-    (fa as Option<A>).map(f)
+  map: <A, B>(f: (a: A) => B, fa: Option<A>) =>
+    fa.map(f),
+  // Apply
+  ap: <A, B>(ff: Option<(a: A) => B>, fa: Option<A>): Option<B> =>
+    ff.flatMap(f => fa.map(f)),
+  // Applicative
+  of: <A>(value: A) => Option.pure(value),
+  // Chain
+  chain: <A, B>(f: (a: A) => Option<B>, fa: Option<A>): Option<B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Option<C>, a: A): Option<B> =>
+    Option.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
 }
 
 /**
@@ -1105,26 +1162,24 @@ export const OptionModule: OptionTypes = {
  */
 export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   private _isSuccess: boolean
-  private _successRef: A
-  private _failureRef: Throwable
+  public readonly value: Throwable | A
 
-  private constructor(_success: A, _failure: Throwable, _isSuccess: boolean) {
-    this._isSuccess = _isSuccess
-    if (_isSuccess) this._successRef = _success
-    else this._failureRef = _failure
+  protected constructor(value: Throwable | A, tag: "failure" | "success") {
+    this._isSuccess = tag === "success"
+    this.value = value
   }
 
   /**
    * Returns `true` if the source is a [[Success]] result,
    * or `false` in case it is a [[Failure]].
    */
-  isSuccess(): boolean { return this._isSuccess }
+  isSuccess(): this is TSuccess<A> { return this._isSuccess }
 
   /**
    * Returns `true` if the source is a [[Failure]],
    * or `false` in case it is a [[Success]] result.
    */
-  isFailure(): boolean { return !this._isSuccess }
+  isFailure(): this is TFailure { return !this._isSuccess }
 
   /**
    * Returns a Try's successful value if it's a [[Success]] reference,
@@ -1136,8 +1191,8 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    * a runtime exception will get thrown. Use with care.
    */
   get(): A {
-    if (!this._isSuccess) throw this._failureRef
-    return this._successRef
+    if (!this._isSuccess) throw this.value
+    return this.value as A
   }
 
   /**
@@ -1150,7 +1205,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    * ```
    */
   getOrElse<AA>(fallback: AA): A | AA {
-    return this._isSuccess ? this._successRef : fallback
+    return this._isSuccess ? this.value as A : fallback
   }
 
   /**
@@ -1163,7 +1218,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    * ```
    */
   getOrElseL<AA>(thunk: () => AA): A | AA {
-    return this._isSuccess ? this._successRef : thunk()
+    return this._isSuccess ? this.value as A : thunk()
   }
 
   /**
@@ -1182,7 +1237,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    * ```
    */
   orNull(): A | null {
-    return this._isSuccess ? this._successRef : null
+    return this._isSuccess ? this.value as A : null
   }
 
   /**
@@ -1201,7 +1256,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    * ```
    */
   orUndefined(): A | undefined {
-    return this._isSuccess ? this._successRef : undefined
+    return this._isSuccess ? this.value as A : undefined
   }
 
   /**
@@ -1241,7 +1296,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   failed(): Try<Throwable> {
     return this._isSuccess
       ? Failure(new NoSuchElementError("try.failed()"))
-      : Success(this._failureRef)
+      : Success(this.value as Throwable)
   }
 
   /**
@@ -1261,8 +1316,8 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    */
   fold<R>(failure: (error: Throwable) => R, success: (a: A) => R): R {
     return this._isSuccess
-      ? success(this._successRef)
-      : failure(this._failureRef)
+      ? success(this.value as A)
+      : failure(this.value as Throwable)
   }
 
   /**
@@ -1276,10 +1331,10 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   filter(p: (a: A) => boolean): Try<A> {
     if (!this._isSuccess) return this
     try {
-      if (p(this._successRef)) return this
+      if (p(this.value as A)) return this
       return Failure(
         new NoSuchElementError(
-          `Predicate does not hold for ${this._successRef}`
+          `Predicate does not hold for ${this.value as A}`
         ))
     } catch (e) {
       return Failure(e)
@@ -1303,7 +1358,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   flatMap<B>(f: (a: A) => Try<B>): Try<B> {
     if (!this._isSuccess) return this as any
     try {
-      return f(this._successRef)
+      return f(this.value as A)
     } catch (e) {
       return Failure(e)
     }
@@ -1328,7 +1383,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    */
   map<B>(f: (a: A) => B): Try<B> {
     return this._isSuccess
-      ? Try.of(() => f(this._successRef))
+      ? Try.of(() => f(this.value as A))
       : ((this as any) as Try<B>)
   }
 
@@ -1337,7 +1392,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    * returns `void` if this is a [[Failure]].
    */
   forEach(cb: (a: A) => void): void {
-    if (this._isSuccess) cb(this._successRef)
+    if (this._isSuccess) cb(this.value as A)
   }
 
   /**
@@ -1361,7 +1416,9 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    * ```
    */
   recover<AA>(f: (error: Throwable) => AA): Try<A | AA> {
-    return this._isSuccess ? this : Try.of(() => f(this._failureRef))
+    return this._isSuccess
+      ? this
+      : Try.of(() => f(this.value as Throwable))
   }
 
   /**
@@ -1386,7 +1443,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    */
   recoverWith<AA>(f: (error: Throwable) => Try<AA>): Try<A | AA> {
     try {
-      return this._isSuccess ? this : f(this._failureRef)
+      return this._isSuccess ? this : f(this.value as Throwable)
     } catch (e) {
       return Failure(e)
     }
@@ -1405,7 +1462,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    * ```
    */
   toOption(): Option<A> {
-    return this._isSuccess ? Some(this._successRef) : None
+    return this._isSuccess ? Some(this.value as A) : None
   }
 
   /**
@@ -1422,8 +1479,8 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
    */
   toEither(): Either<Throwable, A> {
     return this._isSuccess
-      ? Right(this._successRef)
-      : Left(this._failureRef)
+      ? Right(this.value as A)
+      : Left(this.value as Throwable)
   }
 
   /**
@@ -1433,20 +1490,20 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
     // tslint:disable-next-line:strict-type-predicates
     if (that == null) return false
     return this._isSuccess
-      ? that._isSuccess && std.is(this._successRef, that._successRef)
-      : !that._isSuccess && std.is(this._failureRef, that._failureRef)
+      ? that._isSuccess && std.is(this.value as A, that.value as A)
+      : !that._isSuccess && std.is(this.value, that.value)
   }
 
   // Implemented from IEquals
   hashCode(): number {
     return this._isSuccess
-      ? std.hashCode(this._successRef)
-      : std.hashCode(this._failureRef)
+      ? std.hashCode(this.value as A)
+      : std.hashCode(this.value as Throwable)
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _URI: "funfix/try"
-  /** @hidden */ readonly _A: A
+  /** @hidden */ readonly _URI!: "funfix/try"
+  /** @hidden */ readonly _A!: A
 
   // Implements Constructor<T>
   /** @hidden */ static readonly _Class: Try<any>
@@ -1533,10 +1590,10 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
     fa1: Try<A1>, fa2: Try<A2>,
     f: (a1: A1, a2: A2) => R): Try<R> {
 
-    if (fa1.isFailure()) return ((fa1 as any) as Try<R>)
-    if (fa2.isFailure()) return ((fa2 as any) as Try<R>)
+    if (fa1.isFailure()) return fa1
+    if (fa2.isFailure()) return fa2
     try {
-      return Success(f(fa1._successRef, fa2._successRef))
+      return Success(f(fa1.value as A1, fa2.value as A2))
     } catch (e) {
       return Failure(e)
     }
@@ -1571,14 +1628,15 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
     fa1: Try<A1>, fa2: Try<A2>, fa3: Try<A3>,
     f: (a1: A1, a2: A2, a3: A3) => R): Try<R> {
 
-    if (fa1.isFailure()) return ((fa1 as any) as Try<R>)
-    if (fa2.isFailure()) return ((fa2 as any) as Try<R>)
-    if (fa3.isFailure()) return ((fa3 as any) as Try<R>)
+    if (fa1.isFailure()) return fa1
+    if (fa2.isFailure()) return fa2
+    if (fa3.isFailure()) return fa3
     try {
       return Success(f(
-        fa1._successRef,
-        fa2._successRef,
-        fa3._successRef))
+        fa1.value as A1,
+        fa2.value as A2,
+        fa3.value as A3
+      ))
     } catch (e) {
       return Failure(e)
     }
@@ -1614,16 +1672,17 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
     fa1: Try<A1>, fa2: Try<A2>, fa3: Try<A3>, fa4: Try<A4>,
     f: (a1: A1, a2: A2, a3: A3, a4: A4) => R): Try<R> {
 
-    if (fa1.isFailure()) return ((fa1 as any) as Try<R>)
-    if (fa2.isFailure()) return ((fa2 as any) as Try<R>)
-    if (fa3.isFailure()) return ((fa3 as any) as Try<R>)
-    if (fa4.isFailure()) return ((fa4 as any) as Try<R>)
+    if (fa1.isFailure()) return fa1
+    if (fa2.isFailure()) return fa2
+    if (fa3.isFailure()) return fa3
+    if (fa4.isFailure()) return fa4
     try {
       return Success(f(
-        fa1._successRef,
-        fa2._successRef,
-        fa3._successRef,
-        fa4._successRef))
+        fa1.value as A1,
+        fa2.value as A2,
+        fa3.value as A3,
+        fa4.value as A4
+      ))
     } catch (e) {
       return Failure(e)
     }
@@ -1666,18 +1725,19 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
     fa1: Try<A1>, fa2: Try<A2>, fa3: Try<A3>, fa4: Try<A4>, fa5: Try<A5>,
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5) => R): Try<R> {
 
-    if (fa1.isFailure()) return ((fa1 as any) as Try<R>)
-    if (fa2.isFailure()) return ((fa2 as any) as Try<R>)
-    if (fa3.isFailure()) return ((fa3 as any) as Try<R>)
-    if (fa4.isFailure()) return ((fa4 as any) as Try<R>)
-    if (fa5.isFailure()) return ((fa5 as any) as Try<R>)
+    if (fa1.isFailure()) return fa1
+    if (fa2.isFailure()) return fa2
+    if (fa3.isFailure()) return fa3
+    if (fa4.isFailure()) return fa4
+    if (fa5.isFailure()) return fa5
     try {
       return Success(f(
-        fa1._successRef,
-        fa2._successRef,
-        fa3._successRef,
-        fa4._successRef,
-        fa5._successRef))
+        fa1.value as A1,
+        fa2.value as A2,
+        fa3.value as A3,
+        fa4.value as A4,
+        fa5.value as A5
+      ))
     } catch (e) {
       return Failure(e)
     }
@@ -1722,20 +1782,21 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
     fa1: Try<A1>, fa2: Try<A2>, fa3: Try<A3>, fa4: Try<A4>, fa5: Try<A5>, fa6: Try<A6>,
     f: (a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6) => R): Try<R> {
 
-    if (fa1.isFailure()) return ((fa1 as any) as Try<R>)
-    if (fa2.isFailure()) return ((fa2 as any) as Try<R>)
-    if (fa3.isFailure()) return ((fa3 as any) as Try<R>)
-    if (fa4.isFailure()) return ((fa4 as any) as Try<R>)
-    if (fa5.isFailure()) return ((fa5 as any) as Try<R>)
-    if (fa6.isFailure()) return ((fa6 as any) as Try<R>)
+    if (fa1.isFailure()) return fa1
+    if (fa2.isFailure()) return fa2
+    if (fa3.isFailure()) return fa3
+    if (fa4.isFailure()) return fa4
+    if (fa5.isFailure()) return fa5
+    if (fa6.isFailure()) return fa6
     try {
       return Success(f(
-        fa1._successRef,
-        fa2._successRef,
-        fa3._successRef,
-        fa4._successRef,
-        fa5._successRef,
-        fa6._successRef))
+        fa1.value as A1,
+        fa2.value as A2,
+        fa3.value as A3,
+        fa4.value as A4,
+        fa5.value as A5,
+        fa6.value as A6
+      ))
     } catch (e) {
       return Failure(e)
     }
@@ -1757,8 +1818,8 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
         if (result.isFailure()) return result as any
 
         const some = result.get()
-        if (some.isRight()) return Success(some.get())
-        cursor = some.swap().get()
+        if (some.isRight()) return Success(some.value)
+        cursor = some.value as A
       } catch (e) {
         return Failure(e)
       }
@@ -1770,11 +1831,33 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
 fantasyLandRegister(Try)
 
 /**
+ * Result of the [[Success]] data constructor, representing
+ * successful values in the [[Try]] disjunction.
+ *
+ * @final
+ */
+export class TSuccess<A> extends Try<A> {
+  public readonly value!: A
+  constructor(value: A) { super(value, "success") }
+}
+
+/**
  * The `Success` data constructor is for building [[Try]] values that
  * are successful results of computations, as opposed to [[Failure]].
  */
 export function Success<A>(value: A): Try<A> {
-  return new (Try as any)(value, null, true)
+  return new TSuccess(value)
+}
+
+/**
+ * The `Success` data constructor is for building [[Try]] values that
+ * are successful results of computations, as opposed to [[Failure]].
+ *
+ * @final
+ */
+export class TFailure extends Try<never> {
+  public readonly value!: Throwable
+  constructor(value: Throwable) { super(value, "failure") }
 }
 
 /**
@@ -1782,7 +1865,7 @@ export function Success<A>(value: A): Try<A> {
  * represent failures, as opposed to [[Success]].
  */
 export function Failure(e: Throwable): Try<never> {
-  return new (Try as any)(null as never, e, false)
+  return new TFailure(e)
 }
 
 /**
@@ -1790,18 +1873,31 @@ export function Failure(e: Throwable): Try<never> {
  */
 export type TryTypes =
   Setoid<Try<any>> &
-  Functor<"funfix/try">
+  Monad<"funfix/try">
 
 /**
  * Type-class implementations, compatible with the `static-land`
- * specification.
+ * and `funland` specifications.
+ *
+ * See [funland-js.org](https://funland-js.org).
  */
 export const TryModule: TryTypes = {
   // Setoid
   equals: (x, y) => x ? x.equals(y) : !y,
   // Functor
-  map: <A, B>(f: (a: A) => B, fa: HK<"funfix/try", A>) =>
-    (fa as Try<A>).map(f)
+  map: <A, B>(f: (a: A) => B, fa: Try<A>) =>
+    fa.map(f),
+  // Apply
+  ap: <A, B>(ff: Try<(a: A) => B>, fa: Try<A>): Try<B> =>
+    ff.flatMap(f => fa.map(f)),
+  // Applicative
+  of: <A>(value: A) => Try.pure(value),
+  // Chain
+  chain: <A, B>(f: (a: A) => Try<B>, fa: Try<A>): Try<B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Try<C>, a: A): Try<B> =>
+    Try.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
 }
 
 /**

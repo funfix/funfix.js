@@ -21,7 +21,7 @@ import {
   coreInternals
 } from "funfix-core"
 
-import { HK, Functor } from "funfix-types"
+import { HK, Functor } from "funland"
 import { Scheduler } from "./scheduler"
 import { Duration } from "./time"
 import { ICancelable, Cancelable, ChainedCancelable, DummyCancelable } from "./cancelable"

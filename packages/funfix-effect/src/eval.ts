@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { HK, Functor } from "funfix-types"
+import { HK, Functor } from "funland"
 import { Either, Throwable, coreInternals } from "funfix-core"
 import {
   IteratorLike,

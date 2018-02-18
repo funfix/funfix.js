@@ -30,7 +30,7 @@ import {
   Some, None, Option
 } from "funfix-core"
 
-import { HK } from "funfix-types"
+import { HK } from "funland"
 import { Equiv } from "../../../funfix-laws/src"
 import { functorCheck } from "../../../funfix-laws/test-common"
 import { TestScheduler, Future, ExecutionModel, Duration } from "funfix-exec"

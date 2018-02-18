@@ -17,7 +17,7 @@
 
 /* @flow */
 
-import type { HK, Constructor, Functor } from "funfix-types"
+import type { HK, Constructor, Functor } from "funland"
 import { Either, Try, Option, Success, Failure } from "funfix-core"
 import {
   Future,
