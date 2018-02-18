@@ -40,7 +40,7 @@ declare export class Either<+L, +R> {
   forEach(cb: (r: R) => void): void;
   swap(): Either<R, L>;
   toOption(): Option<R>;
-  equals(that: Either<L, R>, eqL?: (x: L, y: L) => boolean, eqR?: (x: R, y: R) => boolean): boolean;
+  equals(that: Either<L, R>): boolean;
   hashCode(): number;
 
   // Implements Constructor<T>
@@ -98,7 +98,7 @@ declare export class Option<+A> {
 
   chain<B>(f: (a: A) => Option<B>): Option<B>;
   contains(elem: A): boolean;
-  equals(that: Option<A>, eq?: (x: A, y: A) => boolean): boolean;
+  equals(that: Option<A>): boolean;
   exists(p: (a: A) => boolean): boolean;
   filter(p: (a: A) => boolean): Option<A>;
   flatMap<B>(f: (a: A) => Option<B>): Option<B>;
@@ -179,7 +179,7 @@ declare export class Try<+A> {
   recoverWith<AA>(f: (error: Throwable) => Try<AA>): Try<A | AA>;
   toOption(): Option<A>;
   toEither(): Either<Throwable, A>;
-  equals(that: Try<A>, eq?: (x: A, y: A) => boolean): boolean;
+  equals(that: Try<A>): boolean;
   hashCode(): number;
 
   // Implements Constructor<T>
