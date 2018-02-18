@@ -24,9 +24,8 @@ import { Try, TryModule, Success, Failure, DummyError, NoSuchElementError } from
 import { None, Some, Left, Right } from "../../src/"
 import { IllegalStateError } from "../../src/"
 import { is, hashCode } from "../../src/"
-import { Equiv } from "../../../funfix-laws/src"
-import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
-import { functorCheck } from "../../../funfix-laws/test-common/functor-tests"
+import { Equiv } from "funland-laws"
+import { setoidCheck, monadCheck } from "../../../../test-common"
 
 describe("Try.of", () => {
   jv.property("should work for successful functions",
@@ -54,17 +53,17 @@ describe("Try #get", () => {
 
 describe("Try #equals", () => {
   jv.property("should yield true for self.equals(self)",
-    inst.arbTry,
+    inst.arbTryNumber,
     fa => fa.equals(fa)
   )
 
   jv.property("should yield true for equals(self, self)",
-    inst.arbTry,
+    inst.arbTryNumber,
     fa => is(fa, fa)
   )
 
   jv.property("self.hashCode() === self.hashCode() === hashCode(self)",
-    inst.arbTry,
+    inst.arbTryNumber,
     fa => fa.hashCode() === fa.hashCode() && fa.hashCode() === hashCode(fa)
   )
 
@@ -110,7 +109,7 @@ describe("Try #equals", () => {
   })
 
   jv.property("protects against other ref being null",
-    inst.arbTry,
+    inst.arbTryNumber,
     fa => fa.equals(null as any) === false
   )
 })
@@ -129,7 +128,7 @@ describe("Try #failed", () => {
 
 describe("Try identity", () => {
   jv.property("isSuccess == !isFailure",
-    inst.arbTry,
+    inst.arbTryNumber,
     fa => fa.isSuccess() === !fa.isFailure()
   )
 
@@ -146,7 +145,7 @@ describe("Try identity", () => {
 
 describe("Try #filter", () => {
   jv.property("fa.filter(_ => true) == fa",
-    inst.arbTry,
+    inst.arbTryNumber,
     fa => is(fa.filter(_ => true), fa)
   )
 
@@ -179,22 +178,22 @@ describe("Try #fold", () => {
 
 describe("Try #flatMap", () => {
   jv.property("success(n).flatMap(f) == f(n)",
-    jv.number, jv.fn(inst.arbTry),
+    jv.number, jv.fn(inst.arbTryNumber),
     (n, f) => Try.pure(n).flatMap(f).equals(f(n))
   )
 
   jv.property("left identity",
-    jv.number, jv.fn(inst.arbTry),
+    jv.number, jv.fn(inst.arbTryNumber),
     (n, f) => Try.pure(n).flatMap(f).equals(f(n))
   )
 
   jv.property("right identity",
-    inst.arbTry,
+    inst.arbTryNumber,
     fa => fa.flatMap(Try.pure).equals(fa)
   )
 
   jv.property("failure.flatMap(f) == failure",
-    inst.arbTry, jv.fn(inst.arbTry),
+    inst.arbTryNumber, jv.fn(inst.arbTryNumber),
     (e, f) => e.isSuccess() || e.flatMap(f) === e
   )
 
@@ -208,7 +207,7 @@ describe("Try #flatMap", () => {
   )
 
   jv.property("chain is an alias of flatMap",
-    inst.arbTry, jv.fn(inst.arbTry),
+    inst.arbTryNumber, jv.fn(inst.arbTryNumber),
     (fa, f) => is(fa.flatMap(f), fa.chain(f))
   )
 })
@@ -220,12 +219,12 @@ describe("Try.map", () => {
   )
 
   jv.property("covariant identity",
-    inst.arbTry,
+    inst.arbTryNumber,
     fa => fa.map(x => x).equals(fa)
   )
 
   jv.property("covariant composition",
-    inst.arbTry, jv.fn(jv.number), jv.fn(jv.number),
+    inst.arbTryNumber, jv.fn(jv.number), jv.fn(jv.number),
     (fa, f, g) => fa.map(f).map(g).equals(fa.map(x => g(f(x))))
   )
 
@@ -297,24 +296,24 @@ describe("Try #orUndefined", () => {
 
 describe("Try #orElse", () => {
   jv.property("fa.orElse(fb) == fa for success",
-    inst.arbSuccess, inst.arbTry,
+    inst.arbSuccess, inst.arbTryNumber,
     (fa, fb) => is(fa.orElse(fb), fa)
   )
 
   jv.property("fa.orElse(fb) == fb for failure",
-    inst.arbFailure, inst.arbTry,
+    inst.arbFailure, inst.arbTryNumber,
     (fa, fb) => is(fa.orElse(fb), fb)
   )
 })
 
 describe("Try #orElseL", () => {
   jv.property("fa.orElseL(() => fb) == fa for success",
-    inst.arbSuccess, inst.arbTry,
+    inst.arbSuccess, inst.arbTryNumber,
     (fa, fb) => is(fa.orElseL(() => fb), fa)
   )
 
   jv.property("fa.orElseL(() => fb) == fb for failure",
-    inst.arbFailure, inst.arbTry,
+    inst.arbFailure, inst.arbTryNumber,
     (fa, fb) => is(fa.orElseL(() => fb), fb)
   )
 })
@@ -341,12 +340,12 @@ describe("Try #recover", () => {
 
 describe("Try #recoverWith", () => {
   jv.property("fa.recoverWith(f) == fa for success",
-    inst.arbSuccess, inst.arbTry,
+    inst.arbSuccess, inst.arbTryNumber,
     (fa, fb) => fa.recoverWith(_ => fb) === fa
   )
 
   jv.property("fa.recoverWith(_ => b) == fb for failure",
-    inst.arbFailure, inst.arbTry,
+    inst.arbFailure, inst.arbTryNumber,
     (fa, fb) => fa.recoverWith(_ => fb) === fb
   )
 
@@ -383,7 +382,7 @@ describe("Try translations", () => {
 
 describe("Try map2, map3, map4, map5, map6", () => {
   jv.property("map2 equivalence with flatMap",
-    inst.arbTry, inst.arbTry, jv.fn(jv.number),
+    inst.arbTryNumber, inst.arbTryNumber, jv.fn(jv.number),
     (o1, o2, fn) => {
       const f = (...args: any[]) => fn(args)
       return is(Try.map2(o1, o2, f), o1.flatMap(a1 => o2.map(a2 => f(a1, a2))))
@@ -391,7 +390,7 @@ describe("Try map2, map3, map4, map5, map6", () => {
   )
 
   jv.property("map3 equivalence with flatMap",
-    inst.arbTry, inst.arbTry, inst.arbTry, jv.fn(jv.number),
+    inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, jv.fn(jv.number),
     (o1, o2, o3, fn) => {
       const f = (...args: any[]) => fn(args)
       return is(
@@ -402,7 +401,7 @@ describe("Try map2, map3, map4, map5, map6", () => {
   )
 
   jv.property("map4 equivalence with flatMap",
-    inst.arbTry, inst.arbTry, inst.arbTry, inst.arbTry, jv.fn(jv.number),
+    inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, jv.fn(jv.number),
     (o1, o2, o3, o4, fn) => {
       const f = (...args: any[]) => fn(args)
       return is(
@@ -414,7 +413,7 @@ describe("Try map2, map3, map4, map5, map6", () => {
   )
 
   jv.property("map5 equivalence with flatMap",
-    inst.arbTry, inst.arbTry, inst.arbTry, inst.arbTry, inst.arbTry, jv.fn(jv.number),
+    inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, jv.fn(jv.number),
     (o1, o2, o3, o4, o5, fn) => {
       const f = (...args: any[]) => fn(args)
       return is(
@@ -426,7 +425,7 @@ describe("Try map2, map3, map4, map5, map6", () => {
   )
 
   jv.property("map6 equivalence with flatMap",
-    inst.arbTry, inst.arbTry, inst.arbTry, inst.arbTry, inst.arbTry, inst.arbTry, jv.fn(jv.number),
+    inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, inst.arbTryNumber, jv.fn(jv.number),
     (o1, o2, o3, o4, o5, o6, fn) => {
       const f = (...args: any[]) => fn(args)
       return is(
@@ -517,9 +516,8 @@ describe("Try.tailRecM", () => {
   })
 })
 
-
 describe("Setoid<Try> (static-land)", () => {
-  setoidCheck(inst.arbTry, TryModule)
+  setoidCheck(inst.arbTryNumber, TryModule)
 
   it("protects against null", () => {
     assert.ok(TryModule.equals(null as any, null as any))
@@ -529,34 +527,59 @@ describe("Setoid<Try> (static-land)", () => {
 })
 
 describe("Setoid<Try> (fantasy-land)", () => {
-  setoidCheck(inst.arbOpt, {
+  setoidCheck(inst.arbOptAny, {
     equals: (x, y) => (x as any)["fantasy-land/equals"](y)
   })
 })
 
-describe("Functor<Try> (static-land)", () => {
+describe("Monad<Try> (static-land)", () => {
   const check = (e: Equiv<HK<"funfix/try", any>>) =>
     (e.lh as Try<any>).equals(e.rh as Try<any>)
 
-  functorCheck(
-    inst.arbTry as jv.Arbitrary<HK<"funfix/try", any>>,
+  const arbFA = inst.arbTry(jv.int32)
+  const arbFB = inst.arbTry(jv.string)
+  const arbFC = inst.arbTry(jv.int16)
+  const arbFAtoB = inst.arbTry(jv.fun(jv.string))
+  const arbFBtoC = inst.arbTry(jv.fun(jv.int16))
+
+  monadCheck(
+    arbFA,
+    arbFB,
+    arbFC,
     jv.fun(jv.string),
-    jv.fun(jv.int32),
+    jv.fun(jv.int16),
+    arbFAtoB,
+    arbFBtoC,
+    jv.int32,
     check,
     TryModule)
 })
 
-describe("Functor<Try> (fantasy-land)", () => {
+describe("Monad<Try> (fantasy-land)", () => {
   const check = (e: Equiv<HK<"funfix/try", any>>) =>
     (e.lh as Try<any>).equals(e.rh as Try<any>)
 
-  functorCheck(
-    inst.arbTry as jv.Arbitrary<HK<"funfix/try", any>>,
+  const arbFA = inst.arbTry(jv.int32)
+  const arbFB = inst.arbTry(jv.string)
+  const arbFC = inst.arbTry(jv.int16)
+  const arbFAtoB = inst.arbTry(jv.fun(jv.string))
+  const arbFBtoC = inst.arbTry(jv.fun(jv.int16))
+
+  monadCheck(
+    arbFA,
+    arbFB,
+    arbFC,
     jv.fun(jv.string),
-    jv.fun(jv.int32),
+    jv.fun(jv.int16),
+    arbFAtoB,
+    arbFBtoC,
+    jv.int32,
     check,
     {
-      map: (f, fa) => (fa as any)["fantasy-land/map"](f)
+      map: (f, fa) => (fa as any)["fantasy-land/map"](f),
+      ap: (ff, fa) => (fa as any)["fantasy-land/ap"](ff),
+      chain: (f, fa) => (fa as any)["fantasy-land/chain"](f),
+      chainRec: (f, a) => (Try as any)["fantasy-land/chainRec"](f, a),
+      of: a => (Try as any)["fantasy-land/of"](a)
     })
 })
-

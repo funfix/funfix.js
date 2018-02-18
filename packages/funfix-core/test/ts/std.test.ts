@@ -18,9 +18,11 @@
 import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "assert"
-import { setoidCheck } from "../../../funfix-laws/test-common/setoid-tests"
+import { setoidCheck } from "../../../../test-common"
 
-import {IEquals, hashCode, is, equals, id, applyMixins, universalSetoid} from "../../src/"
+import {
+  IEquals, hashCode, is, equals, id, applyMixins, universalSetoid
+} from "../../src/"
 
 describe("std", () => {
   describe("id", () => {

@@ -156,7 +156,19 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
   }
 
   /** Alias for [[flatMap]]. */
-  chain = this.flatMap
+  chain<S>(f: (r: R) => Either<L, S>): Either<L, S> {
+    return this.flatMap(f)
+  }
+
+  /**
+   * `Apply`/`Applicative` `ap` operation.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<S>(ff: Either<L, (a: R) => S>): Either<L, S> {
+    return ff.flatMap(f => this.map(f))
+  }
 
   /**
    * Applies the `left` function to [[Left]] values, and the
@@ -316,10 +328,26 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
   // Implements Constructor<T>
   /** @hidden */ static readonly _Class: Either<any, any>
 
+  /**
+   * Builds a pure `Either` value.
+   *
+   * This operation is the pure `Applicative` operation for lifting
+   * a value in the `Either` context.
+   */
+  static pure<A>(value: A): Either<never, A> {
+    return new TRight(value)
+  }
+
+  /**
+   * Builds a left value, equivalent with {@link Left}.
+   */
   static left<L, R>(value: L): Either<L, R> {
     return Left(value)
   }
 
+  /**
+   * Builds a right value, equivalent with {@link Right}.
+   */
   static right<L, R>(value: R): Either<L, R> {
     return Right(value)
   }
@@ -485,6 +513,14 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
       cursor = some.value as A
     }
   }
+
+  /**
+   * `Fantasy-Land / `static-land` compliant version of {@link tailRecM}
+   * that uses an implementation independent encoding.
+   */
+  static chainRec<L, A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Either<L, C>, a: A): Either<L, B> {
+    return Either.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
+  }
 }
 
 // Registers Fantasy-Land compatible symbols
@@ -547,16 +583,14 @@ export const EitherModule: EitherTypes = {
     fa.map(f),
   // Apply
   ap: <L, A, B>(ff: Either<L, (a: A) => B>, fa: Either<L, A>): Either<L, B> =>
-    ff.flatMap(f => fa.map(f)),
+    fa.ap(ff),
   // Applicative
-  of: <L, A>(value: A): Either<L, A> =>
-    Either.right(value),
+  of: Either.pure,
   // Chain
   chain: <L, A, B>(f: (a: A) => Either<L, B>, fa: Either<L, A>): Either<L, B> =>
     fa.flatMap(f),
   // ChainRec
-  chainRec: <L, A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Either<L, C>, a: A): Either<L, B> =>
-    Either.tailRecM<L, A, B>(a, a => f(Either.left as any, Either.right as any, a))
+  chainRec: Either.chainRec
 }
 
 /**
@@ -719,7 +753,19 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
   }
 
   /** Alias for [[flatMap]]. */
-  chain = this.flatMap
+  chain<B>(f: (a: A) => Option<B>): Option<B> {
+    return this.flatMap(f)
+  }
+
+  /**
+   * `Apply`/`Applicative` `ap` operation.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<B>(ff: Option<(a: A) => B>): Option<B> {
+    return ff.flatMap(f => this.map(f))
+  }
 
   /**
    * Returns this option if it is nonempty AND applying the
@@ -816,6 +862,7 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
   // Implemented from IEquals
   hashCode(): number {
     if (this._isEmpty) return 2433880
+    // tslint:disable-next-line:strict-type-predicates
     else if (this.value == null) return 2433881 << 2
     else return std.hashCode(this.value) << 2
   }
@@ -1040,6 +1087,14 @@ export class Option<A> implements std.IEquals<Option<A>>, HK<"funfix/option", A>
       }
     }
   }
+
+  /**
+   * `Fantasy-Land / `static-land` compliant version of {@link tailRecM}
+   * that uses an implementation independent encoding.
+   */
+  static chainRec<A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Option<C>, a: A): Option<B> {
+    return Option.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
+  }
 }
 
 // Registers Fantasy-Land compatible symbols
@@ -1103,15 +1158,14 @@ export const OptionModule: OptionTypes = {
     fa.map(f),
   // Apply
   ap: <A, B>(ff: Option<(a: A) => B>, fa: Option<A>): Option<B> =>
-    ff.flatMap(f => fa.map(f)),
+    fa.ap(ff),
   // Applicative
-  of: <A>(value: A) => Option.pure(value),
+  of: Option.pure,
   // Chain
   chain: <A, B>(f: (a: A) => Option<B>, fa: Option<A>): Option<B> =>
     fa.flatMap(f),
   // ChainRec
-  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Option<C>, a: A): Option<B> =>
-    Option.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
+  chainRec: Option.chainRec
 }
 
 /**
@@ -1365,7 +1419,19 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
   }
 
   /** Alias for [[flatMap]]. */
-  readonly chain = this.flatMap
+  chain<B>(f: (a: A) => Try<B>): Try<B> {
+    return this.flatMap(f)
+  }
+
+  /**
+   * `Apply`/`Applicative` `ap` operation.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<B>(ff: Try<(a: A) => B>): Try<B> {
+    return ff.flatMap(f => this.map(f))
+  }
 
   /**
    * Returns a `Try` containing the result of applying `f` to
@@ -1825,6 +1891,14 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
       }
     }
   }
+
+  /**
+   * `Fantasy-Land / `static-land` compliant version of {@link tailRecM}
+   * that uses an implementation independent encoding.
+   */
+  static chainRec<A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Try<C>, a: A): Try<B> {
+    return Try.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
+  }
 }
 
 // Registers Fantasy-Land compatible symbols
@@ -1889,15 +1963,14 @@ export const TryModule: TryTypes = {
     fa.map(f),
   // Apply
   ap: <A, B>(ff: Try<(a: A) => B>, fa: Try<A>): Try<B> =>
-    ff.flatMap(f => fa.map(f)),
+    fa.ap(ff),
   // Applicative
-  of: <A>(value: A) => Try.pure(value),
+  of: Try.pure,
   // Chain
   chain: <A, B>(f: (a: A) => Try<B>, fa: Try<A>): Try<B> =>
     fa.flatMap(f),
   // ChainRec
-  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Try<C>, a: A): Try<B> =>
-    Try.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
+  chainRec: Try.chainRec
 }
 
 /**

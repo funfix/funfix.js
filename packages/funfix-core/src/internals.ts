@@ -56,6 +56,13 @@ export function fantasyLandRegister<A>(cls: Constructor<A>): void {
   const flEquals = fl + equals
   const map = "map"
   const flMap = fl + map
+  const ap = "ap"
+  const flAp = fl + ap
+  const flOf = fl + "of"
+  const chain = "chain"
+  const flChain = fl + chain
+  const chainRec = "chainRec"
+  const flChainRec = fl + chainRec
 
   // Setoid
   /* istanbul ignore else */
@@ -66,5 +73,25 @@ export function fantasyLandRegister<A>(cls: Constructor<A>): void {
   /* istanbul ignore else */
   if (p[map]) {
     p[flMap] = p[map]
+  }
+  // Apply
+  /* istanbul ignore else */
+  if (p[ap]) {
+    p[flAp] = p[ap]
+  }
+  // Applicative
+  /* istanbul ignore else */
+  if (c["pure"]) {
+    c[flOf] = c["pure"]
+  }
+  // Chain
+  /* istanbul ignore else */
+  if (p[chain]) {
+    p[flChain] = p[chain]
+  }
+  // ChainRec
+  /* istanbul ignore else */
+  if (c[chainRec]) {
+    c[flChainRec] = c[chainRec]
   }
 }
