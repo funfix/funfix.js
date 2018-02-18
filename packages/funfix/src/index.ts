@@ -19,4 +19,3 @@
 export * from "funfix-core"
 export * from "funfix-exec"
 export * from "funfix-effect"
-export * from "funfix-types"

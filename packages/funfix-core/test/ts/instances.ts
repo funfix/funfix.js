@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,7 @@
 import * as jv from "jsverify"
 
 import {
-  Option, Some,
+  Option, Some, None,
   Either, Left, Right,
   Try, Failure, Success,
   DummyError
@@ -28,17 +28,42 @@ export const arbAnyPrimitive: jv.Arbitrary<any> =
   jv.sum([jv.number, jv.string, jv.falsy])
     .smap(v => v.value, v => v)
 
-export const arbOpt: jv.Arbitrary<Option<any>> =
+export function arbOpt<A>(arbA: jv.Arbitrary<A>): jv.Arbitrary<Option<A>> {
+  return jv.pair(jv.int32, arbA).smap(
+    tuple => {
+      const [i, a] = tuple
+      return i % 3 !== 0 ? Some(a) : None
+    },
+    opt => {
+      return opt.nonEmpty()
+        ? [1, opt.value]
+        : [0, undefined]
+    }
+  )
+}
+
+export const arbOptAny: jv.Arbitrary<Option<any>> =
   arbAnyPrimitive.smap(Option.of, opt => opt.orNull())
 
-export const arbOptNonempty: jv.Arbitrary<Option<number>> =
+export const arbOptAnyNonEmpty: jv.Arbitrary<Option<number>> =
   jv.number.smap(Some, opt => opt.getOrElse(0))
 
-export const arbEither: jv.Arbitrary<Either<number, number>> =
-  jv.number.smap(
-    i => i % 4 < 3 ? Right(i) : Left(i),
-    (fa: Either<number, number>) => fa.isRight() ? fa.get() : fa.swap().get()
+export function arbEither<R>(arbR: jv.Arbitrary<R>): jv.Arbitrary<Either<number, R>> {
+  return jv.pair(jv.int32, arbR).smap(
+    tuple => {
+      const [l, r] = tuple
+      return l % 3 !== 0 ? Either.right(r) : Either.left(l)
+    },
+    either => {
+      return either.isLeft()
+        ? [either.value, undefined as any]
+        : [1, either.value]
+    }
   )
+}
+
+export const arbEitherNum: jv.Arbitrary<Either<number, number>> =
+  arbEither(jv.int32)
 
 export const arbSuccess: jv.Arbitrary<Try<number>> =
   jv.number.smap(Try.pure, t => t.get())
@@ -46,12 +71,26 @@ export const arbSuccess: jv.Arbitrary<Try<number>> =
 export const arbFailure: jv.Arbitrary<Try<number>> =
   jv.constant(Try.failure<number>(new DummyError("dummy")))
 
-export const arbTry: jv.Arbitrary<Try<number>> =
+export function arbTry<A>(arbA: jv.Arbitrary<A>): jv.Arbitrary<Try<A>> {
+  return jv.pair(jv.int32, arbA).smap(
+    tuple => {
+      const [i, a] = tuple
+      return i % 3 !== 0 ? Success(a) : Failure(i)
+    },
+    opt => {
+      return opt.isSuccess()
+        ? [1, opt.value]
+        : [opt.failed().get() as number, undefined]
+    }
+  )
+}
+
+export const arbTryNumber: jv.Arbitrary<Try<number>> =
   jv.number.smap(
     i => i % 4 < 3 ? Success(i) : Failure(i),
     fa => fa.isSuccess() ? fa.get() : fa.failed().get() as any
   )
 
 export const arbAny: jv.Arbitrary<any> =
-  jv.sum([jv.number, jv.string, jv.falsy, arbOpt, arbEither])
+  jv.sum([jv.number, jv.string, jv.falsy, arbOptAny, arbEitherNum])
     .smap(v => v.valueOf(), v => v)

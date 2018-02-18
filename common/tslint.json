@@ -17,6 +17,7 @@
     "ter-indent": false,
     "no-unused-variable": false,
     "brace-style": false,
-    "one-line": false
+    "one-line": false,
+    "semicolon": false
   }
 }

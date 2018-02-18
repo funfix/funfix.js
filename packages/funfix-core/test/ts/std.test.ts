@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +18,11 @@
 import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "assert"
+import { setoidCheck } from "../../../../test-common"
 
-import { IEquals, hashCode, is, equals, id, applyMixins } from "../../src/"
+import {
+  IEquals, hashCode, is, equals, id, applyMixins, universalSetoid
+} from "../../src/"
 
 describe("std", () => {
   describe("id", () => {
@@ -152,5 +155,13 @@ describe("std", () => {
       const ref = new Child2()
       assert.equal(ref.hello(), "Override!")
     })
+  })
+
+  describe("universalSetoid<number>", () => {
+    setoidCheck(jv.integer, universalSetoid)
+  })
+
+  describe("universalSetoid<string>", () => {
+    setoidCheck(jv.string, universalSetoid)
   })
 })

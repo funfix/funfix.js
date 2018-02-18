@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,10 +21,14 @@ import {
   Right, DummyError
 } from "funfix-core"
 
+import { HK } from "funland"
+import { Try } from "funfix-core"
 import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
-import { Eval } from "../../src/"
+import { Eval, EvalModule } from "../../src/"
+import { Equiv } from "funland-laws"
+import { monadCheck } from "../../../../test-common"
 
 describe("Eval basic data constructors tests", () => {
   it("now(a) should yield value", () => {
@@ -113,7 +117,7 @@ describe("Eval basic data constructors tests", () => {
   })
 
   jv.property("defer is an alias for suspend",
-    jv.number, jv.fn(inst.arbEval),
+    jv.number, jv.fn(inst.arbEvalNum),
     (n, f) => {
       const thunk = () => f(n)
       return is(Eval.defer(thunk).get(), Eval.suspend(thunk).get())
@@ -143,17 +147,17 @@ describe("Eval basic data constructors tests", () => {
 
 describe("Eval is a monad", () => {
   jv.property("success(n).flatMap(f) <-> f(n) (left identity)",
-    jv.number, jv.fn(inst.arbEval),
+    jv.number, jv.fn(inst.arbEvalNum),
     (n, f) => is(Eval.pure(n).flatMap(f).get(), f(n).get())
   )
 
   jv.property("right identity",
-    inst.arbEval,
+    inst.arbEvalNum,
     fa => is(fa.flatMap(Eval.pure).get(), fa.get())
   )
 
   jv.property("chain is an alias of flatMap",
-    inst.arbEval, jv.fn(inst.arbEval),
+    inst.arbEvalNum, jv.fn(inst.arbEvalNum),
     (fa, f) => is(fa.flatMap(f).get(), fa.chain(f).get())
   )
 
@@ -173,12 +177,12 @@ describe("Eval is a monad", () => {
   )
 
   jv.property("covariant identity",
-    inst.arbEval,
+    inst.arbEvalNum,
     fa => is(fa.map(id).get(), fa.get())
   )
 
   jv.property("covariant composition",
-    inst.arbEval, jv.fn(jv.number), jv.fn(jv.number),
+    inst.arbEvalNum, jv.fn(jv.number), jv.fn(jv.number),
     (fa, f, g) => is(fa.map(f).map(g).get(), fa.map(x => g(f(x))).get())
   )
 
@@ -200,7 +204,7 @@ describe("Eval is a monad", () => {
 
 describe("Eval memoization", () => {
   jv.property("memoize mirrors the source for pure functions",
-    inst.arbEval,
+    inst.arbEvalNum,
     fa => is(fa.memoize().get(), fa.get())
   )
 
@@ -232,7 +236,7 @@ describe("Eval memoization", () => {
 
 describe("Eval.foreach and foreachL", () => {
   jv.property("forEach works for successful results",
-    inst.arbEval,
+    inst.arbEvalNum,
     fa => {
       let effect = 0
       fa.forEach(a => { effect = a })
@@ -333,5 +337,58 @@ describe("Eval.sequence", () => {
 
     const seq = Eval.sequence(iter as any).map(_ => _[0]).get()
     assert.equal(seq, 1)
+  })
+})
+
+describe("Eval type classes", () => {
+  const check = (eq: Equiv<Eval<any>>) => is(
+    Try.of(() => eq.lh.get()),
+    Try.of(() => eq.rh.get())
+  )
+
+  describe("Monad<Eval> (static-land)", () => {
+    const arbFA = inst.arbEval(jv.int32)
+    const arbFB = inst.arbEval(jv.string)
+    const arbFC = inst.arbEval(jv.int16)
+    const arbFAtoB = inst.arbEval(jv.fun(jv.string))
+    const arbFBtoC = inst.arbEval(jv.fun(jv.int16))
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
+      jv.fun(jv.string),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
+      check,
+      EvalModule)
+  })
+
+  describe("Monad<Eval> (fantasy-land)", () => {
+    const arbFA = inst.arbEval(jv.int32)
+    const arbFB = inst.arbEval(jv.string)
+    const arbFC = inst.arbEval(jv.int16)
+    const arbFAtoB = inst.arbEval(jv.fun(jv.string))
+    const arbFBtoC = inst.arbEval(jv.fun(jv.int16))
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
+      jv.fun(jv.string),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
+      check,
+      {
+        map: (f, fa) => (fa as any)["fantasy-land/map"](f),
+        ap: (ff, fa) => (fa as any)["fantasy-land/ap"](ff),
+        chain: (f, fa) => (fa as any)["fantasy-land/chain"](f),
+        chainRec: (f, a) => (Eval as any)["fantasy-land/chainRec"](f, a),
+        of: a => (Eval as any)["fantasy-land/of"](a)
+      })
   })
 })

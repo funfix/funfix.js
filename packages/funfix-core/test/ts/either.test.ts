@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,12 +18,14 @@
 import * as jv from "jsverify"
 import * as assert from "./asserts"
 import * as inst from "./instances"
-import { hashCode, is, Left, Right, Either, Option } from "../../src/"
+import { hashCode, is, HK, Left, Right, Either, Option, EitherModule } from "../../src/"
+import { Equiv } from "funland-laws"
+import { setoidCheck, monadCheck } from "../../../../test-common"
 
 describe("Either", () => {
   describe("Either discrimination", () => {
     jv.property("isRight == !isLeft",
-      inst.arbEither,
+      inst.arbEitherNum,
       e => e.isRight() === !e.isLeft()
     )
   })
@@ -40,7 +42,7 @@ describe("Either", () => {
 
   describe("Either #contains", () => {
     jv.property("left.contains(elem) == false",
-      inst.arbEither, jv.number,
+      inst.arbEitherNum, jv.number,
       (e, b) => e.isRight() || !e.contains(b)
     )
 
@@ -52,79 +54,79 @@ describe("Either", () => {
 
   describe("Either #exists", () => {
     jv.property("left.exists(any) == false",
-      inst.arbEither, jv.fn(jv.bool),
+      inst.arbEitherNum, jv.fn(jv.bool),
       (e, p) => e.isRight() || !e.exists(p)
     )
 
     jv.property("right.exists(x => true) == true",
-      inst.arbEither,
+      inst.arbEitherNum,
       (e) => e.isLeft() || e.exists(x => true)
     )
 
     jv.property("right.exists(x => false) == false",
-      inst.arbEither,
+      inst.arbEitherNum,
       e => e.isLeft() || !e.exists(x => false)
     )
   })
 
   describe("Either #forAll", () => {
     jv.property("left.forAll(x => true) == true",
-      inst.arbEither,
+      inst.arbEitherNum,
       e => e.isRight() || e.forAll(x => true)
     )
 
     jv.property("left.forAll(x => false) == true",
-      inst.arbEither,
+      inst.arbEitherNum,
       e => e.isRight() || e.forAll(x => false)
     )
 
     jv.property("right.forAll(x => true) == true",
-      inst.arbEither,
+      inst.arbEitherNum,
       e => e.isLeft() || e.forAll(x => true)
     )
 
     jv.property("right.forAll(x => false) == false",
-      inst.arbEither,
+      inst.arbEitherNum,
       e => e.isLeft() || !e.forAll(x => false)
     )
   })
 
   describe("Either #filterOrElse", () => {
     jv.property("right.filterOrElse(x => true, ???) == right",
-      inst.arbEither,
+      inst.arbEitherNum,
       e => e.isLeft() || e.filterOrElse(b => true, () => 0).equals(e)
     )
 
     jv.property("right.filterOrElse(x => false, zero) == left(zero)",
-      inst.arbEither,
+      inst.arbEitherNum,
       e => e.isLeft() ||
         is(e.filterOrElse(b => false, () => 0), Either.left(0))
     )
 
     jv.property("left.filterOrElse(any) == left",
-      inst.arbEither, jv.fn(jv.bool), jv.number,
+      inst.arbEitherNum, jv.fn(jv.bool), jv.number,
       (e, p, z) => e.isRight() || e.filterOrElse(p, () => z).equals(e)
     )
   })
 
   describe("Either #flatMap", () => {
     jv.property("right(n).flatMap(f) == f(n)",
-      jv.number, jv.fn(inst.arbEither),
+      jv.number, jv.fn(inst.arbEitherNum),
       (n, f) => Either.right(n).flatMap(f).equals(f(n))
     )
 
     jv.property("left identity",
-      jv.number, jv.fn(inst.arbEither),
+      jv.number, jv.fn(inst.arbEitherNum),
       (n, f) => Either.right(n).flatMap(f).equals(f(n))
     )
 
     jv.property("right identity",
-      inst.arbEither,
+      inst.arbEitherNum,
       opt => opt.flatMap(Either.right).equals(opt)
     )
 
     jv.property("left.flatMap(f) == left",
-      inst.arbEither, jv.fn(inst.arbEither),
+      inst.arbEitherNum, jv.fn(inst.arbEitherNum),
       (e, f) => e.isRight() || e.flatMap(f) === e
     )
   })
@@ -136,12 +138,12 @@ describe("Either", () => {
     )
 
     jv.property("covariant identity",
-      inst.arbEither,
+      inst.arbEitherNum,
       opt => opt.map(x => x).equals(opt)
     )
 
     jv.property("covariant composition",
-      inst.arbEither, jv.fn(jv.number), jv.fn(jv.number),
+      inst.arbEitherNum, jv.fn(jv.number), jv.fn(jv.number),
       (opt, f, g) => opt.map(f).map(g).equals(opt.map(x => g(f(x))))
     )
   })
@@ -211,17 +213,17 @@ describe("Either", () => {
 
   describe("Either #equals", () => {
     jv.property("should yield true for self.equals(self)",
-      inst.arbEither,
+      inst.arbEitherNum,
       opt => opt.equals(opt)
     )
 
     jv.property("should yield true for equals(self, self)",
-      inst.arbEither,
+      inst.arbEitherNum,
       opt => is(opt, opt)
     )
 
     jv.property("self.hashCode() === self.hashCode() === hashCode(self)",
-      inst.arbEither,
+      inst.arbEitherNum,
       opt => opt.hashCode() === opt.hashCode() && opt.hashCode() === hashCode(opt)
     )
 
@@ -252,7 +254,7 @@ describe("Either", () => {
     })
 
     jv.property("protects against other ref being null",
-      inst.arbEither,
+      inst.arbEitherNum,
       fa => fa.equals(null as any) === false
     )
   })
@@ -273,7 +275,7 @@ describe("Either", () => {
 
   describe("Either map2, map3, map4, map5, map6", () => {
     jv.property("map2 equivalence with flatMap",
-      inst.arbEither, inst.arbEither, jv.fn(jv.number),
+      inst.arbEitherNum, inst.arbEitherNum, jv.fn(jv.number),
       (o1, o2, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(Either.map2(o1, o2, f), o1.flatMap(a1 => o2.map(a2 => f(a1, a2))))
@@ -281,7 +283,7 @@ describe("Either", () => {
     )
 
     jv.property("map3 equivalence with flatMap",
-      inst.arbEither, inst.arbEither, inst.arbEither, jv.fn(jv.number),
+      inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, jv.fn(jv.number),
       (o1, o2, o3, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(
@@ -292,7 +294,7 @@ describe("Either", () => {
     )
 
     jv.property("map4 equivalence with flatMap",
-      inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, jv.fn(jv.number),
+      inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, jv.fn(jv.number),
       (o1, o2, o3, o4, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(
@@ -304,7 +306,7 @@ describe("Either", () => {
     )
 
     jv.property("map5 equivalence with flatMap",
-      inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, jv.fn(jv.number),
+      inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, jv.fn(jv.number),
       (o1, o2, o3, o4, o5, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(
@@ -316,7 +318,7 @@ describe("Either", () => {
     )
 
     jv.property("map6 equivalence with flatMap",
-      inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, inst.arbEither, jv.fn(jv.number),
+      inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, inst.arbEitherNum, jv.fn(jv.number),
       (o1, o2, o3, o4, o5, o6, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(
@@ -339,5 +341,73 @@ describe("Either", () => {
       const fa = Either.tailRecM(0, a => Left("value"))
       assert.equal(fa.swap().get(), "value")
     })
+  })
+
+  describe("Setoid<Either> (static-land)", () => {
+    setoidCheck(inst.arbEitherNum, EitherModule)
+
+    it("protects against null", () => {
+      assert.ok(EitherModule.equals(null as any, null as any))
+      assert.not(EitherModule.equals(null as any, Either.right(1)))
+      assert.not(EitherModule.equals(Either.right(1), null as any))
+    })
+  })
+
+  describe("Setoid<Either> (fantasy-land)", () => {
+    setoidCheck(inst.arbEitherNum, {
+      equals: (x, y) => (x as any)["fantasy-land/equals"](y)
+    })
+  })
+
+  describe("Monad<Either> (static-land)", () => {
+    const check = (e: Equiv<HK<"funfix/either", any>>) =>
+      (e.lh as Either<any, any>).equals(e.rh as Either<any, any>)
+
+    const arbFA = inst.arbEither(jv.int32)
+    const arbFB = inst.arbEither(jv.string)
+    const arbFC = inst.arbEither(jv.int16)
+    const arbFAtoB = inst.arbEither(jv.fun(jv.string))
+    const arbFBtoC = inst.arbEither(jv.fun(jv.int16))
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
+      jv.fun(jv.string),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
+      check,
+      EitherModule)
+  })
+
+  describe("Monad<Either> (fantasy-land)", () => {
+    const check = (e: Equiv<HK<"funfix/either", any>>) =>
+      (e.lh as Either<any, any>).equals(e.rh as Either<any, any>)
+
+    const arbFA = inst.arbEither(jv.int32)
+    const arbFB = inst.arbEither(jv.string)
+    const arbFC = inst.arbEither(jv.int16)
+    const arbFAtoB = inst.arbEither(jv.fun(jv.string))
+    const arbFBtoC = inst.arbEither(jv.fun(jv.int16))
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
+      jv.fun(jv.string),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
+      check,
+      {
+        map: (f, fa) => (fa as any)["fantasy-land/map"](f),
+        ap: (ff, fa) => (fa as any)["fantasy-land/ap"](ff),
+        chain: (f, fa) => (fa as any)["fantasy-land/chain"](f),
+        chainRec: (f, a) => (Either as any)["fantasy-land/chainRec"](f, a),
+        of: a => (Either as any)["fantasy-land/of"](a)
+      })
   })
 })

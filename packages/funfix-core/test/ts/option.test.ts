@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +19,12 @@ import * as jv from "jsverify"
 import * as inst from "./instances"
 import * as assert from "./asserts"
 
-import { Option, Some, None, Left, Right } from "../../src/"
+import { Option, Some, None, Left, Right, OptionModule } from "../../src/"
 import { NoSuchElementError } from "../../src/"
 import { is, hashCode } from "../../src/"
+import { HK } from "funland"
+import { Equiv } from "funland-laws"
+import { setoidCheck, monadCheck } from "../../../../test-common"
 
 describe("Option", () => {
   describe("constructor", () => {
@@ -40,7 +43,7 @@ describe("Option", () => {
     )
 
     jv.property("Some(option).get() equals option",
-      inst.arbOpt,
+      inst.arbOptAny,
       n => is(Some(n).get(), n)
     )
 
@@ -56,7 +59,7 @@ describe("Option", () => {
 
   describe("#getOrElse", () => {
     jv.property("equivalence with #get if nonempty",
-      inst.arbOptNonempty,
+      inst.arbOptAnyNonEmpty,
       opt => is(opt.getOrElse(1000), opt.get())
     )
 
@@ -87,7 +90,7 @@ describe("Option", () => {
 
   describe("#orNull", () => {
     jv.property("equivalence with #get if nonempty",
-      inst.arbOptNonempty,
+      inst.arbOptAnyNonEmpty,
       opt => is(opt.orNull(), opt.get())
     )
 
@@ -98,7 +101,7 @@ describe("Option", () => {
 
   describe("#orUndefined", () => {
     jv.property("equivalence with #get if nonempty",
-      inst.arbOptNonempty,
+      inst.arbOptAnyNonEmpty,
       opt => is(opt.orUndefined(), opt.get())
     )
 
@@ -109,7 +112,7 @@ describe("Option", () => {
 
   describe("#orElse", () => {
     jv.property("mirrors the source if nonempty",
-      inst.arbOptNonempty,
+      inst.arbOptAnyNonEmpty,
       opt => is(opt.orElse(None), opt)
     )
 
@@ -127,17 +130,17 @@ describe("Option", () => {
 
   describe("#orElseL", () => {
     jv.property("mirrors the source if nonempty",
-      inst.arbOptNonempty,
+      inst.arbOptAnyNonEmpty,
       opt => is(opt.orElseL(() => None), opt)
     )
 
     jv.property("works as a fallback if the source is empty",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => is(Option.empty<number>().orElseL(() => opt), opt)
     )
 
     jv.property("doesn't evaluate if the source is non-empty",
-      inst.arbOptNonempty,
+      inst.arbOptAnyNonEmpty,
       opt => {
         let effect = false
         const received = opt.orElseL(() => { effect = true; return None })
@@ -160,29 +163,29 @@ describe("Option", () => {
     })
 
     jv.property("should signal nonEmpty when non-empty",
-      inst.arbOptNonempty,
+      inst.arbOptAnyNonEmpty,
       opt => opt.nonEmpty()
     )
 
     jv.property("should have consistent isEmpty and nonEmpty",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => opt.isEmpty() === !opt.nonEmpty()
     )
   })
 
   describe("#equals and #hashCode", () => {
     jv.property("should yield true for self.equals(self)",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => opt.equals(opt)
     )
 
     jv.property("should yield true for equals(self, self)",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => is(opt, opt)
     )
 
     jv.property("self.hashCode() === self.hashCode() === hashCode(self)",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => opt.hashCode() === opt.hashCode() && opt.hashCode() === hashCode(opt)
     )
 
@@ -215,7 +218,7 @@ describe("Option", () => {
     })
 
     jv.property("protects against other ref being null",
-      inst.arbOpt,
+      inst.arbOptAny,
       fa => fa.equals(null as any) === false
     )
   })
@@ -227,41 +230,24 @@ describe("Option", () => {
     )
 
     jv.property("covariant identity",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => opt.map(x => x).equals(opt)
     )
 
     jv.property("covariant composition",
-      inst.arbOpt, jv.fn(jv.number), jv.fn(jv.number),
+      inst.arbOptAny, jv.fn(jv.number), jv.fn(jv.number),
       (opt, f, g) => opt.map(f).map(g).equals(opt.map(x => g(f(x))))
     )
 
     jv.property("Some(n).map(_ => null) == Some(null)",
-      inst.arbOptNonempty,
+      inst.arbOptAnyNonEmpty,
       opt => is(opt.map(_ => null), Some(null))
-    )
-  })
-
-  describe("#mapN", () => {
-    jv.property("pure(n).mapN(f) === pure(f(n))",
-      jv.number, jv.fn(jv.number),
-      (n, f) => is(Option.pure(n).mapN(f), Option.pure(f(n)))
-    )
-
-    jv.property("covariant identity",
-      inst.arbOpt,
-      opt => opt.mapN(x => x).equals(opt)
-    )
-
-    jv.property("Some(n).mapN(_ => null) == None",
-      inst.arbOptNonempty,
-      opt => is(opt.mapN(_ => null), None)
     )
   })
 
   describe("#flatMap", () => {
     jv.property("pure(n).flatMap(f) === f(n)",
-      jv.number, jv.fn(inst.arbOpt),
+      jv.number, jv.fn(inst.arbOptAny),
       (n, f) => Option.pure(n).flatMap(f).equals(f(n))
     )
 
@@ -274,34 +260,34 @@ describe("Option", () => {
     )
 
     jv.property("express map",
-      inst.arbOpt, jv.fn(jv.number),
+      inst.arbOptAny, jv.fn(jv.number),
       (opt, f) => opt.flatMap(n => Some(f(n))).equals(opt.map(f))
     )
 
     jv.property("left identity",
-      jv.number, jv.fn(inst.arbOpt),
+      jv.number, jv.fn(inst.arbOptAny),
       (n, f) => Option.pure(n).flatMap(f).equals(f(n))
     )
 
     jv.property("right identity",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => opt.flatMap(Option.some).equals(opt)
     )
 
     jv.property("chain is an alias of flatMap",
-      inst.arbOpt, jv.fn(inst.arbOpt),
+      inst.arbOptAny, jv.fn(inst.arbOptAny),
       (opt, f) => is(opt.flatMap(f), opt.chain(f))
     )
   })
 
   describe("#filter", () => {
     jv.property("opt.filter(x => true) === opt",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => opt.filter(x => true) === opt
     )
 
     jv.property("opt.filter(x => false) === none",
-      inst.arbOpt,
+      inst.arbOptAny,
       opt => opt.filter(x => false).equals(None)
     )
   })
@@ -397,7 +383,7 @@ describe("Option", () => {
 
   describe("map2, map3, map4, map5, map6", () => {
     jv.property("map2 equivalence with flatMap",
-      inst.arbOpt, inst.arbOpt, jv.fn(jv.number),
+      inst.arbOptAny, inst.arbOptAny, jv.fn(jv.number),
       (o1, o2, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(Option.map2(o1, o2, f), o1.flatMap(a1 => o2.map(a2 => f(a1, a2))))
@@ -405,7 +391,7 @@ describe("Option", () => {
     )
 
     jv.property("map3 equivalence with flatMap",
-      inst.arbOpt, inst.arbOpt, inst.arbOpt, jv.fn(jv.number),
+      inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, jv.fn(jv.number),
       (o1, o2, o3, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(
@@ -416,7 +402,7 @@ describe("Option", () => {
     )
 
     jv.property("map4 equivalence with flatMap",
-      inst.arbOpt, inst.arbOpt, inst.arbOpt, inst.arbOpt, jv.fn(jv.number),
+      inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, jv.fn(jv.number),
       (o1, o2, o3, o4, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(
@@ -428,7 +414,7 @@ describe("Option", () => {
     )
 
     jv.property("map5 equivalence with flatMap",
-      inst.arbOpt, inst.arbOpt, inst.arbOpt, inst.arbOpt, inst.arbOpt, jv.fn(jv.number),
+      inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, jv.fn(jv.number),
       (o1, o2, o3, o4, o5, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(
@@ -440,7 +426,7 @@ describe("Option", () => {
     )
 
     jv.property("map6 equivalence with flatMap",
-      inst.arbOpt, inst.arbOpt, inst.arbOpt, inst.arbOpt, inst.arbOpt, inst.arbOpt, jv.fn(jv.number),
+      inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, inst.arbOptAny, jv.fn(jv.number),
       (o1, o2, o3, o4, o5, o6, fn) => {
         const f = (...args: any[]) => fn(args)
         return is(
@@ -483,5 +469,73 @@ describe("Option", () => {
       const fa = Option.tailRecM(0, a => None)
       assert.equal(fa, None)
     })
+  })
+
+  describe("Setoid<Option> (static-land)", () => {
+    setoidCheck(inst.arbOptAny, OptionModule)
+
+    it("protects against null", () => {
+      assert.ok(OptionModule.equals(null as any, null as any))
+      assert.not(OptionModule.equals(null as any, None))
+      assert.not(OptionModule.equals(None, null as any))
+    })
+  })
+
+  describe("Setoid<Option> (fantasy-land)", () => {
+    setoidCheck(inst.arbOptAny, {
+      equals: (x, y) => (x as any)["fantasy-land/equals"](y)
+    })
+  })
+
+  describe("Monad<Option> (static-land)", () => {
+    const check = (e: Equiv<HK<"funfix/option", any>>) =>
+      (e.lh as Option<any>).equals(e.rh as Option<any>)
+
+    const arbFA = inst.arbOpt(jv.int32)
+    const arbFB = inst.arbOpt(jv.string)
+    const arbFC = inst.arbOpt(jv.int16)
+    const arbFAtoB = inst.arbOpt(jv.fun(jv.string))
+    const arbFBtoC = inst.arbOpt(jv.fun(jv.int16))
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
+      jv.fun(jv.string),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
+      check,
+      OptionModule)
+  })
+
+  describe("Monad<Option> (fantasy-land)", () => {
+    const check = (e: Equiv<HK<"funfix/option", any>>) =>
+      (e.lh as Option<any>).equals(e.rh as Option<any>)
+
+    const arbFA = inst.arbOpt(jv.int32)
+    const arbFB = inst.arbOpt(jv.string)
+    const arbFC = inst.arbOpt(jv.int16)
+    const arbFAtoB = inst.arbOpt(jv.fun(jv.string))
+    const arbFBtoC = inst.arbOpt(jv.fun(jv.int16))
+
+    monadCheck(
+      arbFA,
+      arbFB,
+      arbFC,
+      jv.fun(jv.string),
+      jv.fun(jv.int16),
+      arbFAtoB,
+      arbFBtoC,
+      jv.int32,
+      check,
+      {
+        map: (f, fa) => (fa as any)["fantasy-land/map"](f),
+        ap: (ff, fa) => (fa as any)["fantasy-land/ap"](ff),
+        chain: (f, fa) => (fa as any)["fantasy-land/chain"](f),
+        chainRec: (f, a) => (Option as any)["fantasy-land/chainRec"](f, a),
+        of: a => (Option as any)["fantasy-land/of"](a)
+      })
   })
 })

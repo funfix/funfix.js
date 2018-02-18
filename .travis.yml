@@ -5,9 +5,9 @@ cache:
 notifications:
   email: false
 node_js:
-  - '7.10'
+  - '8.9'
 before_script:
-  - npm prune && npm cache clean
+  - npm prune && npm cache verify
   - npm install
 script:
   - npm run build && npm run test:prod

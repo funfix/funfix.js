@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,11 @@
 
 import {
   Try, Success, Failure, Option, Some, None, Either, Left, Right,
-  IllegalStateError, IllegalArgumentError, TimeoutError, Throwable
+  IllegalStateError, IllegalArgumentError, TimeoutError, Throwable,
+  coreInternals
 } from "funfix-core"
 
+import { HK, Monad } from "funland"
 import { Scheduler } from "./scheduler"
 import { Duration } from "./time"
 import { ICancelable, Cancelable, ChainedCancelable, DummyCancelable } from "./cancelable"
@@ -115,7 +117,7 @@ export interface IPromiseLike<T> {
  * is "thenable", so you can await on functions returning `Future`
  * just fine.
  */
-export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
+export abstract class Future<A> implements HK<"funfix/future", A>, IPromiseLike<A>, ICancelable {
   /**
    * Reference to the current {@link Scheduler} available for subsequent
    * data transformations. Can be set in `Future`'s constructors, or by
@@ -126,7 +128,7 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *
    * @protected
    */
-  protected readonly _scheduler: Scheduler
+  protected readonly _scheduler!: Scheduler
 
   /**
    * Reference to the current {@link ICancelable} available for
@@ -337,6 +339,21 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
     return this.transformWith(Future.raise, f)
   }
 
+  /** Alias for {@link flatMap}. */
+  chain<B>(f: (a: A) => Future<B>): Future<B> {
+    return this.flatMap(f)
+  }
+
+  /**
+   * `Applicative` apply operator.
+   *
+   * Resembles {@link map}, but the passed mapping function is
+   * lifted in the `Either` context.
+   */
+  ap<B>(ff: Future<(a: A) => B>): Future<B> {
+    return ff.flatMap(f => this.map(f))
+  }
+
   /**
    * Asynchronously processes the value in the future once the value becomes available.
    *
@@ -371,9 +388,6 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * Creates a new future that will handle any matching throwable that this
    * future might contain by assigning it a value of another future.
    *
-   * If there is no match, or if this future contains a valid result then the
-   * new future will contain the same result.
-   *
    * This operation is the equivalent of {@link flatMap} for handling errors.
    * Also see {@link transformWith}, which can handle both successful results
    * and failures.
@@ -392,7 +406,12 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
   }
 
   /**
+   * Creates a new future that will handle any matching throwable that this
+   * future might contain by assigning it a value.
    *
+   * This operation is the equivalent of {@link map} for handling errors.
+   * Also see {@link transform}, which can handle both successful results
+   * and failures.
    *
    * ```typescript
    * const f = Future.of<number>(() => { throw new DummyError() })
@@ -410,6 +429,10 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
       a => Future.pure(a, this._scheduler))
   }
 
+  /**
+   * JavaScript `Thenable` implementation, needed in order to `await` `Future`
+   * values in `async` functions.
+   */
   then<TResult1, TResult2>(
     onFulfilled?: ((value: A) => (IPromiseLike<TResult1> | TResult1)) | undefined | null,
     onRejected?: ((reason: Throwable) => (IPromiseLike<TResult2> | TResult2)) | undefined | null): Future<TResult2 | TResult1> {
@@ -459,8 +482,8 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    */
   delayResult(delay: number | Duration): Future<A> {
     return this.transformWith(
-      err => Future.delayedTick(delay, this._scheduler).flatMap(_ => Future.raise(err, this._scheduler)),
-      a => Future.delayedTick(delay, this._scheduler).map(_ => a)
+      err => Future.delayedTick(delay, this._scheduler).flatMap(() => Future.raise(err, this._scheduler)),
+      a => Future.delayedTick(delay, this._scheduler).map(() => a)
     )
   }
 
@@ -502,17 +525,17 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    * @param fallback is a thunk generating a fallback `Future` to timeout to
    */
   timeoutTo<AA>(after: number | Duration, fallback: () => Future<AA>): Future<A | AA> {
-    const other = Future.delayedTick(after, this._scheduler).flatMap(_ => fallback())
+    const other = Future.delayedTick(after, this._scheduler).flatMap(() => fallback())
     const lst: Future<A | AA>[] = [this, other]
     return Future.firstCompletedOf(lst, this._scheduler)
   }
 
   // Implements HK<F, A>
-  /** @hidden */ readonly _funKindF: Future<any>
-  /** @hidden */ readonly _funKindA: A
+  /** @hidden */ readonly _URI!: "funfix/future"
+  /** @hidden */ readonly _A!: A
 
   // Implements Constructor<T>
-  /** @hidden */ static readonly _funErasure: Future<any>
+  /** @hidden */ static readonly _Class: Future<any>
 
   /**
    * Given a function that executes immediately, executes it asynchronously
@@ -581,7 +604,7 @@ export abstract class Future<A> implements IPromiseLike<A>, ICancelable {
    *        then {@link Scheduler.global} gets used, which also allows for
    *        local overrides, being a {@link DynamicRef}
    */
-  static raise(e: Throwable, ec: Scheduler = Scheduler.global.get()): Future<never> {
+  static raise<A = never>(e: Throwable, ec: Scheduler = Scheduler.global.get()): Future<A> {
     return new PureFuture(Failure(e), ec)
   }
 
@@ -1206,29 +1229,58 @@ class AsyncFutureState<A> {
 }
 
 /**
+ * Type enumerating the type classes implemented by `Future`.
+ */
+export type FutureTypes = Monad<"funfix/future">
+
+/**
+ * Type-class implementations, compatible with the `static-land`
+ * specification.
+ */
+export const FutureModule: FutureTypes = {
+  // Functor
+  map: <A, B>(f: (a: A) => B, fa: Future<A>) =>
+    fa.map(f),
+  // Apply
+  ap: <A, B>(ff: Future<(a: A) => B>, fa: Future<A>): Future<B> =>
+    fa.ap(ff),
+  // Applicative
+  of: Future.pure,
+  // Chain
+  chain: <A, B>(f: (a: A) => Future<B>, fa: Future<A>): Future<B> =>
+    fa.flatMap(f),
+  // ChainRec
+  chainRec: <A, B>(f: <C>(next: (a: A) => C, done: (b: B) => C, a: A) => Future<C>, a: A): Future<B> =>
+    Future.tailRecM(a, a => f(Either.left as any, Either.right as any, a))
+}
+
+// Registering Fantasy-Land compatible symbols
+coreInternals.fantasyLandRegister(Future, FutureModule)
+
+/**
  * Internal `Future` implementation that's the result of a
  * {@link FutureMaker.future}.
  *
  * @Hidden
  */
 class AsyncFuture<A> extends Future<A> {
-  readonly _state: AsyncFutureState<A>
+  readonly ["_state"]: AsyncFutureState<A>
   readonly _scheduler: Scheduler
   _cancelable?: ICancelable
 
   constructor(state: AsyncFutureState<A>, cRef: ICancelable | undefined, ec: Scheduler) {
     super()
-    this._state = state
+    this["_state"] = state
     this._scheduler = ec
     if (cRef) this._cancelable = cRef
   }
 
   value(): Option<Try<A>> {
-    return this._state.value()
+    return this["_state"].value()
   }
 
   onComplete(f: (a: Try<A>) => void): void {
-    return this._state.onComplete(f, this._scheduler)
+    return this["_state"].onComplete(f, this._scheduler)
   }
 
   cancel(): void {
@@ -1240,7 +1292,7 @@ class AsyncFuture<A> extends Future<A> {
 
   withScheduler(ec: Scheduler): Future<A> {
     if (this._scheduler === ec) return this
-    return new AsyncFuture(this._state, this._cancelable, ec)
+    return new AsyncFuture(this["_state"], this._cancelable, ec)
   }
 
   transformWith<B>(failure: (e: Throwable) => Future<B>, success: (a: A) => Future<B>): Future<B> {
@@ -1272,7 +1324,7 @@ class AsyncFuture<A> extends Future<A> {
  * ```
  */
 export class FutureMaker<A> {
-  private readonly _state: AsyncFutureState<A>
+  private readonly ["_state"]: AsyncFutureState<A>
   private readonly _scheduler: Scheduler
 
   private constructor(state: AsyncFutureState<A>, ec: Scheduler) {
@@ -1419,7 +1471,7 @@ export class FutureMaker<A> {
    *        cancellation logic to be baked into the created future
    */
   future(cancelable?: ICancelable): Future<A> {
-    switch (this._state.id) {
+    switch (this["_state"].id) {
       case "complete":
         return new PureFuture(this["_state"].ref as Try<A>, this._scheduler)
       default:
@@ -1442,7 +1494,7 @@ export class FutureMaker<A> {
    */
   withScheduler(ec: Scheduler): FutureMaker<A> {
     if (this._scheduler === ec) return this
-    return new FutureMaker(this._state, ec)
+    return new FutureMaker(this["_state"], ec)
   }
 
   /**
@@ -1484,6 +1536,7 @@ export class FutureMaker<A> {
  * Internal, common `transformWith` implementation.
  *
  * @Hidden
+ * @private
  */
 function genericTransformWith<A, B>(
   self: Future<A>,
@@ -1522,7 +1575,7 @@ function genericTransformWith<A, B>(
     }
 
     if (fb instanceof AsyncFuture) {
-      fb._state.chainTo(defer["_state"] as AsyncFutureState<B>, scheduler)
+      fb["_state"].chainTo(defer["_state"] as AsyncFutureState<B>, scheduler)
     } else {
       (fb as Future<B>).onComplete(defer.tryComplete)
     }
@@ -1729,10 +1782,10 @@ function futureTraverseLoop<A, B>(
 
     if (index >= list.length) {
       // We are done, signal final result
-      return fa.map(_ => result)
+      return fa.map(() => result)
     } else {
       // Continue with the next batch
-      return fa.flatMap(_ => futureTraverseLoop(list, f, parallelism, ec, index, result))
+      return fa.flatMap(() => futureTraverseLoop(list, f, parallelism, ec, index, result))
     }
   } catch (e) {
     // Batch generation triggered an error

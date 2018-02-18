@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2017 by The Funfix Project Developers.
+ * Copyright (c) 2017-2018 by The Funfix Project Developers.
  * Some rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,23 @@
 
 /* @flow */
 
+import type {
+  Constructor,
+  Setoid,
+  Functor,
+  Apply,
+  Applicative,
+  Chain,
+  ChainRec,
+  Monad
+} from "funland"
+
+import type { OptionURI, OptionK } from "../../src/"
 import {
   Option,
   Some,
-  None
+  None,
+  OptionModule
 } from "../../src/"
 
 const opt: Option<number> = Option.of(1)
@@ -80,9 +93,6 @@ const r14: boolean =
 const r15: Option<string> =
   Option.of(1).map((n: number) => String(n))
 
-const r16: Option<string> =
-  Option.of(1).mapN((n: number): string | null => null)
-
 const r17: boolean =
   Option.of(1).nonEmpty()
 
@@ -130,3 +140,23 @@ const opt1: Option<string> = Option.of(str1)
 
 const str2: string | null = null
 const opt2: Option<string> = Option.of(str2)
+
+const setoid: Setoid<Option<number>> =
+  OptionModule
+const functor: Functor<OptionURI> =
+  OptionModule
+const apply: Apply<OptionURI> =
+  OptionModule
+const applicative: Applicative<OptionURI> =
+  OptionModule
+const chain: Chain<OptionURI> =
+  OptionModule
+const chainRec: ChainRec<OptionURI> =
+  OptionModule
+const monad: Monad<OptionURI> =
+  OptionModule
+
+const hk1: OptionK<number> =
+  Some(1)
+const tp: Constructor<Option<any>> =
+  Option
