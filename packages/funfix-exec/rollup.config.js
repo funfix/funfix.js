@@ -34,8 +34,12 @@ export default {
   ],
   sourcemap: true,
   // Indicate here external modules you don't wanna include in your bundle (i.e.: 'lodash')
-  external: ['funfix-core'],
-  globals: { 'funfix-core': 'funfixCore' },
+  external: [
+    'funfix-core'
+  ],
+  globals: {
+    'funfix-core': 'funfixCore'
+  },
   plugins: [
     // Allow bundling cjs modules (unlike webpack, rollup doesn't understand cjs)
     commonjs(),
