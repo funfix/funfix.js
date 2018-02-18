@@ -17,7 +17,19 @@
 
 /* @flow */
 
-import type { HK, HK2, Constructor, Setoid, Functor } from "funland"
+import type {
+  HK,
+  Constructor,
+  Setoid,
+  Functor,
+  Apply,
+  Applicative,
+  Chain,
+  ChainRec,
+  Monad
+} from "funland"
+
+import type { EitherURI, EitherK } from "../../src"
 import {
   Either,
   Left,
@@ -60,12 +72,22 @@ const r27: Either<Dog, string> =
 
 const setoid: Setoid<Either<number, number>> =
   EitherModule
-const functor: Functor<"funfix/either"> =
+const functor: Functor<EitherURI> =
+  EitherModule
+const apply: Apply<EitherURI> =
+  EitherModule
+const applicative: Applicative<EitherURI> =
+  EitherModule
+const chain: Chain<EitherURI> =
+  EitherModule
+const chainRec: ChainRec<EitherURI> =
+  EitherModule
+const monad: Monad<EitherURI> =
   EitherModule
 
-const hk1: HK<"funfix/either", number> =
+const hk1: HK<EitherURI, number> =
   Either.right(1)
-const hk2: HK2<"funfix/either", number, number> =
+const hk2: EitherK<number, number> =
   Either.right(1)
 
 const tp: Constructor<Either<any, any>> =

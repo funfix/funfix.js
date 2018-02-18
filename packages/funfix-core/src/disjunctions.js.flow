@@ -17,6 +17,7 @@
 
 /* @flow */
 
+import type { HK, HK2 } from "funland"
 import { Setoid, Monad } from "funland"
 import type { Throwable } from "./errors"
 
@@ -52,10 +53,12 @@ declare export class Either<+L, +R> {
   static left<L, R>(value: L): Either<L, R>;
   static right<L, R>(value: R): Either<L, R>;
 
-  static map2<A1,A2,L,R>(fa1: Either<L,A1>, fa2: Either<L,A2>,
-                         f: (A1, A2) => R): Either<L, R>;
-  static map3<A1,A2,A3,L,R>(fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>,
-                            f: (A1, A2, A3) => R): Either<L, R>;
+  static map2<A1,A2,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>,
+    f: (A1, A2) => R): Either<L, R>;
+  static map3<A1,A2,A3,L,R>(
+    fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>,
+    f: (A1, A2, A3) => R): Either<L, R>;
   static map4<A1,A2,A3,A4,L,R>(
     fa1: Either<L,A1>, fa2: Either<L,A2>, fa3: Either<L,A3>, fa4: Either<L,A4>,
     f: (A1, A2, A3, A4) => R): Either<L, R>;
@@ -69,13 +72,26 @@ declare export class Either<+L, +R> {
   static tailRecM<L, A, B>(a: A, f: (a: A) => Either<L, Either<A, B>>): Either<L, B>;
 }
 
-declare export function Left<L>(value: L): Either<L, empty>;
-declare export function Right<R>(value: R): Either<empty, R>;
+declare export class TLeft<+L> extends Either<L, empty> {
+  +value: L;
+}
 
-export type EitherTypes = Setoid<Either<any, any>> & Functor<"funfix/either">;
+declare export class TRight<+R> extends Either<empty, R> {
+  +value: R;
+}
+
+declare export function Left<L>(value: L): TLeft<L>;
+declare export function Right<R>(value: R): TRight<R>;
+
+export type EitherURI = <U, L, A>(x: [U, L, A]) => Either<L, A>;
+export type EitherK<L, R> = HK2<EitherURI, L, R>;
+
+export type EitherTypes = Setoid<Either<any, any>> & Monad<EitherURI>;
 declare export var EitherModule: EitherTypes;
 
 declare export class Option<+A> {
+  +value: void | A;
+
   get(): A;
   getOrElse<AA>(fallback: AA): A | AA;
   getOrElseL<AA>(thunk: () => AA): A | AA;
@@ -130,13 +146,26 @@ declare export class Option<+A> {
   static tailRecM<A, B>(a: A, f: (a: A) => Option<Either<A, B>>): Option<B>;
 }
 
-declare export function Some<A>(value: A): Option<A>;
-declare export var None: Option<empty>;
+declare export class TSome<A> extends Option<A> {
+  +value: A;
+}
 
-export type OptionTypes = Setoid<Option<any>> & Functor<"funfix/option">;
+declare export class TNone extends Option<empty> {
+  +value: void;
+}
+
+declare export function Some<A>(value: A): TSome<A>;
+declare export var None: TNone;
+
+export type OptionURI = <U, L, A>(x: [U, L, A]) => Option<A>;
+export type OptionK<A> = HK<OptionURI, A>;
+
+export type OptionTypes = Setoid<Option<any>> & Monad<OptionURI>;
 declare export var OptionModule: OptionTypes;
 
 declare export class Try<+A> {
+  +value: Throwable | A;
+
   get(): A;
   getOrElse<AA>(fallback: AA): A | AA;
   getOrElseL<AA>(thunk: () => AA): A | AA;
@@ -194,8 +223,19 @@ declare export class Try<+A> {
   static tailRecM<A, B>(a: A, f: (a: A) => Try<Either<A, B>>): Try<B>;
 }
 
-declare export function Success<A>(value: A): Try<A>;
-declare export function Failure(e: Throwable): Try<empty>;
+declare export class TSuccess<A> extends Try<A> {
+  +value: A;
+}
 
-export type TryTypes = Setoid<Try<any>> & Functor<"funfix/try">;
+declare export class TFailure extends Try<empty> {
+  +value: void;
+}
+
+declare export function Success<A>(value: A): TSuccess<A>;
+declare export function Failure(e: Throwable): TFailure;
+
+export type TryURI = <U, L, A>(x: [U, L, A]) => Try<A>;
+export type TryK<A> = HK<TryURI, A>;
+
+export type TryTypes = Setoid<Try<any>> & Monad<TryURI>;
 declare export var TryModule: TryTypes;

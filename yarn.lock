@@ -1527,10 +1527,6 @@ fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
 
-funland@^0.1.4:
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/funland/-/funland-0.1.4.tgz#b2b6df1ce691a0c811304c03310341aa3175ad05"
-
 gauge@~2.7.3:
   version "2.7.4"
   resolved "https://registry.yarnpkg.com/gauge/-/gauge-2.7.4.tgz#2c03405c7538c39d7eb37b317022e325fb018bf7"

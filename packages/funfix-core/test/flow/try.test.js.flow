@@ -17,7 +17,18 @@
 
 /* @flow */
 
-import type { HK, Constructor, Setoid, Functor } from "funland"
+import type {
+  Constructor,
+  Setoid,
+  Functor,
+  Apply,
+  Applicative,
+  Chain,
+  ChainRec,
+  Monad
+} from "funland"
+
+import type { TryURI, TryK } from "../../src"
 import {
   Failure,
   Success,
@@ -59,10 +70,20 @@ const rel2: Dog | void = dogTry.orUndefined()
 
 const setoid: Setoid<Try<number>> =
   TryModule
-const functor: Functor<"funfix/try"> =
+const functor: Functor<TryURI> =
+  TryModule
+const apply: Apply<TryURI> =
+  TryModule
+const applicative: Applicative<TryURI> =
+  TryModule
+const chain: Chain<TryURI> =
+  TryModule
+const chainRec: ChainRec<TryURI> =
+  TryModule
+const monad: Monad<TryURI> =
   TryModule
 
-const hk1: HK<"funfix/try", number> =
+const hk1: TryK<number> =
   Success(1)
 const tp: Constructor<Try<any>> =
   Try

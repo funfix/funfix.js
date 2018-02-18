@@ -17,7 +17,18 @@
 
 /* @flow */
 
-import type { HK, Constructor, Setoid, Functor } from "funland"
+import type {
+  Constructor,
+  Setoid,
+  Functor,
+  Apply,
+  Applicative,
+  Chain,
+  ChainRec,
+  Monad
+} from "funland"
+
+import type { OptionURI, OptionK } from "../../src/"
 import {
   Option,
   Some,
@@ -132,10 +143,20 @@ const opt2: Option<string> = Option.of(str2)
 
 const setoid: Setoid<Option<number>> =
   OptionModule
-const functor: Functor<"funfix/option"> =
+const functor: Functor<OptionURI> =
+  OptionModule
+const apply: Apply<OptionURI> =
+  OptionModule
+const applicative: Applicative<OptionURI> =
+  OptionModule
+const chain: Chain<OptionURI> =
+  OptionModule
+const chainRec: ChainRec<OptionURI> =
+  OptionModule
+const monad: Monad<OptionURI> =
   OptionModule
 
-const hk1: HK<"funfix/option", number> =
+const hk1: OptionK<number> =
   Some(1)
 const tp: Constructor<Option<any>> =
   Option

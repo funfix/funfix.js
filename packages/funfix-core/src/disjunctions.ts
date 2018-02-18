@@ -139,7 +139,7 @@ export class Either<L, R> implements std.IEquals<Either<L, R>>, HK2<"funfix/eith
    * Left(7).filterOrElse(x => false, () => -1)    // Left(7)
    * ```
    */
-  filterOrElse<LL>(p: (r: R) => boolean, zero: () => LL): Either<LL, R> {
+  filterOrElse<LL>(p: (r: R) => boolean, zero: () => LL): Either<L | LL, R> {
     return this._isRight
       ? (p(this.value as R) ? this as any : Left(zero()))
       : this as any
