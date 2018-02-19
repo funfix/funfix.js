@@ -2507,7 +2507,7 @@ function ioListToFutureProcess<A, B>(list: IO<A>[] | Iterable<IO<A>>, f: (list: 
 
         for (let i = 0; i < array.length; i++) {
           const io = array[i]
-          const f = io.run(ctx.scheduler) as Future<A>
+          const f = io.run(ctx.scheduler)
           futures.push(f)
         }
 

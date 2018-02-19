@@ -1575,9 +1575,9 @@ function genericTransformWith<A, B>(
     }
 
     if (fb instanceof AsyncFuture) {
-      fb["_state"].chainTo(defer["_state"] as AsyncFutureState<B>, scheduler)
+      fb["_state"].chainTo(defer["_state"], scheduler)
     } else {
-      (fb as Future<B>).onComplete(defer.tryComplete)
+      fb.onComplete(defer.tryComplete)
     }
   })
 
