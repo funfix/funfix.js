@@ -1866,7 +1866,7 @@ export class Try<A> implements std.IEquals<Try<A>>, HK<"funfix/try", A> {
     let cursor = a
     while (true) {
       try {
-        const result = f(cursor) as Try<Either<A, B>>
+        const result = f(cursor)
         if (result.isFailure()) return result as any
 
         const some = result.get()

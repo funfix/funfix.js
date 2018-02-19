@@ -556,9 +556,8 @@ class Suspend<A> extends Eval<A> {
 
 /**
  * `FlatMap` is an internal `Eval` state that represents a
- * [[Eval.flatMap .flatMap]], [[Eval.map .map]], [[Eval.transform .transform]]
- * or a [[Eval.transformWith .transformWith]] operation, all of them
- * being expressed with this state.
+ * [[Eval.flatMap .flatMap]], [[Eval.map .map]] operations,
+ * all of them being expressed with this state.
  *
  * @private
  */
