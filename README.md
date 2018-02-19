@@ -50,7 +50,8 @@ everything by depending on the `funfix` project.
 
 These sub-projects are:
 
-### funfix-core [![npm](https://img.shields.io/npm/v/funfix-core.svg)](https://www.npmjs.com/package/funfix-core)
+### funfix-core 
+[![npm](https://img.shields.io/npm/v/funfix-core.svg)](https://www.npmjs.com/package/funfix-core)
 
 Exposes primitive interfaces and data types that need to be
 universally available, belonging into a standard library.
@@ -106,7 +107,8 @@ Misc utilities:
 
 </details>
 
-### funfix-exec [![npm](https://img.shields.io/npm/v/funfix-exec.svg)](https://www.npmjs.com/package/funfix-exec)
+### funfix-exec 
+[![npm](https://img.shields.io/npm/v/funfix-exec.svg)](https://www.npmjs.com/package/funfix-exec)
 
 Contains low level / side-effectful utilities and data types for
 building higher level concurrency tools.
@@ -150,7 +152,8 @@ And also types for expressing durations:
 
 </details>
 
-### funfix-effect [![npm](https://img.shields.io/npm/v/funfix-effect.svg)](https://www.npmjs.com/package/funfix-effect)
+### funfix-effect 
+[![npm](https://img.shields.io/npm/v/funfix-effect.svg)](https://www.npmjs.com/package/funfix-effect)
 
 Defines monadic data types for controlling laziness, asynchrony and side effects.
 Exposes the most advanced `IO` implementation for JavaScript.
