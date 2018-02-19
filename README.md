@@ -57,6 +57,8 @@ universally available, belonging into a standard library.
 
 **[See JSDoc documentation](https://funfix.org/api/core/)**.
 
+<details><summary>Quick Overview &amp; Usage</summary>
+
 For an à la carte install:
 
 ```
@@ -102,12 +104,16 @@ Misc utilities:
 | [applyMixins](https://funfix.org/api/core/globals.html#applyMixins)    | for working with mixins (i.e. classes used as interfaces, with methods that have default implementations), see [Mixins](https://www.typescriptlang.org/docs/handbook/mixins.html) for an explanation |
 | [id](https://funfix.org/api/core/globals.html#id)                      | is the "identity" function                                                                         |
 
+</details>
+
 ### funfix-exec
 
 Contains low level / side-effectful utilities and data types for
 building higher level concurrency tools.
 
 **[See JSDoc documentation](https://funfix.org/api/exec/)**.
+
+<details><summary>Quick Overview &amp; Usage</summary>
 
 For an à la carte install:
 
@@ -142,11 +148,15 @@ And also types for expressing durations:
 | [TimeUnit](https://funfix.org/api/exec/classes/timeunit.html) | inspired by Java's own enumeration, representing time| elated units of measurement     |
 | [Duration](https://funfix.org/api/exec/classes/duration.html) | inspired by Scala's own type, as a type safe representation for durations              |
 
+</details>
+
 ### funfix-effect
 
 Defines monadic data types for controlling laziness, asynchrony and side effects.
 
 **[See JSDoc documentation](https://funfix.org/api/effect/)**.
+
+<details><summary>Quick Overview &amp; Usage</summary>
 
 For an à la carte install:
 
@@ -160,6 +170,8 @@ The exposed data types:
 |--------------|--------------------------------------------------------------------------------------- |
 | [Eval](https://funfix.org/api/effect/classes/eval.html) | lawful, lazy, monadic data type, that can control evaluation, inspired by the `Eval` type in [Typelevel Cats](http://typelevel.org/cats/) and by the `Coeval` type in [Monix](https://monix.io), a more simple `IO`-like type that can only handle immediate execution, no async boundaries, no error handling, not being meant for suspending side effects. |
 | [IO](https://funfix.org/api/effect/classes/io.html)     | lawful, lazy, monadic data type, capable of expressing and composing side effectful actions, including asynchronous, being the most potent and capable alternative to JavaScript's `Promise`, inspired by Haskell's `IO` and by the [Monix Task](https://monix.io/docs/2x/eval/task.html) |
+
+</details>
 
 ## TypeScript or Flow?
 

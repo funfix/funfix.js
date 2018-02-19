@@ -71,7 +71,7 @@ for (const p of fs.readdirSync(rootDir)) {
   const dir = path.join(rootDir, p)
   if (!fs.lstatSync(dir).isDirectory()) continue
 
-  const docsDir = path.join(dir, "dist", "docs")
+  const docsDir = path.join(dir, ".docs")
   if (!fs.existsSync(docsDir) || !fs.lstatSync(docsDir).isDirectory()) continue
 
   const prefixLess = p.replace(/^funfix\-/, '')
