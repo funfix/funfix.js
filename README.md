@@ -60,8 +60,6 @@ universally available, belonging into a standard library.
 
 <details><summary>Quick Overview &amp; Usage</summary>
 
-For an à la carte install:
-
 ```
 npm install --save funfix-core
 ```
@@ -117,8 +115,6 @@ building higher level concurrency tools.
 
 <details><summary>Quick Overview &amp; Usage</summary>
 
-For an à la carte install:
-
 ```
 npm install --save funfix-exec
 ```
@@ -161,8 +157,6 @@ Exposes the most advanced `IO` implementation for JavaScript.
 **[See JSDoc documentation](https://funfix.org/api/effect/)**.
 
 <details><summary>Quick Overview &amp; Usage</summary>
-
-For an à la carte install:
 
 ```
 npm install --save funfix-effect
