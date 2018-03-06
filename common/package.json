@@ -40,9 +40,9 @@
     "build": "tsc && npm run rollup && npm run doc",
     "start": "node ../../node_modules/.bin/tsc-watch --onSuccess 'npm run rollup'",
 
-    "test": "mocha --opts mocha.opts",
-    "test:watch": "mocha --opts mocha.opts --watch",
-    "test:prod": "npm run lint && nyc mocha --opts mocha.opts --reporter dot",
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' mocha --opts mocha.opts",
+    "test:watch": "npm run test -- --watch",
+    "test:prod": "npm run lint && nyc npm run test -- --reporter dot",
 
     "rollup": "rollup -c && npm run fix-modules && npm run fix-types",
     "fix-modules": "node ../../scripts/fix-es5.js dist/es5.js",
