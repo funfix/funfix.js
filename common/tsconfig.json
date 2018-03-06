@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
+      "module": "es2015",
       "moduleResolution": "node",
-      "target": "es2015",
+      "target": "es5",
       "lib": ["es2015", "dom.iterable"],
       "strict": true,
       "sourceMap": true,
