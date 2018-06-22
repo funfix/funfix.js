@@ -1106,7 +1106,7 @@ export function Some<A>(value: A): TSome<A> {
  * non-empty values in the [[Option]] disjunction.
  */
 export class TNone extends Option<never> {
-  public readonly value!: undefined
+  public readonly value!: never
   private constructor() { super(undefined, true) }
 }
 
