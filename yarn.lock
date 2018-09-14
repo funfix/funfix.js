@@ -1319,9 +1319,9 @@ find-up@^2.0.0, find-up@^2.1.0:
   dependencies:
     locate-path "^2.0.0"
 
-flow-bin@^0.67.1:
-  version "0.67.1"
-  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.67.1.tgz#eabb7197cce870ac9442cfd04251c7ddc30377db"
+flow-bin@^0.81.0:
+  version "0.81.0"
+  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.81.0.tgz#7f0a733dce1dad3cb1447c692639292dc3d60bf5"
 
 for-in@^1.0.1:
   version "1.0.2"
