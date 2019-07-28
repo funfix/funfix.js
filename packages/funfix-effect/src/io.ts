@@ -140,7 +140,7 @@ import {
  *
  * ```typescript
  * function retryOnFailure<A>(times: number, io: IO<A>): IO<A> {
- *   return source.recoverWith(err => {
+ *   return io.recoverWith(err => {
  *     // No more retries left? Re-throw error:
  *     if (times <= 0) return IO.raise(err)
  *     // Recursive call, yes we can!
