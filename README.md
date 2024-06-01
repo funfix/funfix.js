@@ -2,11 +2,8 @@
 
 <img src="https://funfix.org/public/logo/funfix-512.png" width="200" align="right" style="float:right; display: block; width:200px;" />
 
-[![Travis](https://img.shields.io/travis/funfix/funfix.svg)](https://travis-ci.org/funfix/funfix)
-[![Coverage Status](https://codecov.io/gh/funfix/funfix/coverage.svg?branch=master)](https://codecov.io/gh/funfix/funfix?branch=master)
-[![Greenkeeper badge](https://badges.greenkeeper.io/funfix/funfix.svg)](https://greenkeeper.io/)
-[![npm](https://img.shields.io/npm/v/funfix.svg)](https://www.npmjs.com/package/funfix)
-[![Join chat](https://badges.gitter.im/funfix/funfix.svg)](https://gitter.im/funfix/funfix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+> [!WARNING]  
+> This repository has been unmaintained and is now ARCHIVED. At the time of writing, there are better options out there, such as [Effect](https://github.com/Effect-TS), although this code may still provide educational value.
 
 Funfix is a library of type classes and data types for Functional Programming 
 in JavaScript, [TypeScript](https://www.typescriptlang.org/) and [Flow](https://flow.org/).
